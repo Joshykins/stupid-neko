@@ -1,0 +1,26 @@
+{
+	"name": "web",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "node ../../node_modules/next/dist/bin/next dev",
+		"build": "node ../../node_modules/next/dist/bin/next build",
+		"start": "node ../../node_modules/next/dist/bin/next start"
+	},
+	"dependencies": {
+		"@tanstack/react-form": "^0.37.1",
+		"react": "catalog:react19",
+		"react-dom": "catalog:react19",
+		"tailwindcss": "catalog:",
+		"@tailwindcss/postcss": "catalog:",
+		"recharts": "^3.1.2",
+		"countup.js": "^2.9.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"next": "15.5.2",
+		"typescript": "catalog:"
+	}
+}

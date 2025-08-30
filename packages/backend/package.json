@@ -1,0 +1,15 @@
+{
+	"name": "backend",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "pnpm -w exec convex dev",
+		"build": "echo 'Convex has no build step'",
+		"start": "pnpm -w exec convex dev"
+	},
+	"devDependencies": {
+		"convex": "^1.26.0"
+	}
+}
+
+

@@ -1,0 +1,118 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --bg-mountain-sky: oklch(0.70 0.06 255);
+  /* Deep evening blue with a hint of purple, gives energy not gloom */
+  
+  --background-mountain-tier-1: oklch(0.52 0.05 250);
+  /* Rich navy with a bit more chroma for life */
+  
+  --background-mountain-tier-2: oklch(0.40 0.045 245);
+  /* Dark slate-blue, slightly more saturated than before */
+  
+  --background-mountain-tier-3: oklch(0.28 0.03 245);
+  /* Almost black-blue, but still has a cool undertone */
+  
+  
+  
+  /* Deep slate navy, less saturated for depth */
+  --background-clouds: oklch(0.8862 0.0367 217.76);
+  --background-snow: oklch(89.14% 0.0384 73.71);
+  --sakura-petals-inner: oklch(0.7465 0.0984 38.27);
+  --sakura-petals-outer: oklch(0.8732 0.061 48);
+
+  /* layout */
+  --background: oklch(0.3274 0.0363 242.96);         /* deep navy */
+  --secondary-background: oklch(93.34% 0.0447 72.67);/* warm cream (cards) */
+  --foreground: oklch(89.14% 0.0384 73.71);          /* cream text on navy */
+  --main-foreground: oklch(34.09% 0.0517 243.85);    /* navy text on cards */
+  --main: oklch(73% 0.122 66.8);                /* salmon accent (buttons) */
+  --border: oklch(34.09% 0.0517 243.85);             /* navy border */
+  --ring: oklch(73% 0.122 66.8);                /* salmon focus ring */
+  --overlay: oklch(0% 0 0 / 0.8);
+  --shadow: 4px 4px 0px 0px var(--border);
+
+  /* charts (muted blues + salmon/teal) */
+  --chart-1: #E9A786; /* salmon */
+  --chart-2: #748DA5; /* muted blue */
+  --chart-3: #B68973; /* deeper salmon */
+  --chart-4: #6F9B96; /* dusty teal */
+  --chart-5: #9CB1C3; /* light steel blue */
+  --chart-active-dot: #1F3B51; /* navy */
+}
+
+.dark {
+  --bg-mountain-sky: oklch(0.7412 0.0762 242.96);
+  --background-mountain-tier-1: oklch(0.5646 0.0762 242.96);
+  --background-mountain-tier-2: oklch(0.4137 0.091 242.96);
+  --background-mountain-tier-3: oklch(0.3274 0.0363 242.96);
+  --background-clouds: oklch(0.8862 0.0367 217.76);
+  --background-snow: oklch(89.14% 0.0384 73.71);
+  --sakura-petals-inner: oklch(0.7465 0.0984 38.27);
+  --sakura-petals-outer: oklch(0.8732 0.061 48);
+  
+  /* darker backdrop variant */
+  --background: oklch(34.09% 0.0517 243.85);         /* deeper navy */
+  --secondary-background: oklch(39.97% 0.0530 242.72);/* slightly lighter navy panels */
+  --foreground: oklch(93.34% 0.0447 72.67);          /* cream text */
+  --main-foreground: oklch(93.34% 0.0447 72.67);      /* cream text on dark cards */
+  --main: oklch(78.34% 0.0905 47.53);                /* salmon accent */
+  --border: oklch(31.00% 0.0520 242.00);             /* near-black navy */
+  --ring: oklch(78.34% 0.0905 47.53);                /* salmon focus ring */
+  --shadow: 2px 2px 0px 0px var(--border);
+
+  --chart-1: #E7A17F;
+  --chart-2: #748DA5;
+  --chart-3: #C08C77;
+  --chart-4: #6F9B96;
+  --chart-5: #9CB1C3;
+  --chart-active-dot: #FCE5C9; /* cream */
+}
+
+@theme inline {
+
+/* bg colors */
+  --color-mountain-sky: var(--bg-mountain-sky);
+  --color-mountain-tier-1: var(--background-mountain-tier-1);
+  --color-mountain-tier-2: var(--background-mountain-tier-2);
+  --color-mountain-tier-3: var(--background-mountain-tier-3);
+  --color-clouds: var(--background-clouds);
+  --color-snow: var(--background-snow);
+  --color-sakura-petals-inner: var(--sakura-petals-inner);
+  --color-sakura-petals-outer: var(--sakura-petals-outer);
+  /*  */
+  --color-main: var(--main);
+  --color-background: var(--background);
+  --color-secondary-background: var(--secondary-background);
+  --color-foreground: var(--foreground);
+  --color-main-foreground: var(--main-foreground);
+  --color-border: var(--border);
+  --color-overlay: var(--overlay);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --spacing-boxShadowX: 2px;
+  --spacing-boxShadowY: 2px;
+  --spacing-reverseBoxShadowX: -2px;
+  --spacing-reverseBoxShadowY: -2px;
+  --radius-base: 15px;
+  --shadow-shadow: var(--shadow);
+  --font-weight-base: 700;
+  --font-weight-heading: 900;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+}
+
+@layer base {
+  body { @apply text-foreground font-base bg-background; }
+  h1, h2, h3, h4, h5, h6 { @apply font-heading; }
+}

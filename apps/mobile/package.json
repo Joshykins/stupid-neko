@@ -1,0 +1,33 @@
+{
+	"name": "mobile",
+	"version": "0.1.0",
+	"private": true,
+	"main": "expo-router/entry",
+	"scripts": {
+		"dev": "node ../../scripts/expo-dev.js",
+		"start": "node ../../node_modules/expo/bin/cli start --clear",
+		"android": "expo run:android",
+		"ios": "expo run:ios",
+		"web": "node ../../node_modules/expo/bin/cli start --web"
+	},
+	"dependencies": {
+		"@clerk/clerk-expo": "^2.14.24",
+		"expo": "~53.0.22",
+		"expo-auth-session": "~6.2.1",
+		"expo-constants": "~17.1.7",
+		"expo-linking": "~7.1.7",
+		"expo-router": "^5.1.5",
+		"expo-secure-store": "~14.2.4",
+		"expo-status-bar": "~2.2.3",
+		"react": "19.0.0",
+		"react-native": "0.79.5"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.25.2",
+		"@types/react": "~19.0.14",
+		"typescript": "~5.8.3"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

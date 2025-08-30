@@ -1,0 +1,10 @@
+node_modules/**
+apps/**/.next/**
+apps/**/out/**
+dist/**
+build/**
+coverage/**
+.turbo/**
+.next/**
+convex/_generated/**
+
