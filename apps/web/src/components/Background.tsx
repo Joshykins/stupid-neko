@@ -1,6 +1,48 @@
+"use client";
+
+import Image from "next/image";
+import { cubicBezier, motion, scale, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { BackgroundSVGs } from "./BackgroundSVGs";
 
+// Subtle parallax background with a gentle initial slide-up on mount
 export const Background = () => {
+    const prefersReducedMotion = useReducedMotion();
+    const { scrollY } = useScroll();
+
+    // Map scroll position to a small upward translate for parallax (-24px at ~600px scroll)
+    const rawY = useTransform(scrollY, [0, 600], [0, -24]);
+    // Smooth the motion so it feels buttery, not jittery
+    const parallaxY = useSpring(rawY, { stiffness: 60, damping: 18, mass: 0.4 });
+
+    const initial = prefersReducedMotion ? undefined : { scale: 1.1, opacity: 1 };
+    const animate = prefersReducedMotion ? undefined : { scale: 1, opacity: 1 };
+    const transition = prefersReducedMotion ? undefined : { duration: 6, ease: cubicBezier(0.22, 1, 0.36, 1) };
+
+    return (
+        <motion.div
+            className="fixed inset-0 -z-1 pointer-events-none"
+        >
+            {/* Inner wrapper handles both mount animation and scroll-based parallax */}
+            <motion.div
+                className="relative h-full w-full"
+                style={{ y: prefersReducedMotion ? 0 : parallaxY, willChange: "transform" }}
+                initial={initial}
+                animate={animate}
+                transition={transition}
+            >
+                <Image
+                    src="/background/mountain-bg-11.svg"
+                    alt="Decorative mountain background"
+                    fill
+                    priority
+                    style={{ objectFit: "cover" }}
+                />
+            </motion.div>
+        </motion.div>
+    );
+};
+
+export const BackgroundOld = () => {
     return (
         <div className="fixed inset-0 flex flex-col items-center -z-1 bg-mountain-tier-3">
 

@@ -1,16 +1,32 @@
 import { ReactNode } from "react";
 import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { useAuth } from "@clerk/clerk-expo";
+import { ConvexAuthProvider, TokenStorage } from "@convex-dev/auth/react";
 import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
 
 const convexUrl =
-  process.env.EXPO_PUBLIC_CONVEX_URL ||
-  (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_CONVEX_URL;
+	process.env.EXPO_PUBLIC_CONVEX_URL ||
+	(Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_CONVEX_URL;
 if (!convexUrl) {
-  throw new Error("EXPO_PUBLIC_CONVEX_URL is not set");
+	throw new Error("EXPO_PUBLIC_CONVEX_URL is not set");
 }
 const convex = new ConvexReactClient(convexUrl);
+
+const storage: TokenStorage = {
+	async getItem(key: string) {
+		try {
+			return await SecureStore.getItemAsync(key);
+		} catch {
+			return null;
+		}
+	},
+	async setItem(key: string, value: string) {
+		await SecureStore.setItemAsync(key, value);
+	},
+	async removeItem(key: string) {
+		await SecureStore.deleteItemAsync(key);
+	},
+};
 
 export default function ConvexClientProvider({
 	children,
@@ -18,9 +34,9 @@ export default function ConvexClientProvider({
 	children: ReactNode;
 }) {
 	return (
-		<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+		<ConvexAuthProvider client={convex} storage={storage}>
 			{children}
-		</ConvexProviderWithClerk>
+		</ConvexAuthProvider>
 	);
 }
 

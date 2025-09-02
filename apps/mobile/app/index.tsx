@@ -1,13 +1,11 @@
 import React from "react";
 import { View, Text, Button, FlatList } from "react-native";
-import { useAuth } from "@clerk/clerk-expo";
-import { useSSO } from "@clerk/clerk-expo";
-import { makeRedirectUri } from "expo-auth-session";
-import { useMutation, useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation, useQuery, Authenticated, Unauthenticated } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
 function HomeSignedIn() {
-	const { signOut } = useAuth();
+	const { signOut } = useAuthActions();
 	const result = useQuery(api.myFunctions.listNumbers, { count: 25 });
 	const addNumber = useMutation(api.myFunctions.addNumber);
 
@@ -40,24 +38,16 @@ function HomeSignedIn() {
 				)}
 				ListEmptyComponent={<Text>Loading…</Text>}
 			/>
-			<Button title="Sign out" onPress={() => signOut()} />
+			<Button title="Sign out" onPress={() => { void signOut(); }} />
 		</View>
 	);
 }
 
 function HomeSignedOut() {
-	const { startSSOFlow } = useSSO();
+	const { signIn } = useAuthActions();
 	const onSignIn = async () => {
 		try {
-			const redirectUrl = makeRedirectUri({
-				scheme: "stupidneko",
-				native: "stupidneko://",
-			});
-			const { createdSessionId, setActive } = await startSSOFlow({
-				strategy: "oauth_discord",
-				redirectUrl,
-			});
-			if (createdSessionId) await setActive?.({ session: createdSessionId });
+			await signIn("discord");
 		} catch (e) {
 			console.warn("SSO error", e);
 		}
@@ -78,7 +68,14 @@ function HomeSignedOut() {
 }
 
 export default function Index() {
-	const { isLoaded, isSignedIn } = useAuth();
-	if (!isLoaded) return null;
-	return isSignedIn ? <HomeSignedIn /> : <HomeSignedOut />;
+	return (
+		<>
+			<Authenticated>
+				<HomeSignedIn />
+			</Authenticated>
+			<Unauthenticated>
+				<HomeSignedOut />
+			</Unauthenticated>
+		</>
+	);
 }

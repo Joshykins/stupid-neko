@@ -10,8 +10,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-main text-main-foreground",
+        default: "bg-accent text-background",
         neutral: "bg-secondary-background text-background",
+        dark: "bg-background text-foreground",
+        card: "bg-foreground text-main-foreground",
+        white: "bg-white text-background",
+        devOnly: "bg-dev-only text-background data-[dev-hidden=true]:hidden",
       },
     },
     defaultVariants: {
@@ -30,11 +34,13 @@ function Badge({
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot : "span";
+  const devHidden = variant === "devOnly" && process.env.NODE_ENV !== "development";
 
   return (
     <Comp
       data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
+      data-dev-hidden={devHidden || undefined}
+      className={cn(badgeVariants({ variant }), className, devHidden ? "hidden" : "")}
       {...props}
     />
   );

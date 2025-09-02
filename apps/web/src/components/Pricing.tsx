@@ -108,12 +108,12 @@ export default function Pricing() {
                 <Card className="p-6">
                     <CardHeader className="p-0">
 
-                        <CardTitle className="font-display text-3xl font-black flex items-center justify-between"><span>
+                        <CardTitle className="font-display text-3xl font-black flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><span>
                             StupidNeko <Badge><Rocket size={14} /> Pro</Badge></span> <div className="flex items-center text-2xl gap-3">
                                 <span className="text-muted-foreground line-through font-bold">$19.99/mo</span>
                                 <span className="relative inline-flex items-center px-2 py-1 bg-background text-foreground border-2 border-border rounded-sm  font-black">
                                     $15.99/mo
-                                    <Badge variant={"neutral"} className="absolute -top-4.5 -right-6 rotate-6">Launch deal</Badge>
+                                    <Badge variant={"neutral"} className="ml-2 sm:ml-0 sm:absolute sm:-top-4.5 sm:-right-6 sm:rotate-6">Launch deal</Badge>
                                 </span>
                             </div></CardTitle>
                     </CardHeader>

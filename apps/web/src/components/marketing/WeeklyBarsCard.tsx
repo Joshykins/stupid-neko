@@ -30,35 +30,35 @@ export function WeeklyBarsCard() {
         );
     };
     const chartConfig = {
-        listening: { label: "Listening", color: "var(--color-chart-1)" },
-        watching: { label: "Watching", color: "var(--color-chart-2)" },
-        flashcards: { label: "Flashcards", color: "var(--color-chart-3)" },
-        grammar: { label: "Grammar", color: "var(--color-chart-4)" },
+        youtube: { label: "YouTube", color: "var(--color-source-youtube-soft)" },
+        spotify: { label: "Spotify", color: "var(--color-source-spotify-soft)" },
+        anki: { label: "Anki", color: "var(--color-source-anki-soft)" },
+        misc: { label: "Misc", color: "var(--color-source-misc-soft)" },
     } as const;
 
     const data = [
-        { day: "Mon", listening: 20, watching: 35, flashcards: 18, grammar: 12 },
-        { day: "Tue", listening: 28, watching: 22, flashcards: 26, grammar: 10 },
-        { day: "Wed", listening: 16, watching: 30, flashcards: 14, grammar: 8 },
-        { day: "Thu", listening: 34, watching: 18, flashcards: 32, grammar: 14 },
-        { day: "Fri", listening: 22, watching: 25, flashcards: 20, grammar: 9 },
-        { day: "Sat", listening: 12, watching: 14, flashcards: 10, grammar: 6 },
-        { day: "Sun", listening: 18, watching: 28, flashcards: 16, grammar: 7 },
+        { day: "Mon", youtube: 60, spotify: 35, anki: 20, misc: 10 },
+        { day: "Tue", youtube: 40, spotify: 28, anki: 26, misc: 12 },
+        { day: "Wed", youtube: 30, spotify: 22, anki: 18, misc: 8 },
+        { day: "Thu", youtube: 55, spotify: 26, anki: 24, misc: 10 },
+        { day: "Fri", youtube: 42, spotify: 25, anki: 20, misc: 9 },
+        { day: "Sat", youtube: 24, spotify: 14, anki: 16, misc: 6 },
+        { day: "Sun", youtube: 36, spotify: 20, anki: 18, misc: 7 },
     ];
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="font-display text-xl font-black">Weekly distribution</CardTitle>
+                <CardTitle className="font-display text-xl font-black">Weekly source distribution</CardTitle>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig}>
                     <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 16 }}>
                         <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} tick={<Tick />} />
                         <YAxis hide />
-                        <Bar dataKey="listening" stackId="a" fill="var(--color-listening)" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="watching" stackId="a" fill="var(--color-watching)" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="flashcards" stackId="a" fill="var(--color-flashcards)" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="grammar" stackId="a" fill="var(--color-grammar)" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="youtube" stackId="a" fill="var(--color-source-youtube-soft)" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="spotify" stackId="a" fill="var(--color-source-spotify-soft)" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="anki" stackId="a" fill="var(--color-source-anki-soft)" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="misc" stackId="a" fill="var(--color-source-misc-soft)" radius={[2, 2, 0, 0]} />
                         <ChartTooltip
                             cursor={false}
                             content={(props: any) => (

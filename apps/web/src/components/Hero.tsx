@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
+import AppStoreCard from "./marketing/AppStoreCard";
 
 function SakuraBranch({ className, style }: { className?: string; style?: React.CSSProperties; }) {
 	return (
@@ -97,22 +98,25 @@ function MountainCat() {
 
 export function Hero() {
 	return (
-		<section className="relative pt-8 pb-4">
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative">
-				<Card className="p-10">
-					<h1 className="font-display text-6xl  leading-[1.03] tracking-[-0.02em] text-main-foreground">
-						Want to <span className="underline decoration-4 decoration-main ">Auto-<i>nya</i>-tically</span> track your Progress?
+		<section className="relative pt-6 md:pt-8 pb-2 md:pb-4">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center relative">
+				<div className="flex gap-4">
+					<Card className="p-6 md:p-10 relative">
+						<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
+							Do you want to <span className="underline decoration-4 decoration-main ">Auto-<i>nya</i>-tically</span> track your Progress?
 
-					</h1>
-					<p className="text-lg font-medium md:text-2xl text-muted-foreground max-w-prose pt-4">
-						Try out the best tracking system buit for <b>immersion learners</b>.
-					</p>
-					<div className="flex flex-col sm:flex-row gap-3 pt-4">
-						<Button size="cta" variant="default">Start Tracking</Button>
-						<Button variant="neutral" size="cta" className="text-main-foreground">Our Method</Button>
-					</div>
-				</Card>
-				<div className="h-72 md:h-[420px]" />
+						</h1>
+						<p className="text-base md:text-lg font-medium text-muted-foreground max-w-prose pt-4">
+							Try out the best tracking system built for <b>immersion learners</b>.
+						</p>
+						<div className="flex flex-col sm:flex-row gap-3 pt-4">
+							<Button asChild size="cta" variant="default"><Link href="/sign-in">Start Tracking</Link></Button>
+						</div>
+						{/* Store badges moved to AppStoreCard */}
+						<AppStoreCard className="p-2 w-fit h-fit md:absolute md:bottom-0 md:-right-4 md:translate-x-full" />
+					</Card>
+				</div>
+				<div className="hidden md:block md:h-[420px]" />
 			</div>
 			{/* Cat outside the card on the right */}
 			<Image
@@ -120,7 +124,7 @@ export function Hero() {
 				alt="Cat reading on a cherry tree"
 				width={720}
 				height={720}
-				className="pointer-events-none select-none absolute right-0 top-0 bottom-[-20px] z-20 bg-pu"
+				className="pointer-events-none select-none absolute right-0 top-0 bottom-[-20px] z-20 hidden sm:block"
 				priority
 			/>
 		</section >

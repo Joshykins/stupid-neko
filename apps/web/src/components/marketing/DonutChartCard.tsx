@@ -11,17 +11,17 @@ import { useCountUp } from "../../lib/useCountUp";
 
 export function DonutChartCard() {
     const chartConfig = {
-        new: { label: "New", color: "var(--color-chart-1)" },
-        learning: { label: "Learning", color: "var(--color-chart-2)" },
-        review: { label: "Review", color: "var(--color-chart-3)" },
-        suspended: { label: "Suspended", color: "var(--color-chart-4)" },
+        new: { label: "New", color: "var(--color-flashcards-new)" },
+        learning: { label: "Learning", color: "var(--color-flashcards-learning)" },
+        review: { label: "Review", color: "var(--color-flashcards-review)" },
+        suspended: { label: "Suspended", color: "var(--color-flashcards-suspended)" },
     } as const;
 
     const data = [
-        { key: "new", name: "New", value: 48, fill: "var(--color-chart-1)" },
-        { key: "learning", name: "Learning", value: 22, fill: "var(--color-chart-2)" },
-        { key: "review", name: "Review", value: 132, fill: "var(--color-chart-3)" },
-        { key: "suspended", name: "Suspended", value: 6, fill: "var(--color-chart-4)" },
+        { key: "new", name: "New", value: 48, fill: "var(--color-flashcards-new)" },
+        { key: "learning", name: "Learning", value: 22, fill: "var(--color-flashcards-learning)" },
+        { key: "review", name: "Review", value: 132, fill: "var(--color-flashcards-review)" },
+        { key: "suspended", name: "Suspended", value: 6, fill: "var(--color-flashcards-suspended)" },
     ];
     const total = React.useMemo(() => data.reduce((sum, d) => sum + (Number(d.value) || 0), 0), [data]);
     return (
