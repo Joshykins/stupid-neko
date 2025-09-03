@@ -1,21 +1,18 @@
 "use client";
 import * as React from "react";
-import { Stepper, StepDef, StepRenderProps } from "../../components/get-started/Stepper";
-import { Button } from "../../components/ui/button";
-import LanguageFlagSVG from "../../components/LanguageFlagSVG";
-import { Progress } from "../../components/ui/progress";
-import { Card } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { ArrowLeft, Youtube, Tv, Linkedin, Instagram, Users, Search, Newspaper, Music2, HelpCircle, Smile, Briefcase, Clock, GraduationCap, Plane } from "lucide-react";
-import { COMMON_LANGUAGES } from "../../lib/languages";
-import { ScrollArea } from "../../components/ui/scroll-area";
-import { LanguageCode } from "../../../../../convex/schema";
+import { Stepper, StepDef, StepRenderProps } from "../../../components/get-started/Stepper";
+import { Button } from "../../../components/ui/button";
+import LanguageFlagSVG from "../../../components/LanguageFlagSVG";
+import { Progress } from "../../../components/ui/progress";
+import { Card } from "../../../components/ui/card";
+import { ScrollArea } from "../../../components/ui/scroll-area";
+import { LanguageCode } from "../../../../../../convex/schema";
 import Image from "next/image";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Youtube, Tv, Linkedin, Instagram, Users, Search, Newspaper, Music2, HelpCircle, Smile, Briefcase, Clock, GraduationCap, Plane } from "lucide-react";
+import { COMMON_LANGUAGES } from "../../../lib/languages";
 
 type State = {
     language?: LanguageCode;
@@ -37,7 +34,6 @@ const levels = [
     "I can discuss most topics in detail",
 ] as const;
 
-// Has title, progress bar, and back button
 const GettingStartedHeader = ({ back, step, totalSteps }: { back: () => void; step: number; totalSteps: number; }) => {
     const progress = (step / totalSteps) * 100;
     return (
@@ -58,11 +54,8 @@ const GettingStartedFooter = ({ next, disabled }: { next: () => void; disabled: 
     );
 };
 
-
-function LanguageStep({ state, setState, next }: StepRenderProps<State>) {
+function LanguageStep({ state, setState }: StepRenderProps<State>) {
     const languages = COMMON_LANGUAGES;
-
-
     return (
         <>
             <div className="mx-auto p-4">
@@ -166,11 +159,7 @@ function LevelStep({ state, setState }: StepRenderProps<State>) {
     );
 }
 
-function OurMethodStep({ back, state }: any) {
-    return null;
-}
-
-export default function GetStartedPage() {
+export default function GetStartedClient() {
     const steps: Array<StepDef<State>> = [
         { id: "language", title: "I want learn...", subtitle: "Pick the language you want to have automatically tracked.", render: (p) => <LanguageStep {...p} /> },
         { id: "heard", title: "How did you hear about us?", subtitle: "Tell us where you found Stupid Neko.", render: (p) => <HeardStep {...p} /> },
@@ -180,8 +169,6 @@ export default function GetStartedPage() {
 
     const completeOnboarding = useMutation(api.myFunctions.completeOnboarding);
     const router = useRouter();
-
-
 
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [controls, setControls] = React.useState<{ next: () => void; back: () => void; goTo: (i: number) => void; } | null>(null);
@@ -244,6 +231,9 @@ export default function GetStartedPage() {
                 qualifierFormLearningReason: currentState.reason ?? undefined,
                 qualifierFormCurrentLevel: currentState.level ?? undefined,
             });
+            if (typeof document !== "undefined") {
+                document.cookie = `onboarding=false; path=/; max-age=${60 * 60 * 24 * 365}`;
+            }
             router.replace("/dashboard");
         } catch (e) {
             // no-op
@@ -254,7 +244,6 @@ export default function GetStartedPage() {
         const isLast = currentStep?.id === "level";
         if (isLast && stepIsComplete) {
             // Auto-complete when last step validated and user clicks Continue
-            // We intercept the next() call by running completion on next tick
         }
     }, [currentStep?.id, stepIsComplete]);
 

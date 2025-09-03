@@ -16,25 +16,12 @@ import {
 
     // Handle sign-in page redirects
     if (isSignInPage(request) && isAuthenticated) {
-      return nextjsMiddlewareRedirect(request, "/product");
+      return nextjsMiddlewareRedirect(request, "/dashboard");
     }
 
     // Handle protected routes
     if (isProtectedRoute(request) && !isAuthenticated) {
-      return nextjsMiddlewareRedirect(request, "/sign-in");
-    }
-
-    // For authenticated users, check onboarding status from cookie
-    let needsOnboarding = true;
-    if (isAuthenticated) {
-      const cookies = request.headers.get("cookie");
-      const onboardingCookie = cookies?.split(";").find(c => c.trim().startsWith("onboarding="));
-      
-      if (onboardingCookie) {
-        const status = onboardingCookie.split("=")[1];
-        needsOnboarding = status === "true";
-      }
-      // If no cookie exists, assume onboarding is needed (will be set by client component)
+      return nextjsMiddlewareRedirect(request, "/");
     }
 
     // Handle get-started page
@@ -42,25 +29,14 @@ import {
       if (!isAuthenticated) {
         return nextjsMiddlewareRedirect(request, "/");
       }
-      
-      if (needsOnboarding === false) {
-        return nextjsMiddlewareRedirect(request, "/dashboard");
-      }
     }
 
-    // Handle root page redirects for authenticated users
+    // Redirect root to dashboard if authenticated
     if (isRootPage(request) && isAuthenticated) {
-      if (needsOnboarding === true) {
-        return nextjsMiddlewareRedirect(request, "/get-started");
-      } else {
-        return nextjsMiddlewareRedirect(request, "/dashboard");
-      }
+      return nextjsMiddlewareRedirect(request, "/dashboard");
     }
 
-    // Handle protected routes that require completed onboarding
-    if (isProtectedRoute(request) && isAuthenticated && needsOnboarding === true) {
-      return nextjsMiddlewareRedirect(request, "/get-started");
-    }
+    // Otherwise, let server components handle onboarding redirects.
   });
    
   export const config = {

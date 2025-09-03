@@ -21,7 +21,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { usePathname } from "next/navigation";
 
 
-const plainRoutes = ["/get-started"];
+const plainRoutes = ["/get-started", "/sign-in"];
 
 
 export function TopNav() {

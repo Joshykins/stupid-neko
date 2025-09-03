@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans, Baloo_2 } from "next/font/google";
 import { Background } from "../components/Background";
 import TopNav from "../components/TopNav";
-import OnboardingCookieSetter from "../components/OnboardingCookieSetter";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "../../../../components/ConvexClientProvider";
 
@@ -61,7 +60,6 @@ export default async function RootLayout({
 						<div className="min-h-screen px-4 max-w-7xl mx-auto">
 							<Background />
 							<TopNav />
-							<OnboardingCookieSetter />
 							{children}
 						</div>
 					</ConvexClientProvider>
