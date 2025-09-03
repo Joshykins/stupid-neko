@@ -32,6 +32,8 @@ export default function ManuallyTrackRecord() {
     const seedRecords = useMutation(api.languageActivityFunctions.seedMyLanguageActivities);
     const recentManuallyTrackedLanguageActivities = useQuery(api.languageActivityFunctions.listManualTrackedLanguageActivities, {});
     const recentItems = useQuery(api.languageActivityFunctions.recentManualLanguageActivities, { limit: 8 });
+    const me = useQuery(api.meFunctions.me, {});
+
     const form = useForm<FormValues>({
         defaultValues: {
             title: "",
@@ -70,6 +72,7 @@ export default function ManuallyTrackRecord() {
             durationInMinutes: Number(values.durationInMinutes) || 0,
             contentCategories: values.contentCategories,
             skillCategories: values.skillCategories,
+            language: (me?.languageCode ?? "en") as "ja" | "en",
         });
         form.reset();
         setIsOpen(false);
@@ -378,28 +381,6 @@ export default function ManuallyTrackRecord() {
                                     <Input className="flex-1" type="number" min={1} step={1} value={seedMaxMinutes} onChange={(e) => setSeedMaxMinutes(Number(e.target.value))} />
                                 </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label>Language (optional)</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { label: "Unset", value: undefined },
-                                        { label: "Japanese (ja)", value: "ja" },
-                                        { label: "English (en)", value: "en" },
-                                    ].map(({ label, value }) => {
-                                        const selected = seedLanguage === value;
-                                        return (
-                                            <button
-                                                key={label}
-                                                type="button"
-                                                onClick={() => setSeedLanguage(value as any)}
-                                                className={buttonVariants({ variant: selected ? "default" : "neutral", size: "sm", className: "px-3" })}
-                                            >
-                                                {label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         </div>
                         <DialogFooter>
                             <Button
@@ -416,7 +397,6 @@ export default function ManuallyTrackRecord() {
                                             numRecords: seedNum,
                                             minMinutes: seedMinMinutes,
                                             maxMinutes: seedMaxMinutes,
-                                            language: seedLanguage as any,
                                         });
                                         setIsSeedOpen(false);
                                     } finally {

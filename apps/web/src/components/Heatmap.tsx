@@ -3,6 +3,9 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { motion } from "framer-motion";
 import { useCountUp } from "../lib/useCountUp";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { Authenticated, Unauthenticated } from "convex/react";
 
 type HeatmapProps = {
     title?: string;
@@ -35,8 +38,21 @@ function hashStringToSeed(label: string): number {
 }
 
 // Simple neobrutalist GitHub-like heatmap for the hero.
-export function Heatmap({ title = "Daily Streak", days = 365, values, cellSize = 12, liveVersion = false }: HeatmapProps) {
-    const totalDays = days;
+// Internal Heatmap component that handles the actual rendering
+function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize = 12, liveVersion = false }: HeatmapProps) {
+    // Get real streak data when authenticated
+    const streakData = useQuery(api.streakFunctions.getStreakDataForHeatmap, { days });
+
+    // Use real data if available and authenticated, otherwise use provided values or generate demo
+    const effectiveValues = React.useMemo(() => {
+        if (streakData && streakData.values.length === days) {
+            return streakData.values;
+        }
+        return values;
+    }, [streakData, values, days]);
+
+    const effectiveDays = streakData?.totalDays ?? days;
+    const totalDays = effectiveDays;
     const weeksCount = Math.ceil(totalDays / 7);
     const startDate = React.useMemo(() => {
         const d = new Date();
@@ -69,7 +85,7 @@ export function Heatmap({ title = "Daily Streak", days = 365, values, cellSize =
 
     // Generate demo values if not provided (deterministic across SSR/CSR)
     const demoValues = React.useMemo(() => {
-        if (values && values.length === totalDays) return values;
+        if (effectiveValues && effectiveValues.length === totalDays) return effectiveValues;
         const seed = hashStringToSeed(`${title}-${totalDays}-${weeksCount}`);
         const rng = createSeededRng(seed);
         const arr: Array<number> = [];
@@ -81,7 +97,7 @@ export function Heatmap({ title = "Daily Streak", days = 365, values, cellSize =
             arr.push(v);
         }
         return arr;
-    }, [values, totalDays, weeksCount, title]);
+    }, [effectiveValues, totalDays, weeksCount, title]);
 
 
     // Responsive: show as many weeks as fit in the container
@@ -116,9 +132,15 @@ export function Heatmap({ title = "Daily Streak", days = 365, values, cellSize =
 
     // Compute trailing non-zero streak
     let streak = 0;
-    for (let i = demoValues.length - 1; i >= 0; i--) {
-        if (demoValues[i] > 0) streak++;
-        else break;
+    if (streakData) {
+        // Use real streak data when available
+        streak = streakData.currentStreak;
+    } else {
+        // Fall back to computed streak from demo values
+        for (let i = demoValues.length - 1; i >= 0; i--) {
+            if (demoValues[i] > 0) streak++;
+            else break;
+        }
     }
 
     type TooltipState = { visible: boolean; x: number; y: number; label: string; };
@@ -217,6 +239,11 @@ export function Heatmap({ title = "Daily Streak", days = 365, values, cellSize =
             </CardContent>
         </Card>
     );
+}
+
+// Export the main Heatmap component
+export function Heatmap(props: HeatmapProps) {
+    return <HeatmapInternal {...props} />;
 }
 
 export default Heatmap;

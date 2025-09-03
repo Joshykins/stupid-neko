@@ -63,7 +63,8 @@ export default defineSchema({
 		day: v.number(),
 		numberOfActivities: v.number(),
 	}).index("by_user", ["userId"])
-		.index("by_day", ["day"]),
+		.index("by_day", ["day"])
+		.index("by_user_and_day", ["userId", "day"]),
 
 	userTargetLanguages: defineTable({
 		userId: v.id("users"),
@@ -78,6 +79,7 @@ export default defineSchema({
 	userTargetLanguageExperiences: defineTable({
 		userId: v.id("users"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
+		languageActivityId: v.optional(v.id("languageActivities")),
 		experience: v.optional(v.number()),
 	}).index("by_user", ["userId"]),
 
@@ -93,9 +95,8 @@ export default defineSchema({
 
 	languageActivities: defineTable({
 		userId: v.id("users"),
-		userProgressId: v.id("UserProgress"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
-		userTargetLanguageExperienceId: v.id("userTargetLanguageExperiences"),
+		languageCode: v.optional(languageCodeValidator),
 
 		source: v.optional(v.union(v.literal("youtube"), v.literal("spotify"), v.literal("anki"), v.literal("manual"))),                  // e.g. "youtube","anki","manual"
 		contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),

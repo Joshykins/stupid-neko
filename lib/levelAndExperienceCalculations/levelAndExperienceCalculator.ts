@@ -11,6 +11,18 @@ const CAP_LEVEL = 200; // after this, step cost stays flat
 // -------------------------------
 
 /**
+ * XP required to reach the last level.
+ * @param level The level to get the XP for
+ * @returns 
+ */
+export function xpForLastLevel(level: number): number {
+  if (level <= CAP_LEVEL) {
+    return BASE_A + BASE_B * (level - 1) + BASE_C * (level - 1) ** 2;
+  }
+  return BASE_A + BASE_B * (CAP_LEVEL - 1) + BASE_C * (CAP_LEVEL - 1) ** 2;
+}
+
+/**
  * XP required to go from level L to L+1.
  * This is capped so that after CAP_LEVEL,
  * the cost stays constant at the CAP_LEVEL value.
@@ -70,6 +82,7 @@ export type ApplyExperienceResult = {
   levelsGained: number;
   remainderTowardsNextLevel: number;
   nextLevelCost: number;
+  lastLevelCost: number;
 };
 
 /**
@@ -98,5 +111,6 @@ export function applyExperience(
     levelsGained: Math.max(0, newLevel - previousLevel),
     remainderTowardsNextLevel: remainder,
     nextLevelCost: xpForNextLevel(newLevel),
+    lastLevelCost: xpForLastLevel(newLevel),
   };
 }

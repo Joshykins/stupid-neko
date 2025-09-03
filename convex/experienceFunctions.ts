@@ -104,7 +104,9 @@ export const addExperience = internalMutation({
         userId: v.id("users"),
         languageCode: languageCodeValidator,
         deltaExperience: v.number(),
+        languageActivityId: v.optional(v.id("languageActivities")),
         isApplyingStreakBonus: v.optional(v.boolean()),
+        durationInMinutes: v.optional(v.number()),
     },
     returns: v.object({
         userTargetLanguageId: v.id("userTargetLanguages"),
@@ -116,6 +118,7 @@ export const addExperience = internalMutation({
             levelsGained: v.number(),
             remainderTowardsNextLevel: v.number(),
             nextLevelCost: v.number(),
+            lastLevelCost: v.number(),
         }),
     }),
     handler: async (ctx, args) => {
@@ -145,8 +148,12 @@ export const addExperience = internalMutation({
         });
 
         // Update existing user target language
+        const currentTotalMinutes = userTargetLanguage.totalMinutesLearning ?? 0;
+        const newTotalMinutes = currentTotalMinutes + (args.durationInMinutes ?? 0);
+        
         await ctx.db.patch(userTargetLanguage._id, {
             totalExperience: result.newTotalExperience,
+            totalMinutesLearning: newTotalMinutes,
         });
 
         // Insert experience record
@@ -154,6 +161,7 @@ export const addExperience = internalMutation({
             .insert("userTargetLanguageExperiences", {
                 userId,
                 userTargetLanguageId: userTargetLanguage._id,
+                languageActivityId: args.languageActivityId,
                 experience: result.newTotalExperience,
             });
 
