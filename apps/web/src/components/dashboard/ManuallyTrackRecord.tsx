@@ -27,11 +27,11 @@ export default function ManuallyTrackRecord() {
     const [isOpen, setIsOpen] = React.useState(false);
     const [isSeedOpen, setIsSeedOpen] = React.useState(false);
     const [useCustomMinutes, setUseCustomMinutes] = React.useState(false);
-    const addManual = useMutation(api.myFunctions.addManualTrackedItem);
-    const deleteAll = useMutation(api.myFunctions.deleteAllMyTrackedItems);
-    const seedRecords = useMutation(api.myFunctions.seedMyTrackedItems);
-    const recentTitles = useQuery(api.myFunctions.listManualTrackedTitles, {});
-    const recentItems = useQuery(api.myFunctions.recentManualTrackedItems, { limit: 8 });
+    const addManual = useMutation(api.languageActivityFunctions.addManualLanguageActivity);
+    const deleteAll = useMutation(api.languageActivityFunctions.deleteAllMyLanguageActivities);
+    const seedRecords = useMutation(api.languageActivityFunctions.seedMyLanguageActivities);
+    const recentManuallyTrackedLanguageActivities = useQuery(api.languageActivityFunctions.listManualTrackedLanguageActivities, {});
+    const recentItems = useQuery(api.languageActivityFunctions.recentManualLanguageActivities, { limit: 8 });
     const form = useForm<FormValues>({
         defaultValues: {
             title: "",
@@ -165,9 +165,9 @@ export default function ManuallyTrackRecord() {
                                         <Input {...field} placeholder="Enter the task" />
                                     )}
                                 />
-                                {recentTitles && recentTitles.length > 0 && (
+                                {recentManuallyTrackedLanguageActivities && recentManuallyTrackedLanguageActivities.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-1">
-                                        {recentTitles.map((t) => (
+                                        {recentManuallyTrackedLanguageActivities.map((t) => (
                                             <button
                                                 key={t}
                                                 type="button"

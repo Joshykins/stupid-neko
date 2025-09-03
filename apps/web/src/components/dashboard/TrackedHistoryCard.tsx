@@ -9,7 +9,7 @@ import { ScrollArea } from "../ui/scroll-area";
 
 type DisplayItem = { id: string; title: string; minutes: number; source?: string; sourceKey?: "youtube" | "spotify" | "anki" | "manual"; date: string; occurredAt?: number; description?: string; language?: string; contentCategories?: Array<string>; skillCategories?: Array<string>; };
 
-type TrackedItemResult = {
+type LanguageActivityResult = {
     _id: string;
     _creationTime: number;
     userId: string;
@@ -41,12 +41,12 @@ function humanDate(ts?: number): string {
 }
 
 export default function TrackedHistoryCard() {
-    const data = useQuery(api.myFunctions.listRecentTrackedItems, { limit: 20 });
+    const data = useQuery(api.languageActivityFunctions.listRecentLanguageActivities, { limit: 20 });
     const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
     const items: Array<DisplayItem> = React.useMemo(() => {
         if (!data) return [];
-        return data.map((doc: TrackedItemResult) => {
+        return data.map((doc: LanguageActivityResult) => {
             const minutes = Math.max(0, Math.round((doc.durationInSeconds ?? 0) / 60));
             const occurredAt = doc.occurredAt ?? doc._creationTime;
             return {

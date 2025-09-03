@@ -41,7 +41,11 @@ export default function SignInPage() {
                 form.set("flow", "signIn");
                 form.set("email", value.email);
                 form.set("password", value.password);
-                const { signingIn } = await signIn("password", form);
+                const { signingIn } = await signIn("password", {
+                    email: value.email,
+                    password: value.password,
+                    redirectTo: "/get-started"
+                });
             } catch (err: any) {
                 setErrorMessage(err?.errors?.[0]?.message || "Failed to sign in");
             }
@@ -100,7 +104,7 @@ export default function SignInPage() {
                             className="w-full bg-[#5865F2] text-white"
                             onClick={async () => {
                                 try {
-                                    await signIn("discord");
+                                    await signIn("discord", { redirectTo: "/get-started" });
                                 } catch (err: any) {
                                     setErrorMessage(err?.errors?.[0]?.message || "OAuth failed");
                                 }
@@ -117,7 +121,7 @@ export default function SignInPage() {
                             className="w-full bg-white text-black"
                             onClick={async () => {
                                 try {
-                                    await signIn("google");
+                                    await signIn("google", { redirectTo: "/get-started" });
                                 } catch (err: any) {
                                     setErrorMessage(err?.errors?.[0]?.message || "OAuth failed");
                                 }

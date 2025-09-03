@@ -167,7 +167,7 @@ export default function GetStartedClient() {
         { id: "level", title: "What is your current level?", subtitle: "Tell us your current proficiency to help us better your experience.", render: (p) => <LevelStep {...p} /> }
     ];
 
-    const completeOnboarding = useMutation(api.myFunctions.completeOnboarding);
+    const completeOnboarding = useMutation(api.onboardingFunctions.completeOnboarding);
     const router = useRouter();
 
     const [currentIndex, setCurrentIndex] = React.useState(0);

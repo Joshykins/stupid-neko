@@ -48,13 +48,27 @@ export default defineSchema({
 		isAnonymous: v.optional(v.boolean()),
 		qualifierFormHeardAboutUsFrom: v.optional(v.string()),
 		qualifierFormLearningReason: v.optional(v.string()),
+		timezone: v.optional(v.string()),
+
+		// Streak
+		lastStreakCreditAt: v.optional(v.number()),
+		currentStreak: v.optional(v.number()), // current consecutive days
+		longestStreak: v.optional(v.number()), // longest consecutive days
 	})
 		.index("email", ["email"]) // mirror default indexes
 		.index("phone", ["phone"]),
 
+	streakDays: defineTable({
+		userId: v.id("users"),
+		day: v.number(),
+		numberOfActivities: v.number(),
+	}).index("by_user", ["userId"])
+		.index("by_day", ["day"]),
+
 	userTargetLanguages: defineTable({
 		userId: v.id("users"),
 		languageCode: v.optional(languageCodeValidator),
+		totalMinutesLearning: v.optional(v.number()),
 		totalExperience: v.optional(v.number()),
 		qualifierFormCurrentLevel: v.optional(v.string()),
 	})
@@ -63,12 +77,21 @@ export default defineSchema({
 
 	userTargetLanguageExperiences: defineTable({
 		userId: v.id("users"),
-		userLanguageId: v.id("userLanguages"),
-		languageCode: v.optional(languageCodeValidator),
+		userTargetLanguageId: v.id("userTargetLanguages"),
 		experience: v.optional(v.number()),
 	}).index("by_user", ["userId"]),
 
-	trackedItems: defineTable({
+	userTargetLanguageExperiencesMultipliers: defineTable({
+		userId: v.id("users"),
+		type: v.union(v.literal("streak")),
+		userTargetLanguageId: v.id("userTargetLanguages"),
+		userTargetLanguageExperienceId: v.id("userTargetLanguageExperiences"),
+		multiplier: v.number(),
+	}).index("by_user", ["userId"])
+		.index("by_user_and_type", ["userId", "type"])
+		.index("by_user_and_user_target_language_experience_id", ["userId", "userTargetLanguageExperienceId"]),
+
+	languageActivities: defineTable({
 		userId: v.id("users"),
 		userProgressId: v.id("UserProgress"),
 		userTargetLanguageId: v.id("userTargetLanguages"),

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { useQuery, useMutation } from "convex/react";
@@ -28,8 +29,20 @@ export function TopNav() {
     const pathname = usePathname();
     const isPlain = plainRoutes.includes(pathname ?? "");
 
-    const me = useQuery(api.myFunctions.me, {});
+    const me = useQuery(api.meFunctions.me, {});
     const { signOut } = useAuthActions();
+    const updateTimezone = useMutation(api.meFunctions.updateTimezone);
+
+    // Auto-detect and update timezone every time the user accesses the website
+    useEffect(() => {
+        if (me) {
+            const currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            // Only update if the timezone has changed
+            if (me.timezone !== currentTimezone) {
+                updateTimezone({ timezone: currentTimezone });
+            }
+        }
+    }, [me, updateTimezone]);
 
 
 

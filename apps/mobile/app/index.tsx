@@ -6,12 +6,36 @@ import { api } from "../../../convex/_generated/api";
 
 function HomeSignedIn() {
 	const { signOut } = useAuthActions();
-	const result = useQuery(api.myFunctions.listNumbers, { count: 25 });
-	const addNumber = useMutation(api.myFunctions.addNumber);
+	const result = useQuery(api.meFunctions.me);
+	const updateTimezone = useMutation(api.meFunctions.updateTimezone);
+	// const addNumber = useMutation(api.myFunctions.addNumber);
+
+	// Auto-detect and update timezone every time the user accesses the app
+	React.useEffect(() => {
+		if (result) {
+			// For mobile, try to detect timezone using available APIs
+			let currentTimezone = "UTC"; // Default fallback
+
+			// Check if Intl.DateTimeFormat is available (works on newer React Native versions)
+			if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+				try {
+					currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+				} catch (e) {
+					// Fallback to UTC if timezone detection fails
+					currentTimezone = "UTC";
+				}
+			}
+
+			// Only update if the timezone has changed
+			if (result.timezone !== currentTimezone) {
+				updateTimezone({ timezone: currentTimezone });
+			}
+		}
+	}, [result, updateTimezone]);
 
 	const onAddRandom = async () => {
 		const value = Math.floor(Math.random() * 1000);
-		await addNumber({ value });
+		// await addNumber({ value });
 	};
 	return (
 		<View
@@ -25,11 +49,11 @@ function HomeSignedIn() {
 			<Text style={{ fontSize: 20, fontWeight: "600" }}>
 				Welcome to Stupid Neko
 			</Text>
-			<Text style={{ fontSize: 14, color: "#666" }}>
+			{/* <Text style={{ fontSize: 14, color: "#666" }}>
 				Viewer: {result?.viewer ?? "anonymous"}
-			</Text>
+			</Text> */}
 			<Button title="Add random number" onPress={onAddRandom} />
-			<FlatList
+			{/* <FlatList
 				style={{ alignSelf: "stretch", paddingHorizontal: 24 }}
 				data={result?.numbers ?? []}
 				keyExtractor={(item, index) => `${item}-${index}`}
@@ -37,7 +61,7 @@ function HomeSignedIn() {
 					<Text style={{ fontSize: 16, paddingVertical: 4 }}>{item}</Text>
 				)}
 				ListEmptyComponent={<Text>Loading…</Text>}
-			/>
+			/> */}
 			<Button title="Sign out" onPress={() => { void signOut(); }} />
 		</View>
 	);

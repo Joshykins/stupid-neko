@@ -11,7 +11,7 @@ export default async function GetStartedPage() {
     }
 
     const token = await convexAuthNextjsToken();
-    const needsOnboarding = await fetchQuery(api.myFunctions.needsOnboarding, {}, { token });
+    const needsOnboarding = await fetchQuery(api.onboardingFunctions.needsOnboarding, {}, { token });
     console.log("needsOnboarding", needsOnboarding);
     if (needsOnboarding === false) {
         redirect("/dashboard");

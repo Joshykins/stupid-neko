@@ -13,10 +13,11 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useAuthActions } from "@convex-dev/auth/react";
 
+
 export default function AccountPage() {
     const { signOut } = useAuthActions();
-    const me = useQuery(api.myFunctions.me, {});
-    const updateMe = useMutation(api.myFunctions.updateMe);
+    const me = useQuery(api.meFunctions.me, {});
+    const updateMe = useMutation(api.meFunctions.updateMe);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -43,7 +44,7 @@ export default function AccountPage() {
                         </Avatar>
                         <div className="text-center">
                             <div className="text-xl font-heading">{me?.name ?? "Your Account"}</div>
-                            <div className="text-sm opacity-70">User</div>
+
                         </div>
                     </Card>
 
@@ -55,6 +56,7 @@ export default function AccountPage() {
 
                         <EditForm
                             initialName={me?.name ?? ""}
+                            initialTimezone={me?.timezone ?? ""}
                             onSave={async (values) => {
                                 setErrorMessage(null);
                                 setSuccessMessage(null);
@@ -83,22 +85,25 @@ export default function AccountPage() {
 
 function EditForm({
     initialName,
+    initialTimezone,
     onSave,
     saving,
     errorMessage,
     successMessage,
 }: {
     initialName: string;
-    onSave: (values: { name: string; }) => Promise<void>;
+    initialTimezone: string;
+    onSave: (values: { name: string; timezone: string; }) => Promise<void>;
     saving: boolean;
     errorMessage: string | null;
     successMessage: string | null;
 }) {
-    const form = useForm<{ name: string; }>({
+    const form = useForm<{ name: string; timezone: string; }>({
         defaultValues: {
             name: initialName,
+            timezone: initialTimezone,
         },
-        onSubmit: async ({ value }: { value: { name: string; }; }) => {
+        onSubmit: async ({ value }: { value: { name: string; timezone: string; }; }) => {
             await onSave(value);
         },
     });
@@ -127,6 +132,8 @@ function EditForm({
                     )}
                 </form.Field>
             </div>
+
+
 
             {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
             {successMessage && <p className="text-sm text-green-600">{successMessage}</p>}

@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 export default function OnboardingCookieSetter() {
-    const needsOnboarding = useQuery(api.myFunctions.needsOnboarding, {});
+    const needsOnboarding = useQuery(api.onboardingFunctions.needsOnboarding, {});
 
     useEffect(() => {
         if (needsOnboarding === false) {

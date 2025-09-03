@@ -1,146 +1,14 @@
+
 import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { languageCodeValidator, type LanguageCode } from "./schema";
-
-// Write your Convex functions in any file inside this directory (`convex`).
-// See https://docs.convex.dev/functions for more.
-
-
-export const me = query({
-	args: {},
-	returns: v.union(
-		v.object({
-			name: v.optional(v.string()),
-			email: v.optional(v.string()),
-			image: v.optional(v.string()),
-			username: v.optional(v.string()),
-		}),
-		v.null(),
-	),
-	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) return null;
-		const user = await ctx.db.get(userId);
-		if (!user) return null;
-		return {
-			name: (user as any).name ?? undefined,
-			email: (user as any).email ?? undefined,
-			image: (user as any).image ?? undefined,
-		};
-	},
-});
-
-
-export const needsOnboarding = query({
-    args: {},
-    returns: v.boolean(),
-    handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) return true;
-        const user = await ctx.db.get(userId);
-        if (!user) return true;
-        const heard: unknown = (user as any).qualifierFormHeardAboutUsFrom;
-        return heard === null || heard === undefined || heard === "";
-    },
-});
-
-
-export const updateMe = mutation({
-    args: {
-        name: v.optional(v.string()),
-    },
-    returns: v.null(),
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) throw new Error("Unauthorized");
-        const user = await ctx.db.get(userId);
-        if (!user) throw new Error("User not found");
-
-        await ctx.db.patch(userId, {
-            ...(args.name !== undefined ? { name: args.name || undefined } : {}),
-        } as any);
-        return null;
-    },
-});
+import { UserIdentity } from "convex/server";
 
 
 
-export const completeOnboarding = mutation({
-    args: {
-        targetLanguageCode: languageCodeValidator,
-        qualifierFormHeardAboutUsFrom: v.optional(v.string()),
-        qualifierFormLearningReason: v.optional(v.string()),
-        qualifierFormCurrentLevel: v.optional(v.string()),
-    },
-    returns: v.null(),
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) throw new Error("Unauthorized");
-
-        // Persist to users table
-        await ctx.db.patch(userId, {
-            ...(args.qualifierFormHeardAboutUsFrom !== undefined ? { qualifierFormHeardAboutUsFrom: args.qualifierFormHeardAboutUsFrom || undefined } : {}),
-            ...(args.qualifierFormLearningReason !== undefined ? { qualifierFormLearningReason: args.qualifierFormLearningReason || undefined } : {}),
-        } as any);
-
-        // Upsert userTargetLanguages for (userId, language)
-        const allowed: Array<LanguageCode> = ["en", "ja", "es", "fr", "de", "ko", "it", "zh", "hi", "ru", "ar", "pt", "tr"];
-        if (!allowed.includes(args.targetLanguageCode as LanguageCode)) {
-            throw new Error("Unsupported language code");
-        }
-
-        const existing = await ctx.db
-            .query("userTargetLanguages")
-            .withIndex("by_user_and_language", (q: any) => q.eq("userId", userId as any).eq("languageCode", args.targetLanguageCode))
-            .unique();
-
-        if (existing) {
-            await ctx.db.patch(existing._id, {
-                languageCode: args.targetLanguageCode,
-                totalExperience: 0,
-                qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
-            } as any);
-        } else {
-            await ctx.db.insert("userTargetLanguages", {
-                userId,
-                languageCode: args.targetLanguageCode,
-                totalExperience: 0,
-                qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
-            } as any);
-        }
-
-        return null;
-    },
-});
-
-export const checkEmailForPasswordSignup = action({
-    args: { email: v.string() },
-    returns: v.object({ allowed: v.boolean(), reason: v.optional(v.string()) }),
-    handler: async (ctx, { email }) => {
-        const users = await (ctx as any).db
-            .query("users")
-            .withIndex("email", (q: any) => q.eq("email", email))
-            .take(2);
-        if (users.length === 0) return { allowed: true };
-        const userId = users[0]._id;
-        const oauthAccounts = await (ctx as any).db
-            .query("authAccounts")
-            .withIndex("userIdAndProvider", (q: any) => q.eq("userId", userId))
-            .filter((q: any) => q.neq(q.field("provider"), "password"))
-            .take(1);
-        if (oauthAccounts.length > 0) {
-            return {
-                allowed: false,
-                reason: "An account already exists for this email via OAuth. Please sign in with Google or Discord.",
-            };
-        }
-        return { allowed: true };
-    },
-});
-
-export const addManualTrackedItem = mutation({
+export const addManualLanguageActivity = mutation({
     args: {
         title: v.string(),
         description: v.optional(v.string()),
@@ -159,7 +27,7 @@ export const addManualTrackedItem = mutation({
             ),
         ),
     },
-    returns: v.id("trackedItems"),
+    returns: v.id("languageActivities"),
     handler: async (ctx, args) => {
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Unauthorized");
@@ -167,7 +35,31 @@ export const addManualTrackedItem = mutation({
         const now = Date.now();
         const occurredAt = args.occurredAt ?? now;
 
-        const insertedId = await ctx.db.insert("trackedItems", {
+
+        await ctx.runMutation(internal.experienceFunctions.addExperience, {
+            userId,
+            languageCode: args.language as LanguageCode,
+            deltaExperience: await ctx.runQuery(internal.experienceFunctions.getExperienceForActivity, {
+                userId,
+                languageCode: args.language as LanguageCode,
+                isManuallyTracked: true,
+                contentCategories: args.contentCategories ?? undefined,
+                skillCategories: args.skillCategories ?? undefined,
+                durationInMinutes: args.durationInMinutes,
+            }),
+            isApplyingStreakBonus: false,
+        });
+        // Update minutes tracked
+        const user = await ctx.db.get(userId);
+        
+        const userTargetLanguage = await ctx.db.query("userTargetLanguages").withIndex("by_user", (q: any) => q.eq("userId", userId)).unique();
+        if (!userTargetLanguage) throw new Error("User target language not found");
+        const totalMinutesLearning = userTargetLanguage.totalMinutesLearning ?? 0;
+        await ctx.db.patch(userTargetLanguage._id, {
+            totalMinutesLearning: totalMinutesLearning + args.durationInMinutes,
+        });
+
+        const insertedId = await ctx.db.insert("languageActivities", {
             userId,
             source: "manual",
             contentCategories: args.contentCategories ?? undefined,
@@ -184,14 +76,100 @@ export const addManualTrackedItem = mutation({
     },
 });
 
-export const listManualTrackedTitles = query({
+// Create activity, update streak, then add experience (internal)
+export const addActivityUpdateStreakAndExperience = mutation({
+    args: {
+        title: v.string(),
+        description: v.optional(v.string()),
+        durationInMinutes: v.number(),
+        occurredAt: v.optional(v.number()),
+        languageCode: languageCodeValidator,
+        baseExperience: v.number(),
+        applyMultipliers: v.optional(v.boolean()),
+        applyStreakBonus: v.optional(v.boolean()),
+    },
+    returns: v.object({
+        activityId: v.id("languageActivities"),
+        currentStreak: v.number(),
+        longestStreak: v.number(),
+        experience: v.object({
+            userTargetLanguageId: v.id("userTargetLanguages"),
+            previousTotalExperience: v.number(),
+            newTotalExperience: v.number(),
+            previousLevel: v.number(),
+            newLevel: v.number(),
+            levelsGained: v.number(),
+        }),
+    }),
+    handler: async (ctx, args): Promise<{
+        activityId: any;
+        currentStreak: number;
+        longestStreak: number;
+        experience: {
+            userTargetLanguageId: any;
+            previousTotalExperience: number;
+            newTotalExperience: number;
+            previousLevel: number;
+            newLevel: number;
+            levelsGained: number;
+        };
+    }> => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Unauthorized");
+
+        // 1) Create the language activity
+        const now = Date.now();
+        const occurredAt = args.occurredAt ?? now;
+        const activityId = await ctx.db.insert("languageActivities", {
+            userId,
+            source: "manual",
+            isManuallyTracked: true,
+            languageCode: args.languageCode,
+            title: args.title,
+            description: args.description ?? undefined,
+            durationInSeconds: Math.max(0, Math.round(args.durationInMinutes * 60)),
+            occurredAt,
+        } as any);
+
+        // 2) Update streak
+        const streak: { currentStreak: number; longestStreak: number; didIncrementToday: boolean } = await ctx.runMutation(internal.streakFunctions.updateStreakOnActivity, {
+            userId,
+            occurredAt,
+        });
+
+        // 3) Add experience (with optional streak bonus)
+        const exp: { userTargetLanguageId: any; result: { previousTotalExperience: number; newTotalExperience: number; previousLevel: number; newLevel: number; levelsGained: number } } = await ctx.runMutation(internal.experienceFunctions.addExperience, {
+            userId,
+            languageCode: args.languageCode,
+            deltaExperience: args.baseExperience,
+            isApplyingStreakBonus: args.applyStreakBonus ?? false,
+        });
+
+        return {
+            activityId,
+            currentStreak: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            experience: {
+                userTargetLanguageId: exp.userTargetLanguageId,
+                previousTotalExperience: exp.result.previousTotalExperience,
+                newTotalExperience: exp.result.newTotalExperience,
+                previousLevel: exp.result.previousLevel,
+                newLevel: exp.result.newLevel,
+                levelsGained: exp.result.levelsGained,
+            },
+        };
+    },
+});
+
+
+export const listManualTrackedLanguageActivities = query({
     args: {},
     returns: v.array(v.string()),
     handler: async (ctx) => {
         const userId = await getAuthUserId(ctx);
         if (!userId) return [];
         const items = await ctx.db
-            .query("trackedItems")
+            .query("languageActivities")
             .withIndex("by_user", (q: any) => q.eq("userId", userId))
             .order("desc")
             .take(200);
@@ -203,11 +181,11 @@ export const listManualTrackedTitles = query({
     },
 });
 
-export const listRecentTrackedItems = query({
+export const listRecentLanguageActivities = query({
     args: { limit: v.optional(v.number()) },
     returns: v.array(
         v.object({
-            _id: v.id("trackedItems"),
+            _id: v.id("languageActivities"),
             _creationTime: v.number(),
             userId: v.id("users"),
             source: v.optional(
@@ -252,7 +230,7 @@ export const listRecentTrackedItems = query({
         if (!userId) return [];
         const limit = Math.max(1, Math.min(100, args.limit ?? 20));
         const items = await ctx.db
-            .query("trackedItems")
+            .query("languageActivities")
             .withIndex("by_user", (q: any) => q.eq("userId", userId))
             .order("desc")
             .take(limit);
@@ -260,7 +238,7 @@ export const listRecentTrackedItems = query({
     },
 });
 
-export const recentManualTrackedItems = query({
+export const recentManualLanguageActivities = query({
     args: { limit: v.optional(v.number()) },
     returns: v.array(
         v.object({
@@ -275,7 +253,7 @@ export const recentManualTrackedItems = query({
         const userId = await getAuthUserId(ctx);
         if (!userId) return [];
         const items = await ctx.db
-            .query("trackedItems")
+            .query("languageActivities")
             .withIndex("by_user", (q: any) => q.eq("userId", userId))
             .order("desc")
             .take(Math.max(1, Math.min(20, args.limit ?? 8)));
@@ -291,7 +269,7 @@ export const recentManualTrackedItems = query({
     },
 });
 
-export const deleteAllMyTrackedItems = mutation({
+export const deleteAllMyLanguageActivities = mutation({
     args: {},
     returns: v.object({ deleted: v.number() }),
     handler: async (ctx) => {
@@ -300,7 +278,7 @@ export const deleteAllMyTrackedItems = mutation({
 
         let deleted = 0;
         const items = await ctx.db
-            .query("trackedItems")
+            .query("languageActivities")
             .withIndex("by_user", (q: any) => q.eq("userId", userId))
             .collect();
         for (const it of items) {
@@ -311,7 +289,7 @@ export const deleteAllMyTrackedItems = mutation({
     },
 });
 
-export const seedMyTrackedItems = mutation({
+export const seedMyLanguageActivities = mutation({
     args: {
         start: v.number(), // ms timestamp
         end: v.number(),   // ms timestamp
@@ -361,7 +339,7 @@ export const seedMyTrackedItems = mutation({
             const skillCategories = pickSome(skillOptions, 1, 2) as any;
             const title = titles[randomInt(0, titles.length - 1)];
 
-            await ctx.db.insert("trackedItems", {
+            await ctx.db.insert("languageActivities", {
                 userId,
                 source: "manual",
                 isManuallyTracked: true,
@@ -377,53 +355,5 @@ export const seedMyTrackedItems = mutation({
         }
 
         return { inserted };
-    },
-});
-
-export const dailyHeatmapValues = query({
-    args: { days: v.optional(v.number()) },
-    returns: v.array(v.number()),
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        const days = Math.max(1, Math.min(366, Math.floor(args.days ?? 365)));
-
-        // If unauthenticated, return empty to allow client fallback/demo values
-        if (!userId) return new Array(days).fill(0);
-
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const endOfTodayMs = now.getTime() + 24 * 60 * 60 * 1000 - 1; // inclusive end
-        const startMs = now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
-
-        // Initialize buckets for minutes per day (oldest -> newest)
-        const minutesPerDay: Array<number> = new Array(days).fill(0);
-
-        const items = await ctx.db
-            .query("trackedItems")
-            .withIndex("by_user_and_occurred", (q: any) =>
-                q.eq("userId", userId).gte("occurredAt", startMs).lte("occurredAt", endOfTodayMs),
-            )
-            .order("asc")
-            .collect();
-
-        for (const it of items as any[]) {
-            const occurredAt: number | undefined = it.occurredAt;
-            if (occurredAt === undefined || occurredAt === null) continue;
-            const idx = Math.floor((occurredAt - startMs) / (24 * 60 * 60 * 1000));
-            if (idx < 0 || idx >= days) continue;
-            const minutes = Math.max(0, Math.floor((it.durationInSeconds ?? 0) / 60));
-            minutesPerDay[idx] += minutes;
-        }
-
-        // Map minutes to intensity buckets 0..4
-        const intensities: Array<number> = minutesPerDay.map((m) => {
-            if (m <= 0) return 0;
-            if (m < 10) return 1;
-            if (m < 25) return 2;
-            if (m < 60) return 3;
-            return 4;
-        });
-
-        return intensities;
     },
 });

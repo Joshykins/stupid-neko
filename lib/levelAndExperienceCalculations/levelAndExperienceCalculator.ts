@@ -57,4 +57,46 @@ export function levelFromXp(xp: number): { level: number; remainder: number } {
   }
 }
 
+export type ApplyExperienceInput = {
+  currentTotalExperience: number;
+  deltaExperience: number;
+};
 
+export type ApplyExperienceResult = {
+  previousTotalExperience: number;
+  newTotalExperience: number;
+  previousLevel: number;
+  newLevel: number;
+  levelsGained: number;
+  remainderTowardsNextLevel: number;
+  nextLevelCost: number;
+};
+
+/**
+ * Pure helper to apply an experience delta to a running total and
+ * compute level progression details. Does not perform any I/O.
+ */
+export function applyExperience(
+  args: ApplyExperienceInput,
+): ApplyExperienceResult {
+  const previousTotal = Math.max(0, Math.floor(args.currentTotalExperience || 0));
+  const delta = Math.floor(args.deltaExperience || 0);
+
+  // Future: apply multipliers here when implemented
+  const effectiveDelta = delta; // args.applyMultipliers ?? true
+
+  const newTotal = Math.max(0, previousTotal + effectiveDelta);
+
+  const { level: previousLevel } = levelFromXp(previousTotal);
+  const { level: newLevel, remainder } = levelFromXp(newTotal);
+
+  return {
+    previousTotalExperience: previousTotal,
+    newTotalExperience: newTotal,
+    previousLevel,
+    newLevel,
+    levelsGained: Math.max(0, newLevel - previousLevel),
+    remainderTowardsNextLevel: remainder,
+    nextLevelCost: xpForNextLevel(newLevel),
+  };
+}
