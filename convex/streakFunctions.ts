@@ -137,9 +137,7 @@ export const updateStreakOnActivity = internalMutation({
 });
 
 
-const HABIT_CAP_DAYS = 21;      // choose 7, 14, 21, or 28
-const MAX_MULTIPLIER = 2;
-const BASE_MULTIPLIER = 1;
+import { calculateStreakBonusMultiplier, HABIT_CAP_DAYS } from "../lib/streakBonus";
 
 export const getStreakBonusMultiplier = internalQuery({
   args: { userId: v.id("users") },
@@ -149,10 +147,8 @@ export const getStreakBonusMultiplier = internalQuery({
     if (!user) throw new Error("User not found");
 
     const currentStreak = Math.max(0, user.currentStreak ?? 0);
-    const p = Math.min(1, currentStreak / HABIT_CAP_DAYS); // 0→1 over cap days
-    const multiplier = BASE_MULTIPLIER + (MAX_MULTIPLIER - BASE_MULTIPLIER) * p;
-
-    return Number(multiplier.toFixed(3)); // e.g., 1.476
+    const multiplier = calculateStreakBonusMultiplier(currentStreak);
+    return multiplier; // e.g., 1.476
   },
 });
 
@@ -163,6 +159,7 @@ export const getStreakDataForHeatmap = query({
   returns: v.union(
     v.object({
       values: v.array(v.number()),
+      activityCounts: v.array(v.number()),
       currentStreak: v.number(),
       longestStreak: v.number(),
       totalDays: v.number(),
@@ -200,9 +197,13 @@ export const getStreakDataForHeatmap = query({
 
       // Generate the values array for the heatmap
       const values: number[] = [];
+      const activityCounts: number[] = [];
       for (let i = 0; i < days; i++) {
         const dayTimestamp = startDay + i * 24 * 60 * 60 * 1000;
         const activities = dayToActivities.get(dayTimestamp) ?? 0;
+        
+        // Store the actual activity count
+        activityCounts.push(activities);
         
         // Convert number of activities to heatmap intensity (0-4)
         let intensity = 0;
@@ -218,6 +219,7 @@ export const getStreakDataForHeatmap = query({
 
       return {
         values,
+        activityCounts,
         currentStreak,
         longestStreak,
         totalDays: days,

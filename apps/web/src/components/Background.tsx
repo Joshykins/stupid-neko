@@ -14,8 +14,8 @@ export const Background = () => {
     // Smooth the motion so it feels buttery, not jittery
     const parallaxY = useSpring(rawY, { stiffness: 60, damping: 18, mass: 0.4 });
 
-    const initial = prefersReducedMotion ? undefined : { scale: 1.1, opacity: 1 };
-    const animate = prefersReducedMotion ? undefined : { scale: 1, opacity: 1 };
+    const initial = prefersReducedMotion ? undefined : { scale: 1.12, opacity: 1 };
+    const animate = prefersReducedMotion ? undefined : { scale: 1.05, opacity: 1 };
     const transition = prefersReducedMotion ? undefined : { duration: 6, ease: cubicBezier(0.22, 1, 0.36, 1) };
 
     return (

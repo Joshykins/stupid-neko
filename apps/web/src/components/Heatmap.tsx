@@ -5,7 +5,10 @@ import { motion } from "framer-motion";
 import { useCountUp } from "../lib/useCountUp";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { Badge } from "./ui/badge";
+import { Progress } from "./ui/progress";
+import { calculateStreakBonusMultiplier, calculateStreakBonusPercent } from "../../../../lib/streakBonus";
+import HeatmapProgress from "./ui/heatmap-progress";
 
 type HeatmapProps = {
     title?: string;
@@ -157,7 +160,29 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
         if (absoluteIndex >= totalDays) return;
         const day = new Date(startDate);
         day.setDate(day.getDate() + absoluteIndex);
-        const label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • Level ${value}`;
+
+        // Get the actual activity count for this day if we have real data
+        let activityCount = 0;
+        if (streakData && streakData.activityCounts && streakData.activityCounts.length === totalDays) {
+            activityCount = streakData.activityCounts[absoluteIndex] ?? 0;
+        }
+
+        // Create fire emoji representation for intensity
+        const fireEmojis = "🔥".repeat(value);
+        const intensityText = value > 0 ? fireEmojis : "No activity";
+
+        // Create a more descriptive label
+        let label: string;
+        if (activityCount > 0) {
+            if (activityCount === 1) {
+                label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • 1 activity ${fireEmojis}`;
+            } else {
+                label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${activityCount} activities ${fireEmojis}`;
+            }
+        } else {
+            label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${intensityText}`;
+        }
+
         setTooltip((t) => ({ ...t, visible: true, label }));
     };
     const onContainerMove = (ev: React.MouseEvent<HTMLDivElement>) => {
@@ -167,20 +192,43 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
     };
     const onContainerLeave = () => setTooltip({ visible: false, x: 0, y: 0, label: "" });
 
+    const streakBonusPercent = calculateStreakBonusPercent(streakData?.currentStreak ?? 0);
+
+    // Refs for animated counts (must be called unconditionally to obey Rules of Hooks)
+    const titleCountUpRef = useCountUp(streak);
+    const bonusCountUpRef = useCountUp(streakBonusPercent);
+
     return (
         <Card>
-            <CardHeader>
-                <CardTitle className="font-display text-lg font-black tracking-tight text-main-foreground flex items-center gap-2">
-                    {title}
-                    <span className="inline-flex items-center gap-1 text-lg font-black">
-                        <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden>
-                            <path d="M8 1 C10 4 5 6 8 9 C10 11 12 9 12 7 C14 9 15 11 15 13 C15 15.761 12.761 18 10 18 H6 C3.239 18 1 15.761 1 13 C1 9 4 6 6 4 C6.5 3.5 7.5 2.5 8 1 Z" fill="#F59E0B" stroke="#000" strokeWidth="2" />
-                        </svg>
-                        <span ref={useCountUp(streak)} />
-                    </span>
+            <CardHeader className="pb-2">
+                <CardTitle className="font-display text-lg font-black tracking-tight text-main-foreground flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        {title}
+                        <span className="inline-flex items-center gap-1 text-lg font-black">
+                            <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden>
+                                <path d="M8 1 C10 4 5 6 8 9 C10 11 12 9 12 7 C14 9 15 11 15 13 C15 15.761 12.761 18 10 18 H6 C3.239 18 1 15.761 1 13 C1 9 4 6 6 4 C6.5 3.5 7.5 2.5 8 1 Z" fill="#F59E0B" stroke="#000" strokeWidth="2" />
+                            </svg>
+                            <span ref={titleCountUpRef} />
+                        </span>
+                    </div>
+                    {/* Streak Bonus Indicator */}
+                    <div className="flex items-center gap-2">
+                        {streakData && (
+                            <Badge className="bg-[var(--color-heatmap-1)]">
+                                <div className="inline-flex items-center font-bold text-base text-main-foreground">
+                                    <span ref={bonusCountUpRef} />% Bonus
+
+                                </div>
+                            </Badge>
+                        )}
+                    </div>
                 </CardTitle>
+                {/* Streak progress to max streak */}
+                {(
+                    <HeatmapProgress value={streakBonusPercent} />
+                )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4">
                 <div ref={containerRef} className="w-full rounded-md overflow-hidden border-2 border-black bg-heatmap-bg relative" onMouseMove={onContainerMove} onMouseLeave={onContainerLeave}>
                     {/* Reserve space to avoid layout jump */}
                     {(() => {
