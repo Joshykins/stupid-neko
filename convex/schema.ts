@@ -29,6 +29,15 @@ export const languageCodeValidator = v.union(
 	...languagecode.map((c) => v.literal(c)),
 );
 
+// Content Source validator
+export const ContentSources = ["youtube", "spotify", "anki", "manual"] as const;
+export type ContentSource = typeof ContentSources[number];
+export const contentSourceValidator = v.union(...ContentSources.map((s) => v.literal(s)));
+
+// Media Types
+export const MediaTypes = ["audio", "video", "text"] as const;
+export type MediaType = typeof MediaTypes[number];
+export const mediaTypeValidator = v.union(...MediaTypes.map((m) => v.literal(m)));
 
 
 // The schema is entirely optional.
@@ -101,7 +110,7 @@ export default defineSchema({
 		userTargetLanguageId: v.id("userTargetLanguages"),
 		languageCode: v.optional(languageCodeValidator),
 
-		source: v.optional(v.union(v.literal("youtube"), v.literal("spotify"), v.literal("anki"), v.literal("manual"))),                  // e.g. "youtube","anki","manual"
+		source: v.optional(contentSourceValidator),  
 		contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
 		skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
 		isManuallyTracked: v.optional(v.boolean()),
@@ -115,4 +124,51 @@ export default defineSchema({
 		.index("by_user", ["userId"])
 		.index("by_occurred", ["occurredAt"]) 
 		.index("by_user_and_occurred", ["userId", "occurredAt"]),
+
+
+	// Labeling Engine
+	labeledContent: defineTable({
+		key: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID"
+		stage: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
+		contentSource: contentSourceValidator, // "youtube" | "spotify" | "anki" | "manual"
+		contentUrl: v.optional(v.string()),
+		
+		// Normalized metadata (from source APIs)
+		contentMediaType: v.optional(mediaTypeValidator), // "audio" | "video" | "text"
+		title: v.optional(v.string()),
+		authorName: v.optional(v.string()),
+		authorUrl: v.optional(v.string()),
+		description: v.optional(v.string()),
+		thumbnailUrl: v.optional(v.string()),
+		fullDurationInSeconds: v.optional(v.number()),
+	
+		// Language signals
+		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
+		captionLanguageCodes: v.optional(v.array(languageCodeValidator)), // available captions
+		percentTargetLanguageSpeech: v.optional(v.number()), // 0..1
+		languageConfidence: v.optional(v.number()), // 0..1
+		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+	
+		// LLM evaluation (structured + short text)
+		targetLanguageEvaluation: v.optional(v.string()), // short summary (rename from targetLanguageLearnigEvaluation)
+		targetLanguageEvaluationBullets: v.optional(v.array(v.string())), // brief bullet points (rename)
+		eval: v.optional(v.object({
+			version: v.string(),             // schema/versioning
+			cefr: v.optional(v.string()),    // e.g., "A2-B1"
+			speechRateWpm: v.optional(v.number()),
+			clarity: v.optional(v.number()), // 1..5
+			domainTags: v.optional(v.array(v.string())), // ["news", "daily life"]
+			useCases: v.optional(v.array(v.string())),   // ["listening practice", "shadowing"]
+			hasDirectSubs: v.optional(v.boolean()),
+			codeSwitching: v.optional(v.number()), // 0..1
+			recommendedLearnerLevels: v.optional(v.array(v.string())), // ["A2","B1"]
+		})),
+	
+		// Ops
+		attempts: v.optional(v.number()),
+		lastError: v.optional(v.string()),
+		createdAt: v.optional(v.number()),
+		updatedAt: v.optional(v.number()),
+		processedAt: v.optional(v.number()),
+	}).index("by_key", ["key"])
 });
