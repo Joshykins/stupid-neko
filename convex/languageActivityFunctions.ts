@@ -20,7 +20,7 @@ export const addLanguageActivity = internalMutation({
         contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
         skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
         isManuallyTracked: v.optional(v.boolean()),
-        userTargetLanguageId: v.optional(v.id("userTargetLanguages")),
+        userTargetLanguageId: v.id("userTargetLanguages"),
         source: v.optional(
             v.union(
                 v.literal("youtube"),
@@ -48,7 +48,7 @@ export const addLanguageActivity = internalMutation({
         currentStreak: number;
         longestStreak: number;
         experience: {
-            userTargetLanguageId: any;
+            userTargetLanguageId: Id<"userTargetLanguages">;
             previousTotalExperience: number;
             newTotalExperience: number;
             previousLevel: number;
@@ -65,15 +65,15 @@ export const addLanguageActivity = internalMutation({
         const occurredAt = args.occurredAt ?? now;
         const activityId = await ctx.db.insert("languageActivities", {
             userId,
-            source: (args as any).source ?? "manual",
-            isManuallyTracked: args.isManuallyTracked ?? ((args as any).source ?? "manual") === "manual",
+            source: args.source ?? "manual",
+            isManuallyTracked: args.isManuallyTracked ?? (args.source ?? "manual") === "manual",
             languageCode: args.languageCode,
             title: args.title,
-            userTargetLanguageId: args.userTargetLanguageId,
+            userTargetLanguageId: args.userTargetLanguageId ,
             description: args.description ?? undefined,
             durationInSeconds: Math.max(0, Math.round(args.durationInMinutes * 60)),
             occurredAt,
-        } as any);
+        });
 
         // 2) Update streak
         const streak = await ctx.runMutation(internal.streakFunctions.updateStreakOnActivity, {
@@ -143,14 +143,18 @@ export const addManualLanguageActivity = mutation({
         const now = Date.now();
         const occurredAt = args.occurredAt ?? now;
 
-        // Infer language from user's last updated target language
-        const userTargetLanguage = await ctx.db.query("userTargetLanguages").withIndex("by_user", (q: any) => q.eq("userId", userId)).order("desc").take(1);
-        if (!userTargetLanguage) throw new Error("User target language not found");
-        const languageCode = userTargetLanguage[0].languageCode;
+        // Infer language from user's current target language id
+        const user = await ctx.db.get(userId);
+        if (!user) throw new Error("User not found");
+        const currentTargetLanguageId = user.currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+        if (!currentTargetLanguageId) throw new Error("User target language not found");
+        const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
+        if (!currentTargetLanguage) throw new Error("User target language not found");
+        const languageCode = currentTargetLanguage.languageCode as LanguageCode;
 
 
         const result = await ctx.runMutation(internal.languageActivityFunctions.addLanguageActivity, {
-            userTargetLanguageId: userTargetLanguage[0]._id,
+            userTargetLanguageId: currentTargetLanguage._id,
             title: args.title,
             description: args.description ?? undefined,
             durationInMinutes: args.durationInMinutes,
@@ -329,10 +333,14 @@ export const seedMyLanguageActivities = mutation({
         const contentOptions = ["audio", "video", "text", "other"] as const;
         const skillOptions = ["listening", "reading", "speaking", "writing"] as const;
 
-        // Infer language from user's last updated target language
-        const userTargetLanguage = await ctx.db.query("userTargetLanguages").withIndex("by_user", (q: any) => q.eq("userId", userId)).order("desc").take(1);
-        if (!userTargetLanguage) throw new Error("User target language not found");
-        const languageCode = userTargetLanguage[0]!.languageCode!;
+        // Infer language from user's current target language id
+        const user = await ctx.db.get(userId);
+        if (!user) throw new Error("User not found");
+        const currentTargetLanguageId = user.currentTargetLanguageId as Id<"userTargetLanguages">;
+        if (!currentTargetLanguageId) throw new Error("User target language not found");
+        const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
+        if (!currentTargetLanguage) throw new Error("User target language not found");
+        const languageCode = currentTargetLanguage.languageCode as LanguageCode;
 
 
         function randomInt(min: number, max: number): number {
@@ -348,8 +356,8 @@ export const seedMyLanguageActivities = mutation({
         for (let i = 0; i < total; i++) {
             const occurredAt = start + Math.floor(Math.random() * (end - start + 1));
             const durationInMinutes = randomInt(minM, maxM);
-            const contentCategories = pickSome(contentOptions, 1, 2) as any;
-            const skillCategories = pickSome(skillOptions, 1, 2) as any;
+            const contentCategories = pickSome(contentOptions, 1, 2);
+            const skillCategories = pickSome(skillOptions, 1, 2);
             const title = titles[randomInt(0, titles.length - 1)];
 
             await ctx.runMutation(internal.languageActivityFunctions.addLanguageActivity, {
@@ -358,7 +366,7 @@ export const seedMyLanguageActivities = mutation({
                 contentCategories,
                 skillCategories,
                 languageCode,
-                userTargetLanguageId: userTargetLanguage[0]!._id,
+                userTargetLanguageId: currentTargetLanguage._id,
                 isManuallyTracked: true,
                 occurredAt,
             });

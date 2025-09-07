@@ -1,9 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { api } from "./_generated/api";
-import { languageCodeValidator, type LanguageCode } from "./schema";
-import { UserIdentity } from "convex/server";
+import { Id } from "./_generated/dataModel";
 
 
 export const me = query({
@@ -25,26 +23,18 @@ export const me = query({
         const user = await ctx.db.get(userId);
         if (!user) return null;
 
-        // Get current language, sort by last updated
-        const userTargetLanguage = await ctx.db.query("userTargetLanguages").withIndex("by_user", (q: any) => q.eq("userId", userId)).order("desc").take(1);
-        
-        // Check if user has any target languages
-        if (!userTargetLanguage || userTargetLanguage.length === 0) {
-            return {
-                name: (user as any).name ?? undefined,
-                email: (user as any).email ?? undefined,
-                image: (user as any).image ?? undefined,
-                timezone: (user as any).timezone ?? undefined,
-                languageCode: undefined,
-            };
+        // Resolve current target language from the user record
+        const currentTargetLanguageId = user.currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+        if (!currentTargetLanguageId) {
+            throw new Error("Current target language not found");
         }
-        
-        const languageCode = userTargetLanguage[0].languageCode;
+        const utl = await ctx.db.get(currentTargetLanguageId);
+        const languageCode = utl?.languageCode;
         return {
-            name: (user as any).name ?? undefined,
-            email: (user as any).email ?? undefined,
-            image: (user as any).image ?? undefined,
-            timezone: (user as any).timezone ?? undefined,
+            name: user.name ?? undefined,
+            email: user.email ?? undefined,
+            image: user.image ?? undefined,
+            timezone: user.timezone ?? undefined,
             languageCode: languageCode ?? undefined,
         };
     },
@@ -111,15 +101,11 @@ export const getUserProgress = query({
         const user = await ctx.db.get(userId);
         if (!user) return null;
 
-        // Get current language, sort by last updated
-        const userTargetLanguage = await ctx.db.query("userTargetLanguages")
-            .withIndex("by_user", (q: any) => q.eq("userId", userId))
-            .order("desc")
-            .take(1);
-        
-        if (!userTargetLanguage || userTargetLanguage.length === 0) return null;
-        
-        const targetLanguage = userTargetLanguage[0];
+        // Resolve current target language from the user record
+        const currentTargetLanguageId = user.currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+        if (!currentTargetLanguageId) throw new Error("Current target language not found");
+        const targetLanguage = await ctx.db.get(currentTargetLanguageId);
+        if (!targetLanguage) return null;
         const totalExperience = targetLanguage.totalExperience ?? 0
         
         console.log("totalTimeLearning", targetLanguage.totalMinutesLearning);
@@ -133,10 +119,10 @@ export const getUserProgress = query({
         const remainderXp = totalExperience % nextLevelXp;
 
         return {
-            name: (user as any).name ?? undefined,
-            image: (user as any).image ?? undefined,
-            currentStreak: (user as any).currentStreak ?? undefined,
-            longestStreak: (user as any).longestStreak ?? undefined,
+            name: user.name ?? undefined,
+            image: user.image ?? undefined,
+            currentStreak: user.currentStreak ?? undefined,
+            longestStreak: user.longestStreak ?? undefined,
             languageCode: targetLanguage.languageCode ?? undefined,
             totalMinutesLearning: targetLanguage.totalMinutesLearning ?? 0,
             totalExperience,

@@ -14,8 +14,13 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
+import type * as contentActivities from "../contentActivities.js";
+import type * as contentLabeling from "../contentLabeling.js";
+import type * as contentYoutubeLabeling from "../contentYoutubeLabeling.js";
 import type * as devOnlyFunctions from "../devOnlyFunctions.js";
 import type * as experienceFunctions from "../experienceFunctions.js";
+import type * as extensionHTTP from "../extensionHTTP.js";
+import type * as extensionPlayback from "../extensionPlayback.js";
 import type * as http from "../http.js";
 import type * as languageActivityFunctions from "../languageActivityFunctions.js";
 import type * as meFunctions from "../meFunctions.js";
@@ -33,8 +38,13 @@ import type * as utils from "../utils.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  contentActivities: typeof contentActivities;
+  contentLabeling: typeof contentLabeling;
+  contentYoutubeLabeling: typeof contentYoutubeLabeling;
   devOnlyFunctions: typeof devOnlyFunctions;
   experienceFunctions: typeof experienceFunctions;
+  extensionHTTP: typeof extensionHTTP;
+  extensionPlayback: typeof extensionPlayback;
   http: typeof http;
   languageActivityFunctions: typeof languageActivityFunctions;
   meFunctions: typeof meFunctions;

@@ -58,14 +58,17 @@ export default defineSchema({
 		qualifierFormHeardAboutUsFrom: v.optional(v.string()),
 		qualifierFormLearningReason: v.optional(v.string()),
 		timezone: v.optional(v.string()),
-
-		// Testing
-		devDate: v.optional(v.number()),
+		currentTargetLanguageId: v.optional(v.id("userTargetLanguages")),
 
 		// Streak
 		lastStreakCreditAt: v.optional(v.number()),
 		currentStreak: v.optional(v.number()), // current consecutive days
 		longestStreak: v.optional(v.number()), // longest consecutive days
+
+		
+		// Testing
+		devDate: v.optional(v.number()),
+
 	})
 		.index("email", ["email"]) // mirror default indexes
 		.index("phone", ["phone"]),
@@ -126,9 +129,20 @@ export default defineSchema({
 		.index("by_user_and_occurred", ["userId", "occurredAt"]),
 
 
+	
+
+	// Content Activity, these are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
+	contentActivities: defineTable({
+		userId: v.id("users"),
+		contentKey: v.string(), // (will match a contentLabel contentKey) "youtube:VIDEO_ID", "spotify:TRACK_ID" etc.
+		activityType: v.union(v.literal("heartbeat"), v.literal("start"), v.literal("pause"), v.literal("end")),
+		occurredAt: v.optional(v.number()),
+	}).index("by_user", ["userId"])
+		.index("by_user_and_occurred", ["userId", "occurredAt"]),
+
 	// Labeling Engine
-	labeledContent: defineTable({
-		key: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID"
+	contentLabel: defineTable({
+		contentKey: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID"
 		stage: v.union(v.literal("queued"), v.literal("processing"), v.literal("completed"), v.literal("failed")),
 		contentSource: contentSourceValidator, // "youtube" | "spotify" | "anki" | "manual"
 		contentUrl: v.optional(v.string()),
@@ -144,12 +158,11 @@ export default defineSchema({
 	
 		// Language signals
 		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
-		captionLanguageCodes: v.optional(v.array(languageCodeValidator)), // available captions
-		percentTargetLanguageSpeech: v.optional(v.number()), // 0..1
-		languageConfidence: v.optional(v.number()), // 0..1
+		captionLanguageCodes: v.optional(v.array(languageCodeValidator)), // available captions=
 		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
 	
 		// LLM evaluation (structured + short text)
+		contentFromLanguageCode: v.optional(languageCodeValidator),// This is the from language code, its often not set, but it could be if the material is targeted something like english speakers learning x language
 		targetLanguageEvaluation: v.optional(v.string()), // short summary (rename from targetLanguageLearnigEvaluation)
 		targetLanguageEvaluationBullets: v.optional(v.array(v.string())), // brief bullet points (rename)
 		eval: v.optional(v.object({
@@ -170,5 +183,5 @@ export default defineSchema({
 		createdAt: v.optional(v.number()),
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
-	}).index("by_key", ["key"])
+	}).index("by_content_key", ["contentKey"])
 });

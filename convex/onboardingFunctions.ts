@@ -52,12 +52,19 @@ export const completeOnboarding = mutation({
                 totalExperience: 0,
                 qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
             } as any);
+            // Ensure user's currentTargetLanguageId is set to this target
+            await ctx.db.patch(userId, {
+                currentTargetLanguageId: existing._id,
+            } as any);
         } else {
-            await ctx.db.insert("userTargetLanguages", {
+            const newTargetId = await ctx.db.insert("userTargetLanguages", {
                 userId,
                 languageCode: args.targetLanguageCode,
                 totalExperience: 0,
                 qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
+            } as any);
+            await ctx.db.patch(userId, {
+                currentTargetLanguageId: newTargetId,
             } as any);
         }
 
