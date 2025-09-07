@@ -2,6 +2,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { dangerousTestingEnabled, getEffectiveNow } from "./utils";
 
 export const updateStreakDays = internalMutation({
   args: {
@@ -23,12 +24,11 @@ export const updateStreakDays = internalMutation({
     const dayEnd = dayStart + (24 * 60 * 60 * 1000) - 1; // End of day (23:59:59.999)
     const activitiesOnThisDay = await ctx.db
       .query("languageActivities")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => 
-        q.and(
-          q.gte(q.field("occurredAt"), dayStart),
-          q.lte(q.field("occurredAt"), dayEnd)
-        )
+      .withIndex("by_user_and_occurred", (q: any) =>
+        q
+          .eq("userId", args.userId)
+          .gte("occurredAt", dayStart)
+          .lte("occurredAt", dayEnd)
       )
       .collect();
 
@@ -172,13 +172,14 @@ export const getStreakDataForHeatmap = query({
       if (!userId) return null;
 
       const days = args.days ?? 365;
-      const now = Date.now();
-      const startDate = new Date(now - (days - 1) * 24 * 60 * 60 * 1000);
-      const startDay = Math.floor(startDate.getTime() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
-
-      // Get user's streak information
       const user = await ctx.db.get(userId);
       if (!user) return null;
+
+      // In dangerous testing mode, anchor the heatmap window to the user's devDate if set
+      const nowEffective = await getEffectiveNow(ctx);
+
+      const startDate = new Date(nowEffective - (days - 1) * 24 * 60 * 60 * 1000);
+      const startDay = Math.floor(startDate.getTime() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
 
       const currentStreak = user.currentStreak ?? 0;
       const longestStreak = user.longestStreak ?? 0;

@@ -6,6 +6,7 @@ import { api, internal } from "./_generated/api";
 import { languageCodeValidator, type LanguageCode } from "./schema";
 import { UserIdentity } from "convex/server";
 import { Id } from "./_generated/dataModel";
+import { getEffectiveNow } from "./utils";
 
 
 // Create activity, update streak, then add experience (internal)
@@ -20,6 +21,14 @@ export const addLanguageActivity = internalMutation({
         skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
         isManuallyTracked: v.optional(v.boolean()),
         userTargetLanguageId: v.optional(v.id("userTargetLanguages")),
+        source: v.optional(
+            v.union(
+                v.literal("youtube"),
+                v.literal("spotify"),
+                v.literal("anki"),
+                v.literal("manual"),
+            ),
+        ),
     },
     returns: v.object({
         activityId: v.id("languageActivities"),
@@ -56,8 +65,8 @@ export const addLanguageActivity = internalMutation({
         const occurredAt = args.occurredAt ?? now;
         const activityId = await ctx.db.insert("languageActivities", {
             userId,
-            source: "manual",
-            isManuallyTracked: true,
+            source: (args as any).source ?? "manual",
+            isManuallyTracked: args.isManuallyTracked ?? ((args as any).source ?? "manual") === "manual",
             languageCode: args.languageCode,
             title: args.title,
             userTargetLanguageId: args.userTargetLanguageId,
@@ -357,5 +366,82 @@ export const seedMyLanguageActivities = mutation({
         }
 
         return { inserted };
+    },
+});
+
+// Weekly source distribution for the current week (Mon-Sun), aggregated in minutes
+export const getWeeklySourceDistribution = query({
+    args: {},
+    returns: v.array(
+        v.object({
+            day: v.string(),
+            youtube: v.number(),
+            spotify: v.number(),
+            anki: v.number(),
+            misc: v.number(),
+        }),
+    ),
+    handler: async (ctx) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) return [];
+
+        // Compute start of week (Monday 00:00) and end of week (Sunday 23:59:59.999) in UTC
+        const effectiveNowMs = await getEffectiveNow(ctx);
+        const now = new Date(effectiveNowMs);
+        const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const weekday = todayUtc.getUTCDay(); // 0=Sun,1=Mon,...6=Sat
+        const daysSinceMonday = (weekday + 6) % 7; // Mon->0, Tue->1, ..., Sun->6
+        const mondayStartUtcMs = todayUtc.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000;
+        const sundayEndUtcMs = mondayStartUtcMs + 7 * 24 * 60 * 60 * 1000 - 1;
+
+        // Initialize 7-day bins Mon..Sun
+        const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+        const bins: Array<{ day: string; youtube: number; spotify: number; anki: number; misc: number; }> = labels.map((label) => ({
+            day: label,
+            youtube: 0,
+            spotify: 0,
+            anki: 0,
+            misc: 0,
+        }));
+
+        // Query activities within this week using the by_user_and_occurred index
+        const items = await ctx.db
+            .query("languageActivities")
+            .withIndex("by_user_and_occurred", (q: any) =>
+                q
+                    .eq("userId", userId)
+                    .gte("occurredAt", mondayStartUtcMs)
+                    .lte("occurredAt", sundayEndUtcMs),
+            )
+            .collect();
+
+        for (const it of items) {
+            const occurred = (it as any).occurredAt ?? (it as any)._creationTime;
+            const dayIndex = Math.floor((occurred - mondayStartUtcMs) / (24 * 60 * 60 * 1000));
+            if (dayIndex < 0 || dayIndex > 6) continue;
+            const minutes = Math.max(0, Math.round(((it as any).durationInSeconds ?? 0) / 60));
+
+            const source = (it as any).source as
+                | "youtube"
+                | "spotify"
+                | "anki"
+                | "manual"
+                | undefined;
+            switch (source) {
+                case "youtube":
+                    bins[dayIndex].youtube += minutes;
+                    break;
+                case "spotify":
+                    bins[dayIndex].spotify += minutes;
+                    break;
+                case "anki":
+                    bins[dayIndex].anki += minutes;
+                    break;
+                default:
+                    bins[dayIndex].misc += minutes; // manual or undefined -> misc
+            }
+        }
+
+        return bins;
     },
 });

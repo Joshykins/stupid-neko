@@ -10,6 +10,13 @@ import { Progress } from "./ui/progress";
 import { calculateStreakBonusMultiplier, calculateStreakBonusPercent } from "../../../../lib/streakBonus";
 import HeatmapProgress from "./ui/heatmap-progress";
 
+// Heatmap normalization behavior (easy-to-tune constants)
+// - The color saturates when a day's activity count reaches this fraction of the average
+// - The average can be computed over active days only (counts > 0) or all days
+const HEATMAP_SATURATION_FRACTION_OF_AVERAGE = .7; // 80%
+const HEATMAP_AVERAGE_ACTIVE_DAYS_ONLY = true; // consider only days with > 0 activities
+const HEATMAP_INTENSITY_STEPS = 5; // discrete steps including 0 (maps to 0..4)
+
 type HeatmapProps = {
     title?: string;
     days?: number; // number of days to render from oldest -> newest
@@ -99,8 +106,40 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
             const v = Math.max(0, Math.min(4, Math.floor(rng() * 3) + bias - 1));
             arr.push(v);
         }
+        // Also do streak
+
+
         return arr;
     }, [effectiveValues, totalDays, weeksCount, title]);
+
+    // Compute normalized intensities (0..HEATMAP_INTENSITY_STEPS-1) from activity counts using average-based saturation
+    const normalizedValues: Array<number> | null = React.useMemo(() => {
+        if (!streakData || !streakData.activityCounts || streakData.activityCounts.length !== totalDays) {
+            return null;
+        }
+        const counts = streakData.activityCounts;
+        const countsForAverage = HEATMAP_AVERAGE_ACTIVE_DAYS_ONLY ? counts.filter((c) => c > 0) : counts;
+        const average = countsForAverage.length > 0 ? countsForAverage.reduce((sum, c) => sum + c, 0) / countsForAverage.length : 0;
+        const saturateAt = average * HEATMAP_SATURATION_FRACTION_OF_AVERAGE;
+        if (saturateAt <= 0) {
+            return counts.map(() => 0);
+        }
+        const maxStep = HEATMAP_INTENSITY_STEPS - 1;
+        return counts.map((c) => {
+            if (c > 0 && saturateAt > 0) {
+                const fraction = Math.min(1, Math.max(0, c / saturateAt));
+                return Math.max(1, Math.round(fraction * maxStep));
+            }
+            return 0;
+        });
+    }, [streakData, totalDays]);
+
+    // Choose which values to render: prefer normalized if available, otherwise provided/effective or demo
+    const renderValues: Array<number> = React.useMemo(() => {
+        if (normalizedValues && normalizedValues.length === totalDays) return normalizedValues;
+        if (effectiveValues && effectiveValues.length === totalDays) return effectiveValues;
+        return demoValues;
+    }, [normalizedValues, effectiveValues, demoValues, totalDays]);
 
 
     // Responsive: show as many weeks as fit in the container
@@ -109,12 +148,12 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
     const maxVisibleWeeks = innerWidth > 0 ? Math.max(1, Math.floor(innerWidth / approxCellWithBorder)) : weeksCount;
     const visibleWeeks = Math.min(weeksCount, maxVisibleWeeks);
     const visibleDays = visibleWeeks * 7;
-    const startIndex = Math.max(0, demoValues.length - visibleDays);
+    const startIndex = Math.max(0, renderValues.length - visibleDays);
 
     const columns: Array<Array<number>> = [];
     for (let w = 0; w < visibleWeeks; w++) {
         const start = startIndex + w * 7;
-        const slice = demoValues.slice(start, start + 7);
+        const slice = renderValues.slice(start, start + 7);
         // pad last week to full 7 for grid alignment
         while (slice.length < 7) slice.push(0);
         columns.push(slice);
@@ -140,8 +179,8 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
         streak = streakData.currentStreak;
     } else {
         // Fall back to computed streak from demo values
-        for (let i = demoValues.length - 1; i >= 0; i--) {
-            if (demoValues[i] > 0) streak++;
+        for (let i = renderValues.length - 1; i >= 0; i--) {
+            if (renderValues[i] > 0) streak++;
             else break;
         }
     }
@@ -193,10 +232,22 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
     const onContainerLeave = () => setTooltip({ visible: false, x: 0, y: 0, label: "" });
 
     const streakBonusPercent = calculateStreakBonusPercent(streakData?.currentStreak ?? 0);
+    const isMarketingView = !liveVersion;
+    const [demoPercent, setDemoPercent] = React.useState<number>(0);
+    React.useEffect(() => {
+        if (isMarketingView) {
+            setDemoPercent(0);
+            const t = window.setTimeout(() => setDemoPercent(100), 50);
+            return () => window.clearTimeout(t);
+        } else {
+            setDemoPercent(0);
+        }
+    }, [isMarketingView]);
+    const displayedPercent = isMarketingView ? demoPercent : streakBonusPercent;
 
     // Refs for animated counts (must be called unconditionally to obey Rules of Hooks)
     const titleCountUpRef = useCountUp(streak);
-    const bonusCountUpRef = useCountUp(streakBonusPercent);
+    const bonusCountUpRef = useCountUp(displayedPercent);
 
     return (
         <Card>
@@ -213,19 +264,17 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
                     </div>
                     {/* Streak Bonus Indicator */}
                     <div className="flex items-center gap-2">
-                        {streakData && (
-                            <Badge className="bg-[var(--color-heatmap-1)]">
-                                <div className="inline-flex items-center font-bold text-base text-main-foreground">
-                                    <span ref={bonusCountUpRef} />% Bonus
+                        <Badge className="bg-[var(--color-heatmap-1)]">
+                            <div className="inline-flex items-center font-bold text-base text-main-foreground">
+                                <span ref={bonusCountUpRef} />% XP Bonus
 
-                                </div>
-                            </Badge>
-                        )}
+                            </div>
+                        </Badge>
                     </div>
                 </CardTitle>
                 {/* Streak progress to max streak */}
                 {(
-                    <HeatmapProgress value={streakBonusPercent} />
+                    <HeatmapProgress value={displayedPercent} />
                 )}
             </CardHeader>
             <CardContent className="px-4">

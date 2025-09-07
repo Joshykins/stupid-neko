@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils";
 export default function AppStoreCard({ className }: { className?: string; }) {
     return (
         <div className={cn("flex gap-3", className)}>
-            <a
+            {/* <a
                 href="https://apps.apple.com/app/idXXXXXXXXX"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -31,7 +31,7 @@ export default function AppStoreCard({ className }: { className?: string; }) {
                     <span className="text-[10px]">Get it on</span>
                     <span className="text-sm font-semibold -mt-0.5">Google Play</span>
                 </span>
-            </a>
+            </a> */}
         </div>
     );
 }

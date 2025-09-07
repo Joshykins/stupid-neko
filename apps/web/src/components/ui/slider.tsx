@@ -1,17 +1,22 @@
-import * as SliderPrimitive from "@radix-ui/react-slider"
+import * as SliderPrimitive from "@radix-ui/react-slider";
 
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "../../lib/utils"
+import { cn } from "../../lib/utils";
+
+type SliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
+  mainColor?: string;
+};
 
 function Slider({
   className,
+  mainColor = "var(--color-main)",
   defaultValue,
   value,
   min = 0,
   max = 100,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
+}: SliderProps) {
   const _values = React.useMemo(
     () =>
       Array.isArray(value)
@@ -20,7 +25,7 @@ function Slider({
           ? defaultValue
           : [min, max],
     [value, defaultValue, min, max],
-  )
+  );
 
   return (
     <SliderPrimitive.Root
@@ -30,7 +35,7 @@ function Slider({
       min={min}
       max={max}
       className={cn(
-        "relative flex w-full touch-none select-none items-center data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
+        "relative flex w-full touch-none select-none items-center data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col cursor-pointer",
         className,
       )}
       {...props}
@@ -41,18 +46,19 @@ function Slider({
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
-          className="absolute bg-main data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+          className={`absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full`}
+          style={{ backgroundColor: mainColor }}
         />
       </SliderPrimitive.Track>
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="block h-5 w-5 rounded-full border-2 border-border bg-white ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="block h-5 w-5 rounded-full border-2 border-border bg-white ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 !ring-transparent focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
     </SliderPrimitive.Root>
-  )
+  );
 }
 
-export { Slider }
+export { Slider };

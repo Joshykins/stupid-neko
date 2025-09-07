@@ -59,10 +59,12 @@ export function HeatmapProgress({ className, value = 0, ...props }: HeatmapProgr
             >
                 <ProgressPrimitive.Indicator
                     data-slot="progress-indicator"
-                    className="h-full w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out"
+                    className={cn("h-full relative w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out", is100Percent && "opacity-0")}
                     style={{ transform: `translateX(-${100 - (value || 0)}%)`, backgroundImage: gradient }}
 
-                />
+                >
+                </ProgressPrimitive.Indicator>
+
 
 
             </ProgressPrimitive.Root>

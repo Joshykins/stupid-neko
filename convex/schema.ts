@@ -50,6 +50,9 @@ export default defineSchema({
 		qualifierFormLearningReason: v.optional(v.string()),
 		timezone: v.optional(v.string()),
 
+		// Testing
+		devDate: v.optional(v.number()),
+
 		// Streak
 		lastStreakCreditAt: v.optional(v.number()),
 		currentStreak: v.optional(v.number()), // current consecutive days

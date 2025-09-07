@@ -12,6 +12,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { COMMON_LANGUAGES } from "../lib/languages";
+import LevelExperienceInfo from "./LevelExperienceInfo";
 
 type MockUser = {
     name: string;
@@ -130,7 +131,7 @@ export const ProfileSummary = () => {
                         </Authenticated>
 
                         {/* Show leaderboard badge for all users */}
-
+                        <LevelExperienceInfo />
                     </div>
 
                 </div>

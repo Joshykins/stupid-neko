@@ -120,7 +120,9 @@ export const getUserProgress = query({
         if (!userTargetLanguage || userTargetLanguage.length === 0) return null;
         
         const targetLanguage = userTargetLanguage[0];
-        const totalExperience = targetLanguage.totalExperience ?? 0;
+        const totalExperience = targetLanguage.totalExperience ?? 0
+        
+        console.log("totalTimeLearning", targetLanguage.totalMinutesLearning);
         
         // Simple level calculation (can be refined later)
         // For now, use a basic formula: level = sqrt(totalExperience / 100) + 1

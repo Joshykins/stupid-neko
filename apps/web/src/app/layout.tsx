@@ -5,6 +5,7 @@ import { Background } from "../components/Background";
 import TopNav from "../components/TopNav";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "../../../../components/ConvexClientProvider";
+import { TestingComponent } from "../components/testing/TestingComponent";
 
 const plusJakarta = Plus_Jakarta_Sans({
 	variable: "--font-geist-sans",
@@ -53,10 +54,11 @@ export default async function RootLayout({
 			</head>
 			<body
 				suppressHydrationWarning
-				className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable} antialiased`}
+				className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable} antialiased relative`}
 			>
 				<ConvexAuthNextjsServerProvider>
 					<ConvexClientProvider>
+						<TestingComponent />
 						<div className="min-h-screen px-4 max-w-7xl mx-auto">
 							<Background />
 							<TopNav />

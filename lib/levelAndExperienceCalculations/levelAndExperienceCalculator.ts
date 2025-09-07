@@ -5,6 +5,7 @@ const BASE_A = 150;   // flat XP base
 const BASE_B = 30;    // linear growth factor
 const BASE_C = 1;     // quadratic growth factor
 const CAP_LEVEL = 200; // after this, step cost stays flat
+const EXPONENT = 2;
 
 // -------------------------------
 // Functions
@@ -17,9 +18,9 @@ const CAP_LEVEL = 200; // after this, step cost stays flat
  */
 export function xpForLastLevel(level: number): number {
   if (level <= CAP_LEVEL) {
-    return BASE_A + BASE_B * (level - 1) + BASE_C * (level - 1) ** 2;
+    return BASE_A + BASE_B * (level - 1) + BASE_C * (level - 1) ** EXPONENT;
   }
-  return BASE_A + BASE_B * (CAP_LEVEL - 1) + BASE_C * (CAP_LEVEL - 1) ** 2;
+  return BASE_A + BASE_B * (CAP_LEVEL - 1) + BASE_C * (CAP_LEVEL - 1) ** EXPONENT;
 }
 
 /**
@@ -29,9 +30,9 @@ export function xpForLastLevel(level: number): number {
  */
 export function xpForNextLevel(level: number): number {
   if (level <= CAP_LEVEL) {
-    return BASE_A + BASE_B * (level - 1) + BASE_C * (level - 1) ** 2;
+    return BASE_A + BASE_B * (level - 1) + BASE_C * (level - 1) ** EXPONENT;
   }
-  return BASE_A + BASE_B * (CAP_LEVEL - 1) + BASE_C * (CAP_LEVEL - 1) ** 2;
+  return BASE_A + BASE_B * (CAP_LEVEL - 1) + BASE_C * (CAP_LEVEL - 1) ** EXPONENT;
 }
 
 /**
