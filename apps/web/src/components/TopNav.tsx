@@ -20,6 +20,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
 
 
 const plainRoutes = ["/get-started", "/sign-in"];
@@ -102,6 +103,7 @@ export function TopNav() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* <ThemeToggle /> */}
                             <AuthLoading>{null}</AuthLoading>
                             <Unauthenticated>
 

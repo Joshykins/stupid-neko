@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans, Baloo_2 } from "next/font/google";
-import { Background } from "../components/Background";
+import { Background } from "../components/Background/Background";
 import TopNav from "../components/TopNav";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "../../../../components/ConvexClientProvider";

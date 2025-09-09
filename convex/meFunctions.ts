@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query, mutation, action } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "./_generated/dataModel";
+import { levelFromXp, xpForNextLevel } from "../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
 
 
 export const me = query({
@@ -87,10 +88,9 @@ export const getUserProgress = query({
             longestStreak: v.optional(v.number()),
             languageCode: v.optional(v.string()),
             totalMinutesLearning: v.optional(v.number()),
-            totalExperience: v.optional(v.number()),
             currentLevel: v.number(),
             nextLevelXp: v.number(),
-            remainderXp: v.number(),
+            experienceTowardsNextLevel: v.number(),
         }),
         v.null(),
     ),
@@ -108,15 +108,13 @@ export const getUserProgress = query({
         if (!targetLanguage) return null;
         const totalExperience = targetLanguage.totalExperience ?? 0
         
-        console.log("totalTimeLearning", targetLanguage.totalMinutesLearning);
         
         // Simple level calculation (can be refined later)
         // For now, use a basic formula: level = sqrt(totalExperience / 100) + 1
-        const currentLevel = Math.max(1, Math.floor(Math.sqrt(totalExperience / 100)) + 1);
-        
-        // Simple XP calculation for next level
-        const nextLevelXp = Math.pow(currentLevel, 2) * 100;
-        const remainderXp = totalExperience % nextLevelXp;
+
+        const { level: currentLevel, remainder: remainderXp } = levelFromXp(totalExperience);
+        const nextLevelXp = xpForNextLevel(currentLevel);
+        const experienceTowardsNextLevel = nextLevelXp - remainderXp;
 
         return {
             name: user.name ?? undefined,
@@ -125,10 +123,9 @@ export const getUserProgress = query({
             longestStreak: user.longestStreak ?? undefined,
             languageCode: targetLanguage.languageCode ?? undefined,
             totalMinutesLearning: targetLanguage.totalMinutesLearning ?? 0,
-            totalExperience,
             currentLevel,
+            experienceTowardsNextLevel,
             nextLevelXp,
-            remainderXp,
         };
     },
 });

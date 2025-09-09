@@ -13,7 +13,7 @@ import HeatmapProgress from "./ui/heatmap-progress";
 // Heatmap normalization behavior (easy-to-tune constants)
 // - The color saturates when a day's activity count reaches this fraction of the average
 // - The average can be computed over active days only (counts > 0) or all days
-const HEATMAP_SATURATION_FRACTION_OF_AVERAGE = .7; // 80%
+const HEATMAP_SATURATION_FRACTION_OF_AVERAGE = 1.2; // 80%
 const HEATMAP_AVERAGE_ACTIVE_DAYS_ONLY = true; // consider only days with > 0 activities
 const HEATMAP_INTENSITY_STEPS = 5; // discrete steps including 0 (maps to 0..4)
 

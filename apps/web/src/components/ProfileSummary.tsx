@@ -16,11 +16,8 @@ import LevelExperienceInfo from "./LevelExperienceInfo";
 
 type MockUser = {
     name: string;
-    lastLevelXp: number;
     level: number;
     avatarUrl: string;
-    xp: number;
-    nextLevelXp: number;
     isLeaderboardPlacer: boolean;
     skills: Array<{ label: string; value: number; hours: number; }>;
     recentWins: Array<string>;
@@ -28,9 +25,9 @@ type MockUser = {
     totalHours: number;
     // Add missing properties to match real user data structure
     currentLevel: number;
-    remainderXp: number;
+    experienceTowardsNextLevel: number;
+    nextLevelXp: number;
     totalMinutesLearning: number;
-    totalExperience: number;
     image?: string;
     currentStreak?: number;
     longestStreak?: number;
@@ -39,10 +36,7 @@ type MockUser = {
 const mockUser: MockUser = {
     name: "Kenji",
     level: 59,
-    avatarUrl: "/cat-on-tree.png",
-    xp: 1200,
-    nextLevelXp: 1900,
-    lastLevelXp: 1600,
+    avatarUrl: "/stupid-neko-icon.png",
     isLeaderboardPlacer: true,
     skills: [
         { label: "Reading", value: 42, hours: 120 },
@@ -54,10 +48,10 @@ const mockUser: MockUser = {
     language: "japanese",
     totalHours: 560,
     // Add missing properties
-    currentLevel: 59,
-    remainderXp: 700,
+    currentLevel: 62,
+    experienceTowardsNextLevel: 700,
     totalMinutesLearning: 560 * 60, // Convert hours to minutes
-    totalExperience: 1200,
+    nextLevelXp: 1900,
 };
 
 export const ProfileSummary = () => {
@@ -67,17 +61,12 @@ export const ProfileSummary = () => {
     // Only use real data when it's fully loaded (not undefined)
     const displayData = userProgress ? userProgress : mockUser;
 
-    // XP progress within current level - derived from totals
-    const currentLevelStartXp = userProgress ? Math.pow(displayData.currentLevel - 1, 2) * 100 : Math.pow(mockUser.level - 1, 2) * 100;
-    const nextLevelTotalXp = userProgress ? displayData.nextLevelXp : mockUser.nextLevelXp;
-    const trueRemainderXp = userProgress ? Math.max(0, (displayData.totalExperience - currentLevelStartXp)) : mockUser.xp;
-    const trueNextLevelXp = userProgress ? Math.max(1, nextLevelTotalXp - currentLevelStartXp) : mockUser.nextLevelXp;
-    const trueXp = trueRemainderXp;
+    const currentLevel = displayData.currentLevel;
+    const experienceTowardsNextLevel = displayData.experienceTowardsNextLevel;
+    const nextLevelXp = displayData.nextLevelXp;
 
-    // Calculate XP percentage based on available data
-    const xpPercent = userProgress
-        ? Math.min(100, Math.round((trueRemainderXp / trueNextLevelXp) * 100))
-        : Math.min(100, Math.round((trueXp / trueNextLevelXp) * 100));
+    const xpPercent = Math.min(100, Math.round((experienceTowardsNextLevel / nextLevelXp) * 100));
+    const xpString = `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
@@ -110,28 +99,37 @@ export const ProfileSummary = () => {
                             <AvatarImage src={displayData.image || mockUser.avatarUrl} alt={displayData.name || mockUser.name} />
                             <AvatarFallback>{(displayData.name || mockUser.name).at(0)}</AvatarFallback>
                         </Avatar>
-                        <div >
-                            <h6
-                                className="text-2xl flex items-center gap-2 leading-none  max-w-full"
-                                title={displayData.name || mockUser.name}
-                            >
-                                {displayData.name || mockUser.name}
-                            </h6>
-                            <div className="text-muted-foreground mt-1">Level {displayData.currentLevel || mockUser.level}</div>
+                        <div className="flex justify-between w-full">
+
+
+                            <div >
+                                <h6
+                                    className="text-2xl flex items-center gap-2 leading-none  max-w-full"
+                                    title={displayData.name || mockUser.name}
+                                >
+                                    {displayData.name || mockUser.name}
+                                </h6>
+                                <div className="text-muted-foreground mt-1">Level {displayData.currentLevel || mockUser.level}</div>
+                            </div>
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 items-end sm:items-end shrink-0">
                         <Authenticated>
-                            {/* Show real streak data if available */}
-                            {displayData.currentStreak && displayData.currentStreak > 0 && (
-                                <Badge variant="neutral" className="whitespace-nowrap">
-                                    <Flame className="size-3" /> {displayData.currentStreak} day streak
+
+                            {/* <Badge variant={"neutral"} className="whitespace-nowrap">
+                                    <LanguageFlagSVG language={languageInfo.flag} className="!h-4 !w-4" />
+                                    Learning {languageInfo.name}
+                                </Badge> */}
+
+
+                            {mockUser.isLeaderboardPlacer && (
+                                <Badge className="inline-flex items-center gap-1 whitespace-nowrap">
+                                    <Award className="size-3" /> Top 3%
                                 </Badge>
                             )}
                         </Authenticated>
 
                         {/* Show leaderboard badge for all users */}
-                        <LevelExperienceInfo />
                     </div>
 
                 </div>
@@ -147,10 +145,11 @@ export const ProfileSummary = () => {
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center justify-between text-sm font-medium">
-                            <span className="text-right w-full">
+                            <span className="text-right justify-end w-full flex items-center gap-2">
+                                <LevelExperienceInfo />
                                 {userProgress
-                                    ? `${trueRemainderXp?.toLocaleString() || 0} / ${trueNextLevelXp?.toLocaleString() || 0} XP`
-                                    : `${trueXp.toLocaleString()} / ${trueNextLevelXp} XP`
+                                    ? `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`
+                                    : `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`
                                 }
                             </span>
                         </div>
@@ -164,16 +163,6 @@ export const ProfileSummary = () => {
             </CardHeader>
             <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-2 pb-2">
-                    <Badge variant={"neutral"} className="whitespace-nowrap">
-                        <LanguageFlagSVG language={languageInfo.flag} className="!h-4 !w-4" />
-                        Learning {languageInfo.name}
-                    </Badge>
-
-                    {mockUser.isLeaderboardPlacer && (
-                        <Badge className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Award className="size-3" /> Top 3%
-                        </Badge>
-                    )}
 
                 </div>
                 <div className="space-y-4">
@@ -239,25 +228,7 @@ export const ProfileSummary = () => {
                     </div>
 
                     <div className="flex items-center gap-4 text-muted-foreground">
-                        <Authenticated>
-                            {displayData.currentStreak && displayData.currentStreak > 0 ? (
-                                <div className="inline-flex items-center gap-1">
-                                    <Flame className="size-4" /> {displayData.currentStreak} day streak
-                                </div>
-                            ) : (
-                                <div className="inline-flex items-center gap-1">
-                                    <Flame className="size-4" /> Start your streak today!
-                                </div>
-                            )}
-                        </Authenticated>
-                        <Unauthenticated>
-                            <div className="inline-flex items-center gap-1">
-                                <Flame className="size-4" /> 200 day streak
-                            </div>
-                        </Unauthenticated>
-                        <div className="inline-flex items-center gap-1">
-                            <MessageCircle className="size-4" /> Discord auto-share
-                        </div>
+
                     </div>
                 </div>
             </CardContent>

@@ -2,9 +2,9 @@
 // Constants (easy to tweak here)
 // -------------------------------
 const BASE_A = 150;   // flat XP base
-const BASE_B = 30;    // linear growth factor
-const BASE_C = 1;     // quadratic growth factor
-const CAP_LEVEL = 200; // after this, step cost stays flat
+const BASE_B = 17;    // linear growth factor
+const BASE_C = 2;     // quadratic growth factor
+const CAP_LEVEL = 51; // after this, step cost stays flat
 const EXPONENT = 2;
 
 // -------------------------------

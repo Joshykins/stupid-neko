@@ -22,7 +22,7 @@ export function HeatmapProgress({ className, value = 0, ...props }: HeatmapProgr
 
 
     return (
-        <div className="relative">
+        <div className="relative scale-y-50">
 
             <div className="absolute overflow-hidden blur-sm -inset-1 rounded-lg">
                 <div className={cn("absolute inset-0 aspect-square -translate-y-[47%] scale-y-30 opacity-0", is100Percent && "opacity-100", styles.heatmapSpin)} style={{
@@ -47,7 +47,6 @@ export function HeatmapProgress({ className, value = 0, ...props }: HeatmapProgr
                         var(--color-heatmap-4) 100%
                     )`}}>
                 </div>
-
             </div>
 
             <ProgressPrimitive.Root
@@ -59,10 +58,12 @@ export function HeatmapProgress({ className, value = 0, ...props }: HeatmapProgr
             >
                 <ProgressPrimitive.Indicator
                     data-slot="progress-indicator"
-                    className={cn("h-full relative w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out", is100Percent && "opacity-0")}
+                    className={cn("h-full relative w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out")}
                     style={{ transform: `translateX(-${100 - (value || 0)}%)`, backgroundImage: gradient }}
 
                 >
+
+
                 </ProgressPrimitive.Indicator>
 
 

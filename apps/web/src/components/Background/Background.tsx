@@ -1,8 +1,10 @@
 "use client";
-
 import Image from "next/image";
-import { cubicBezier, motion, scale, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { cubicBezier, motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { BackgroundSVGs } from "./BackgroundSVGs";
+import BackgroundBirds from "./BackgroundBirds";
+
+
 
 // Subtle parallax background with a gentle initial slide-up on mount
 export const Background = () => {
@@ -30,6 +32,8 @@ export const Background = () => {
                 animate={animate}
                 transition={transition}
             >
+
+                <BackgroundBirds />
                 <Image
                     src="/background/mountain-bg-11.svg"
                     alt="Decorative mountain background"

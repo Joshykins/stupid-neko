@@ -1,5 +1,7 @@
 "use client";
 import * as React from "react";
+import { Button } from "./ui/button";
+import { cn } from "../lib/utils";
 
 
 export function ThemeToggle() {
@@ -13,42 +15,50 @@ export function ThemeToggle() {
                 return;
             }
             setTheme("light"); // default brand look
-        } catch {}
+        } catch { }
     }, []);
 
     React.useEffect(() => {
         try {
             document.documentElement.dataset.theme = theme;
             localStorage.setItem("theme", theme);
-        } catch {}
+        } catch { }
     }, [theme]);
 
     const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
-    const circle = (
+    const topCircle = (
         <span
-            aria-hidden
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-black shadow-[3px_3px_0_0_#000] overflow-hidden"
-        >
-            <span
-                className="h-full w-full"
-                style={{
-                    background: `linear-gradient(180deg, var(--foreground) 50%, var(--background) 50%)`,
-                    display: "block",
-                }}
-            />
-        </span>
+            className={cn("h-full w-full rounded-t-full transition-all duration-300",
+                theme === "dark" && "bg-[#4B7295]",
+                theme === "light" && "bg-main",
+            )}
+
+        />
     );
 
+    const bottomCircle = (
+        <span
+            className={cn("h-full w-full rounded-b-full transition-all duration-300",
+                theme === "dark" && "bg-[#0E1B34]",
+                theme === "light" && "bg-[#4B7295]",
+            )}
+
+        />
+    );
+
+
     return (
-        <button
-            type="button"
+        <Button
+            variant={"neutral"}
+            size="icon"
             onClick={toggle}
             aria-label="Toggle theme"
-            className="bg-muted px-2 py-2 rounded-md border-2 border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
+            className="rounded-full flex flex-col gap-0 divide-y-2 divide-border"
         >
-            {circle}
-        </button>
+            {topCircle}
+            {bottomCircle}
+        </Button>
     );
 }
 
