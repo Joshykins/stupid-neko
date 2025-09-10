@@ -1,8 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Fonts are self-hosted from the extension bundle via content/index.tsx injector */
 
 
 :root {
+  /* Match Next.js font CSS variables from the web app */
+  --font-geist-sans: 'Plus Jakarta Sans';
+  --font-display: 'Baloo 2';
+  --font-geist-mono: 'Geist Mono';
   --bg-mountain-sky: oklch(0.70 0.06 255);
   /* Deep evening blue with a hint of purple, gives energy not gloom */
   
@@ -220,6 +225,24 @@
 }
 
 @layer base {
-  body { @apply text-foreground font-base bg-background; }
+  body { @apply text-foreground font-base bg-background; font-family: var(--font-geist-sans), system-ui, sans-serif; }
+  .font-display { font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif; }
+  .font-mono { font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
   h1, h2, h3, h4, h5, h6 { @apply font-heading; }
+}
+
+/* Force our font inside the content root and Radix popover portal */
+#__stupid-neko-root, #__stupid-neko-root * {
+  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+}
+
+[data-radix-popper-content-wrapper] {
+  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+}
+
+/* Ensure our font variables inherit on the body element */
+body {
+  --font-geist-sans: 'Plus Jakarta Sans';
+  --font-display: 'Baloo 2';
+  --font-geist-mono: 'Geist Mono';
 }

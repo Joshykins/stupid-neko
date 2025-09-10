@@ -1,4 +1,4 @@
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { HonoWithConvex } from "convex-helpers/server/hono";
@@ -11,7 +11,7 @@ app.use("/extension/*", cors({
     origin: (origin) => origin ?? "*",
     credentials: true,
     allowHeaders: ["authorization", "content-type"],
-    allowMethods: ["POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
 }));
 
 const ActivitySchema = z.object({
@@ -48,6 +48,21 @@ app.post(
             currentTargetLanguage = await c.env.runQuery(internal.users.getCurrentTargetLanguage, { userId });
         } catch {}
         return c.json({ ...result, contentLabel, currentTargetLanguage });
+    },
+);
+
+app.get(
+    "/extension/me",
+    async (c) => {
+        const userId = await getAuthUserId(c.env);
+        if (!userId) return c.json({ isAuthed: false }, 401);
+        try {
+            const me = await c.env.runQuery(api.meFunctions.me, {});
+            const progress = await c.env.runQuery(api.meFunctions.getUserProgress, {});
+            return c.json({ isAuthed: true, me, progress });
+        } catch (e) {
+            return c.json({ isAuthed: true, me: null, progress: null });
+        }
     },
 );
 }

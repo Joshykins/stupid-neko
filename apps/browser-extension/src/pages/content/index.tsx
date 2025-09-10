@@ -1,7 +1,117 @@
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './globals.css';
-import { toast } from 'sonner';
-import { Toaster } from '../../components/ui/sonner';
+// Removed sonner in favor of in-page TrackingWidget UI
+// import { toast } from 'sonner';
+// import { Toaster } from '../../components/ui/sonner';
+import TrackingWidget from '../../components/TrackingWidget';
+
+// Lightweight client helpers
+async function bgGetAuthState(): Promise<{ isAuthed: boolean; me: any | null; }> {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' }, (resp) => {
+        resolve((resp as any) || { isAuthed: false, me: null });
+      });
+    } catch {
+      resolve({ isAuthed: false, me: null });
+    }
+  });
+}
+
+// Load self-hosted fonts via FontFace API (robust in MV3 and shadow/portals)
+async function loadFontsUsingFontFace(): Promise<void> {
+  try {
+    const faces: Array<FontFace> = [];
+    const pjNormal = new FontFace(
+      'Plus Jakarta Sans',
+      `url('${chrome.runtime.getURL('fonts/PlusJakartaSans-VariableFont_wght.ttf')}')`,
+      { style: 'normal', weight: '100 900' }
+    );
+    faces.push(pjNormal);
+    try {
+      const pjItalic = new FontFace(
+        'Plus Jakarta Sans',
+        `url('${chrome.runtime.getURL('fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf')}')`,
+        { style: 'italic', weight: '100 900' }
+      );
+      faces.push(pjItalic);
+    } catch { }
+    try {
+      const baloo = new FontFace(
+        'Baloo 2',
+        `url('${chrome.runtime.getURL('fonts/Baloo2-VariableFont_wght.ttf')}')`,
+        { style: 'normal', weight: '400 800' }
+      );
+      faces.push(baloo);
+    } catch { }
+    const loads = faces.map((f) => f.load());
+    const loaded = await Promise.all(loads);
+    loaded.forEach((f) => document.fonts.add(f));
+    document.documentElement.classList.add('sn-fonts-ready');
+  } catch { }
+}
+
+async function bgGetContentLabel(contentKey: string): Promise<any | null> {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'GET_CONTENT_LABEL', contentKey }, (resp) => {
+        resolve((resp as any)?.contentLabel ?? null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+function computeCurrentContentKey(): string | null {
+  try {
+    const url = new URL(location.href);
+    if (/(^|\.)youtube\.com$/.test(url.hostname)) {
+      const vParam = url.searchParams.get('v');
+      if (vParam) return `youtube:${vParam}`;
+      if (url.pathname.startsWith('/shorts/')) {
+        const seg = url.pathname.split('/').filter(Boolean)[1];
+        if (seg) return `youtube:${seg}`;
+      }
+    }
+    if (url.hostname.endsWith('youtu.be')) {
+      const seg = url.pathname.split('/').filter(Boolean)[0];
+      if (seg) return `youtube:${seg}`;
+    }
+  } catch { }
+  return null;
+}
+
+function TrackingWidgetGate() {
+  const [show, setShow] = React.useState<boolean>(false);
+  const recompute = React.useCallback(async () => {
+    const key = computeCurrentContentKey();
+    if (!key) {
+      setShow(false);
+      return;
+    }
+    const auth = await bgGetAuthState();
+    if (!auth?.isAuthed || !auth?.me?.languageCode) {
+      setShow(false);
+      return;
+    }
+    const label = await bgGetContentLabel(key);
+    const labelReady = label && label.stage === 'completed';
+    const matchesLang = label?.contentLanguageCode && (label.contentLanguageCode === auth.me.languageCode);
+    setShow(!!(labelReady && matchesLang));
+  }, []);
+
+  React.useEffect(() => { recompute(); }, [recompute]);
+  React.useEffect(() => {
+    const handler = (_message: any) => { recompute(); };
+    try { chrome.runtime.onMessage.addListener(handler); } catch { }
+    return () => { try { chrome.runtime.onMessage.removeListener(handler); } catch { } };
+  }, [recompute]);
+
+  if (!show) return null;
+  return <TrackingWidget collapsedByDefault />;
+}
 
 
 type Integration = {
@@ -93,6 +203,17 @@ function createYouTubeIntegration(): Integration {
     return { url, title, videoId };
   }
 
+  async function resolveContentLabel() {
+    const meta = currentMetadata();
+    const id = getCurrentVideoId();
+    const contentKey = id ? `youtube:${id}` : undefined;
+    if (!contentKey) return;
+    const label = await bgGetContentLabel(contentKey);
+    if (label) {
+      try { localStorage.setItem('lastContentLabel', JSON.stringify(label)); } catch { }
+    }
+  }
+
   function emit(event: 'start' | 'pause' | 'end') {
     const meta = currentMetadata();
     const matchesTarget = cachedTargetLanguage ? titleMatchesTargetLanguage(meta.title, cachedTargetLanguage) : undefined;
@@ -106,17 +227,6 @@ function createYouTubeIntegration(): Integration {
       if (!isPlaying && !p.paused) {
         isPlaying = true;
         emit('start');
-        // Congratulate when content appears to match target language
-        try {
-          const videoId = getCurrentVideoId();
-          if (videoId && videoId !== lastCongratulatedVideoId && cachedTargetLanguage) {
-            const looksMatch = titleMatchesTargetLanguage(document.title.replace(/ - YouTube$/, ''), cachedTargetLanguage);
-            if (looksMatch) {
-              toast.success(`Great job! You're listening in ${cachedTargetLanguage.toUpperCase()}.`);
-              lastCongratulatedVideoId = videoId;
-            }
-          }
-        } catch { }
       }
     };
     onPlay = () => ensureStart();
@@ -139,6 +249,9 @@ function createYouTubeIntegration(): Integration {
     p.addEventListener('seeked', onSeeked, { passive: true });
     p.addEventListener('pause', onPause, { passive: true });
     p.addEventListener('ended', onEnded, { passive: true });
+
+    // Probe for cached label on attach
+    resolveContentLabel();
 
     const heartbeat = () => {
       if (!player || player.paused) return;
@@ -223,18 +336,20 @@ function boot() {
 // Optional visual debug badge (keep previous content root minimal)
 const div = document.createElement('div');
 div.id = '__stupid-neko-root';
-// HTML
-const html = document.querySelector('html');
-html?.appendChild(div);
+// Attach to document.body so Radix portal (also under body) inherits our CSS vars and fonts
+document.body.appendChild(div);
 const rootContainer = document.querySelector('#__stupid-neko-root');
 if (!rootContainer) throw new Error("Can't find Content root element");
 const root = createRoot(rootContainer);
-root.render(
-  <div className='h-screen w-screen fixed z-500 pointer-events-none'>
-    <Toaster />
-    <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs text-black !bg-indigo-400 z-50 px-1 text-white text-lg p-4 rounded-md'>stupid-neko content 123</div>
-  </div>
-);
+// Attempt to install extension-bundled fonts before rendering
+(async () => {
+  await loadFontsUsingFontFace().catch(() => { });
+  root.render(
+    <div className='h-screen w-screen fixed z-[5000] pointer-events-none'>
+      <TrackingWidgetGate />
+    </div>
+  );
+})();
 
 // Prime target language cache before booting integrations
 loadTargetLanguage()
@@ -252,67 +367,16 @@ try {
       try { console.debug('[content] DEBUG_PING received', message.payload); } catch { }
       return;
     }
-    if (message && message.type === 'TOAST') {
-      const payload = message.payload || {};
-      const msg: string | undefined = payload.message;
-      const level: string | undefined = payload.level;
-      if (typeof msg === 'string' && msg.length > 0) {
-        if (level === 'success') toast.success(msg);
-        else if (level === 'error') toast.error(msg);
-        else if (level === 'info') (toast as any).message ? (toast as any).message(msg) : toast(msg);
-        else toast(msg);
-      }
-    } else if (message && message.type === 'CONTENT_ACTIVITY_RECORDED') {
+    if (message && message.type === 'CONTENT_ACTIVITY_RECORDED') {
       const p = message.payload || {};
       try { console.debug('[content] CONTENT_ACTIVITY_RECORDED', p); } catch { }
-      if (p.error) {
-        toast.error('We could not record your activity this time.');
-        return;
-      }
-      const langFromBackend: string | undefined = p?.currentTargetLanguage?.languageCode;
-      const lang = (langFromBackend || cachedTargetLanguage || 'your target language').toUpperCase();
-      try { console.debug('[content] using language for toast', { langFromBackend, cachedTargetLanguage }); } catch { }
       if (p?.contentLabel) {
-        try { console.debug('[content] contentLabel cached', p.contentLabel); } catch { }
         try { localStorage.setItem('lastContentLabel', JSON.stringify(p.contentLabel)); } catch { }
       }
+      const langFromBackend: string | undefined = p?.currentTargetLanguage?.languageCode;
       if (langFromBackend) {
         try { localStorage.setItem('currentTargetLanguage', langFromBackend); } catch { }
       }
-      const title = (p.title || document.title.replace(/ - YouTube$/, '') || '').trim();
-      const compliments: Array<string> = [
-        'Nice pick!',
-        'Excellent choice!', 'Love that one!', 'Great selection!', 'Perfect for practice!',
-      ];
-      const compliment = compliments[Math.floor(Math.random() * compliments.length)];
-      const nekoCount = Math.floor(Math.random() * 900) + 100; // 100-999 mock
-      const RecordDot = () => (
-        <span className='inline-flex items-center justify-center mr-2'>
-          <span className='relative inline-block'>
-            <span className='absolute inset-0 rounded-full bg-red-500/40 blur-[3px] animate-ping' />
-            <span className='relative inline-block size-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' />
-          </span>
-        </span>
-      );
-      toast(
-        <div className='flex flex-col gap-2'>
-          <div className='flex items-center gap-3'>
-            <RecordDot />
-            <span className='font-semibold'>Tracking {lang} activity</span>
-            <button onClick={() => (toast as any).dismiss?.()}
-              className='ml-auto text-xs border-2 border-black text-black bg-white px-2 py-0.5 rounded'>Close</button>
-          </div>
-          {title && <div className='text-sm opacity-90'>"{title}"</div>}
-          <div className='text-base'>We see you’re engaging with {lang} content. {compliment}</div>
-          <div className='text-sm opacity-80'>{nekoCount} nekos have also used this to learn {lang}.</div>
-        </div>,
-        { duration: 30000, dismissible: true }
-      );
     }
   });
-} catch { }
-
-// Demo toast to verify content script is active
-try {
-  toast.success('stupid-neko is active on this page');
 } catch { }

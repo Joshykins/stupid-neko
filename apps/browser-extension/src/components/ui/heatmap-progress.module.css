@@ -1,0 +1,11 @@
+.heatmapSpin {
+  animation: heatmapSpin 3s linear infinite;
+  will-change: transform;
+}
+
+@keyframes heatmapSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+

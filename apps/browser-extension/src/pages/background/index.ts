@@ -37,6 +37,25 @@ type TabPlaybackState = {
 
 const tabStates: Record<number, TabPlaybackState> = {};
 
+// Cache recent labels by content key for quick lookup from content/popup
+const contentLabelsByKey: Record<string, any> = {};
+
+// Lightweight auth cache
+type AuthMe = {
+  name?: string;
+  email?: string;
+  image?: string;
+  username?: string;
+  timezone?: string;
+  languageCode?: string;
+  [key: string]: unknown;
+};
+type AuthState = { isAuthed: boolean; me: AuthMe | null };
+let lastAuthState: { value: AuthState | null; fetchedAt: number | null } = {
+  value: null,
+  fetchedAt: null,
+};
+
 type TokenCache = {
   token: string | null;
   expiresAt: number | null; // ms epoch
@@ -80,6 +99,39 @@ async function getAuthToken(): Promise<string | null> {
   } catch (e) {
     return null;
   }
+}
+
+async function fetchMe(): Promise<AuthState> {
+  const token = await getAuthToken();
+  if (!token) return { isAuthed: false, me: null };
+  const convexUrl = getEnv('CONVEX_SITE_URL');
+  const webAppUrl = getEnv('WEB_APP_URL');
+  const headers: Record<string, string> = { 'content-type': 'application/json', 'Authorization': `Bearer ${token}` };
+  // Try Convex extension endpoint first, then fall back to web app if present
+  try {
+    if (convexUrl) {
+      const res = await fetch(`${convexUrl}/extension/me`, { method: 'GET', headers, credentials: 'include' });
+      if (res.ok) {
+        const data = (await res.json().catch(() => null)) as { isAuthed?: boolean; me?: AuthMe | null; progress?: { currentStreak?: number; longestStreak?: number } | null } | null;
+        let me: AuthMe | null = data?.me ?? null;
+        const progress = data?.progress;
+        if (me && progress) {
+          me = { ...me, currentStreak: progress.currentStreak, longestStreak: progress.longestStreak } as AuthMe;
+        }
+        return { isAuthed: data?.isAuthed ?? true, me };
+      }
+    }
+  } catch {}
+  try {
+    if (webAppUrl) {
+      const res2 = await fetch(`${webAppUrl}/api/me`, { method: 'GET', headers, credentials: 'include' });
+      if (res2.ok) {
+        const me2 = (await res2.json().catch(() => null)) as AuthMe | null;
+        return { isAuthed: true, me: me2 };
+      }
+    }
+  } catch {}
+  return { isAuthed: true, me: null };
 }
 
 function deriveYouTubeId(input: string | undefined): string | undefined {
@@ -152,6 +204,13 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: numbe
     });
     const json: ContentActivityResult = await res.json().catch(() => ({ ok: false, saved: false } as ContentActivityResult));
     console.log('[bg] posted content activity', res.status, json);
+    // Cache label by content key when provided
+    try {
+      const key = json?.contentKey || contentKey;
+      if (key && json?.contentLabel) {
+        contentLabelsByKey[key] = json.contentLabel;
+      }
+    } catch {}
     // Notify the originating tab for a user-friendly toast only when saved
     try {
       if (typeof tabId === 'number' && json?.saved) {
@@ -185,6 +244,34 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: numbe
 
 chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
   console.log('onMessage', message);
+  // Quick RPCs from content/popup
+  if (message && message.type === 'GET_AUTH_STATE') {
+    const now = Date.now();
+    const fresh = lastAuthState.value && lastAuthState.fetchedAt && (now - lastAuthState.fetchedAt < 60_000);
+    if (fresh) {
+      try { _sendResponse?.(lastAuthState.value); } catch {}
+      return true;
+    }
+    fetchMe()
+      .then((auth) => {
+        lastAuthState = { value: auth, fetchedAt: Date.now() };
+        try { _sendResponse?.(auth); } catch {}
+      })
+      .catch(() => {
+        try { _sendResponse?.({ isAuthed: false, me: null } as AuthState); } catch {}
+      });
+    return true; // async response
+  }
+  if (message && message.type === 'GET_CONTENT_LABEL') {
+    try {
+      const key = message?.contentKey as string | undefined;
+      const label = key ? contentLabelsByKey[key] : undefined;
+      _sendResponse?.({ contentLabel: label || null });
+    } catch {
+      try { _sendResponse?.({ contentLabel: null }); } catch {}
+    }
+    return true;
+  }
   if (message && message.type === 'PLAYBACK_EVENT') {
     const payload = message.payload as PlaybackEvent;
     try { console.debug('[bg] PLAYBACK_EVENT raw', payload); } catch {}
