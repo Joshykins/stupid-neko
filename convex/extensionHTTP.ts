@@ -36,7 +36,18 @@ app.post(
         const body = c.req.valid("json");
         console.log("[extensionHTTP] recordContentActivity", body);
         const result = await c.env.runMutation(internal.contentActivities.recordContentActivity, { userId, ...body });
-        return c.json(result);
+        // Enrich response with contentLabel + user's target language for the extension to cache
+        let contentLabel: any = null;
+        try {
+            if (result?.contentKey) {
+                contentLabel = await c.env.runQuery(internal.contentLabels.getByContentKey, { contentKey: result.contentKey });
+            }
+        } catch {}
+        let currentTargetLanguage: any = null;
+        try {
+            currentTargetLanguage = await c.env.runQuery(internal.users.getCurrentTargetLanguage, { userId });
+        } catch {}
+        return c.json({ ...result, contentLabel, currentTargetLanguage });
     },
 );
 }

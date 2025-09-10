@@ -19,7 +19,8 @@
     "type": "module"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "content_scripts": [
     {

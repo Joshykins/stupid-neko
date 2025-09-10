@@ -16,6 +16,7 @@ import type {
 import type * as auth from "../auth.js";
 import type * as contentActivities from "../contentActivities.js";
 import type * as contentLabeling from "../contentLabeling.js";
+import type * as contentLabels from "../contentLabels.js";
 import type * as contentYoutubeLabeling from "../contentYoutubeLabeling.js";
 import type * as crons from "../crons.js";
 import type * as devOnlyFunctions from "../devOnlyFunctions.js";
@@ -27,6 +28,7 @@ import type * as languageActivityFunctions from "../languageActivityFunctions.js
 import type * as meFunctions from "../meFunctions.js";
 import type * as onboardingFunctions from "../onboardingFunctions.js";
 import type * as streakFunctions from "../streakFunctions.js";
+import type * as users from "../users.js";
 import type * as utils from "../utils.js";
 
 /**
@@ -41,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   contentActivities: typeof contentActivities;
   contentLabeling: typeof contentLabeling;
+  contentLabels: typeof contentLabels;
   contentYoutubeLabeling: typeof contentYoutubeLabeling;
   crons: typeof crons;
   devOnlyFunctions: typeof devOnlyFunctions;
@@ -52,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   meFunctions: typeof meFunctions;
   onboardingFunctions: typeof onboardingFunctions;
   streakFunctions: typeof streakFunctions;
+  users: typeof users;
   utils: typeof utils;
 }>;
 export declare const api: FilterApi<

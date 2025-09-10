@@ -3,6 +3,7 @@ import logo from '@assets/img/logo.svg';
 import background from '@assets/img/mountain-bg-11.svg';
 import largeNekoOnTree from '@assets/img/cat-on-bigger-tree.png';
 import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 
 export default function Popup() {
 
@@ -16,15 +17,22 @@ export default function Popup() {
           <p className="mt-1 text-sm text-gray-600 text-center">
             Japanese learning companion in your browser.
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 w-full">
-            <a
+          <div className="mt-3 flex justify-center w-full">
+            <Button
               className="inline-flex items-center justify-center rounded-md border border-neutral-800 px-3 py-1 text-sm hover:bg-neutral-100"
-              href="https://stupidneko.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              asChild
             >
-              Open App
-            </a>
+              <a
+                href="https://stupidneko.com"
+                target="_blank"
+                rel="noopener noreferrer"
+
+              >
+
+                Open App
+              </a>
+            </Button>
+
           </div>
         </header>
       </Card>

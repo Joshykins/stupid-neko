@@ -1,15 +1,17 @@
+// Background scripts cannot render UI; send messages to content for toasts
+
 console.log('background script loaded');
 
-const CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL;
-const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL;
+const BUILD_CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL;
+const BUILD_WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL;
 
 try {
   // Helpful to confirm env injection at build time
   // These identifiers are replaced at build via Vite `define`
   // They may be empty strings if not provided
   console.debug('[bg] env check', {
-    convex: (typeof CONVEX_SITE_URL !== 'undefined') ? CONVEX_SITE_URL : undefined,
-    web: (typeof WEB_APP_URL !== 'undefined') ? WEB_APP_URL : undefined,
+    convex: (typeof BUILD_CONVEX_SITE_URL !== 'undefined') ? BUILD_CONVEX_SITE_URL : undefined,
+    web: (typeof BUILD_WEB_APP_URL !== 'undefined') ? BUILD_WEB_APP_URL : undefined,
   });
 } catch {}
 
@@ -23,11 +25,14 @@ type PlaybackEvent = {
   position?: number;
   duration?: number;
   rate?: number;
+  matchesTarget?: boolean;
 };
 
 type TabPlaybackState = {
   lastEvent: PlaybackEvent | null;
   isPlaying: boolean;
+  allowPost?: boolean;
+  lastContentKey?: string;
 };
 
 const tabStates: Record<number, TabPlaybackState> = {};
@@ -44,10 +49,10 @@ function getEnv(name: 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string | undefined {
   const meta: any = (import.meta as any);
   // Prefer compile-time injected constants if available
   try {
-    if (name === 'CONVEX_SITE_URL' && typeof CONVEX_SITE_URL !== 'undefined' && CONVEX_SITE_URL) return CONVEX_SITE_URL;
+    if (name === 'CONVEX_SITE_URL' && typeof BUILD_CONVEX_SITE_URL !== 'undefined' && BUILD_CONVEX_SITE_URL) return BUILD_CONVEX_SITE_URL;
   } catch {}
   try {
-    if (name === 'WEB_APP_URL' && typeof WEB_APP_URL !== 'undefined' && WEB_APP_URL) return WEB_APP_URL;
+    if (name === 'WEB_APP_URL' && typeof BUILD_WEB_APP_URL !== 'undefined' && BUILD_WEB_APP_URL) return BUILD_WEB_APP_URL;
   } catch {}
   // Fallbacks: Vite env and global shims
   return g[`VITE_${name}`] || meta?.env?.[`VITE_${name}`] || g[name] || meta?.env?.[name];
@@ -99,11 +104,23 @@ function deriveYouTubeId(input: string | undefined): string | undefined {
   return undefined;
 }
 
-async function postContentActivityFromPlayback(evt: PlaybackEvent): Promise<void> {
+type ContentActivityResult = {
+  ok: boolean;
+  saved: boolean;
+  contentActivityId?: string;
+  contentLabelId?: string;
+  isWaitingOnLabeling?: boolean;
+  reason?: string;
+  contentKey?: string;
+  contentLabel?: any;
+  currentTargetLanguage?: { languageCode?: string } | null;
+};
+
+async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: number): Promise<ContentActivityResult | null> {
   const convexUrl = getEnv('CONVEX_SITE_URL');
   if (!convexUrl) {
     console.warn('[bg] missing CONVEX_SITE_URL');
-    return;
+    return null;
   }
   const token = await getAuthToken();
   const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -117,7 +134,7 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent): Promise<void
     }
     if (!contentKey) {
       console.warn('[bg] missing contentKey, skipping post', evt);
-      return;
+      return { ok: false, saved: false } as ContentActivityResult;
     }
     const body = {
       source: evt.source,
@@ -133,10 +150,36 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent): Promise<void
       credentials: 'include',
       body: JSON.stringify(body),
     });
-    await res.text().catch(() => '');
-    console.log('[bg] posted content activity', res.status);
+    const json: ContentActivityResult = await res.json().catch(() => ({ ok: false, saved: false } as ContentActivityResult));
+    console.log('[bg] posted content activity', res.status, json);
+    // Notify the originating tab for a user-friendly toast only when saved
+    try {
+      if (typeof tabId === 'number' && json?.saved) {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'CONTENT_ACTIVITY_RECORDED',
+          payload: {
+            source: evt.source,
+            url: evt.url,
+            title: evt.title,
+            videoId: evt.videoId,
+            contentKey: json.contentKey || contentKey,
+            occurredAt: evt.ts,
+            saved: true,
+            contentLabel: json.contentLabel,
+            currentTargetLanguage: json.currentTargetLanguage,
+          },
+        });
+      }
+    } catch {}
+    return json;
   } catch (e) {
     console.warn('[bg] failed posting content activity', e);
+    try {
+      if (typeof tabId === 'number') {
+        chrome.tabs.sendMessage(tabId, { type: 'CONTENT_ACTIVITY_RECORDED', payload: { error: true } });
+      }
+    } catch {}
+    return null;
   }
 }
 
@@ -144,25 +187,79 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
   console.log('onMessage', message);
   if (message && message.type === 'PLAYBACK_EVENT') {
     const payload = message.payload as PlaybackEvent;
+    try { console.debug('[bg] PLAYBACK_EVENT raw', payload); } catch {}
     try {
       console.debug('[bg] received PLAYBACK_EVENT', payload);
     } catch {}
     const tabId = sender.tab?.id;
     if (typeof tabId === 'number') {
+      try {
+        chrome.tabs.sendMessage(tabId, { type: 'DEBUG_PING', payload: { seenAt: Date.now(), event: payload.event } });
+      } catch {}
       const prev = tabStates[tabId] || { lastEvent: null, isPlaying: false } as TabPlaybackState;
+      // compute contentKey for comparison
+      let nextKey: string | undefined;
+      if (payload.source === 'youtube') {
+        const id = payload.videoId || deriveYouTubeId(payload.url);
+        if (id) nextKey = `youtube:${id}`;
+      }
+      const contentChanged = nextKey && nextKey !== prev.lastContentKey;
       if (payload.event === 'start') {
-        tabStates[tabId] = { lastEvent: payload, isPlaying: true };
+        tabStates[tabId] = {
+          lastEvent: payload,
+          isPlaying: true,
+          allowPost: !!payload.matchesTarget,
+          lastContentKey: nextKey || prev.lastContentKey,
+        };
       } else if (payload.event === 'pause') {
-        tabStates[tabId] = { lastEvent: payload, isPlaying: false };
+        tabStates[tabId] = { ...prev, lastEvent: payload, isPlaying: false };
       } else if (payload.event === 'end') {
-        tabStates[tabId] = { lastEvent: payload, isPlaying: false };
+        tabStates[tabId] = { ...prev, lastEvent: payload, isPlaying: false };
       } else if (payload.event === 'progress') {
-        tabStates[tabId] = { lastEvent: payload, isPlaying: true };
+        tabStates[tabId] = { ...prev, lastEvent: payload, isPlaying: true };
       } else {
         tabStates[tabId] = prev;
       }
+      // If content changed, reset allowPost until next start decides
+      if (contentChanged) {
+        tabStates[tabId].lastContentKey = nextKey;
+        if (payload.event !== 'start') {
+          tabStates[tabId].allowPost = undefined;
+        }
+      }
     }
-    postContentActivityFromPlayback(payload);
+    // Decide posting based on backend detection response on start; then gate others
+    const id = sender.tab?.id;
+    if (typeof id === 'number') {
+      const state = tabStates[id] as TabPlaybackState | undefined;
+      if (payload.event === 'start' || state?.allowPost === undefined) {
+        try { console.debug('[bg] probing start -> backend detection'); } catch {}
+        postContentActivityFromPlayback(payload, id).then((result) => {
+          if (!tabStates[id]) return;
+          if (result && result.saved) {
+            tabStates[id].allowPost = true;
+            try { console.debug('[bg] backend says saved -> allowPost=true'); } catch {}
+          } else if (result && result.reason === 'not_target_language') {
+            tabStates[id].allowPost = false;
+            try { console.debug('[bg] backend says not target -> allowPost=false'); } catch {}
+          } else if (result && result.isWaitingOnLabeling) {
+            tabStates[id].allowPost = true; // keep posting while labeling processes
+            try { console.debug('[bg] backend waiting on labeling -> allowPost=true'); } catch {}
+          } else {
+            // default conservative: do not block
+            tabStates[id].allowPost = true;
+            try { console.debug('[bg] backend unknown result -> allowPost=true'); } catch {}
+          }
+        });
+      } else {
+        if (state && state.allowPost) {
+          try { console.debug('[bg] allowPost -> posting'); } catch {}
+          postContentActivityFromPlayback(payload, id);
+        } else {
+          try { console.debug('[bg] skip posting (allowPost=false)'); } catch {}
+        }
+      }
+    }
   }
 });
 
