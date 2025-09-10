@@ -8,14 +8,14 @@ function cx(...classes: Array<string | undefined | false>): string {
 
 // Configuration (editable)
 export const MAX_BIRD_INCLINATION_DEG = 30; // Limit tilt from horizontal
-export const GROUP_COUNT_RANGE: Readonly<[number, number]> = [3, 10]; // number of traveling groups
+export const GROUP_COUNT_RANGE: Readonly<[number, number]> = [10, 15]; // number of traveling groups
 export const BIRDS_PER_GROUP_RANGE: Readonly<[number, number]> = [1, 3]; // birds in each group
 export const MIN_GROUP_SEPARATION_VH = 6; // min vertical spacing between group paths (vh)
 export const GROUP_OFFSET_RANGE_VW: Readonly<[number, number]> = [-2, 2]; // lateral spread per bird in group
 export const GROUP_OFFSET_RANGE_VH: Readonly<[number, number]> = [-2, 2]; // vertical spread per bird in group
-export const FLAP_DURATION_RANGE_SEC: Readonly<[number, number]> = [0.7, 1.6];
+export const FLAP_DURATION_RANGE_SEC: Readonly<[number, number]> = [1.2, 1.4];
 export const FLAP_DELAY_RANGE_SEC: Readonly<[number, number]> = [0, 1.5];
-export const SPEED_RANGE_SEC: Readonly<[number, number]> = [50, 70]; // travel time across screen
+export const SPEED_RANGE_SEC: Readonly<[number, number]> = [30, 50]; // travel time across screen
 export const SCALE_RANGE: Readonly<[number, number]> = [0.1, 0.18];
 export const SCALE_VARIATION_WITHIN_GROUP = 0.35; // ±35%
 export const SPAWN_MARGIN_VW = 5; // offscreen margin for spawn/exit

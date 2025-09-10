@@ -3,6 +3,7 @@ import Image from "next/image";
 import { cubicBezier, motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { BackgroundSVGs } from "./BackgroundSVGs";
 import BackgroundBirds from "./BackgroundBirds";
+import BackgroundClouds from "./BackgroundClouds";
 
 
 
@@ -32,7 +33,7 @@ export const Background = () => {
                 animate={animate}
                 transition={transition}
             >
-
+                <BackgroundClouds />
                 <BackgroundBirds />
                 <Image
                     src="/background/mountain-bg-11.svg"
