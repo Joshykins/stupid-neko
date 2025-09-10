@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { contentSourceValidator, languageCodeValidator, mediaTypeValidator } from "./schema";
+import { internal } from "./_generated/api";
 
 // Base: create or return contentLabel by key and source
 export const getOrEnqueue = internalMutation({
@@ -44,6 +45,10 @@ export const getOrEnqueue = internalMutation({
             createdAt: now,
             updatedAt: now,
         } as any);
+        // Automatically process newly added content labels
+        await ctx.scheduler.runAfter(0, internal.contentLabeling.processOneContentLabel, {
+            contentLabelId,
+        });
         console.log("[contentLabeling] enqueued", { contentKey: args.contentKey, contentLabelId });
         return {
             contentLabelId,
@@ -51,6 +56,40 @@ export const getOrEnqueue = internalMutation({
             stage: "queued" as const,
             existed: false,
         };
+    },
+});
+
+export const processOneContentLabel = internalAction({
+    args: v.object({ contentLabelId: v.id("contentLabel") }),
+    returns: v.union(
+        v.object({ contentLabelId: v.id("contentLabel"), stage: v.literal("completed") }),
+        v.object({ contentLabelId: v.id("contentLabel"), stage: v.literal("failed") }),
+    ),
+    handler: async (ctx, args) => {
+        const label = await ctx.runQuery(internal.contentLabeling.getLabelBasics, { contentLabelId: args.contentLabelId });
+        if (!label) throw new Error("contentLabel not found");
+        const source = label.contentKey.split(":")[0];
+        if(!source) throw new Error("source not found");
+
+        
+        await ctx.runMutation(internal.contentLabeling.markProcessing, { contentLabelId: args.contentLabelId });
+        
+        // Split by source
+        switch(source) {
+            case "youtube":
+                await ctx.runAction(internal.contentYoutubeLabeling.processOneYoutubeContentLabel, { contentLabelId: args.contentLabelId });
+                break;
+            default:
+                throw new Error("source not supported");
+        }
+        
+        try {
+            await ctx.runMutation(internal.contentLabeling.completeWithPatch, { contentLabelId: args.contentLabelId, patch: {} });
+            return { contentLabelId: args.contentLabelId, stage: "completed" } as const;
+        } catch (e: any) {
+            await ctx.runMutation(internal.contentLabeling.markFailed, { contentLabelId: args.contentLabelId, error: e?.message ?? "unknown_error" });
+            return { contentLabelId: args.contentLabelId, stage: "failed" } as const;
+        }
     },
 });
 
@@ -77,7 +116,7 @@ export const completeWithPatch = internalMutation({
             description: v.optional(v.string()),
             thumbnailUrl: v.optional(v.string()),
             fullDurationInSeconds: v.optional(v.number()),
-            	
+            
             // Language signals
             contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
             captionLanguageCodes: v.optional(v.array(languageCodeValidator)), // available captions
@@ -99,13 +138,79 @@ export const completeWithPatch = internalMutation({
                 codeSwitching: v.optional(v.number()), // 0..1
                 recommendedLearnerLevels: v.optional(v.array(v.string())), // ["A2","B1"]
             })),
-        
         }),
     }),
     returns: v.null(),
     handler: async (ctx, args) => {
         const now = Date.now();
         await ctx.db.patch(args.contentLabelId, { ...args.patch, stage: "completed", processedAt: now, updatedAt: now });
+
+        // Kick off batched cleanup by contentKey to avoid large transactional sweeps
+        const label = await ctx.db.get(args.contentLabelId);
+        const contentKey: string | undefined = (label as any)?.contentKey;
+        const contentLanguageCode: any = (label as any)?.contentLanguageCode;
+        if (contentKey && contentLanguageCode) {
+            await ctx.scheduler.runAfter(0, internal.contentLabeling.cleanActivitiesForLabel, {
+                contentKey,
+                contentLanguageCode,
+                cursor: null,
+                limit: 500,
+            } as any);
+        }
+        return null;
+    },
+});
+
+// Batched cleanup of contentActivities for a given contentKey
+export const cleanActivitiesForLabel = internalMutation({
+    args: v.object({
+        contentKey: v.string(),
+        contentLanguageCode: languageCodeValidator,
+        cursor: v.optional(v.union(v.string(), v.null())),
+        limit: v.optional(v.number()),
+    }),
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const page = await ctx.db
+            .query("contentActivities")
+            .withIndex("by_content_key", (q: any) => q.eq("contentKey", args.contentKey))
+            .paginate({ numItems: Math.max(1, Math.min(1000, args.limit ?? 500)), cursor: args.cursor ?? undefined as any });
+
+        // Build userId set for this page
+        const userIds = new Set<string>();
+        for (const ev of page.page) userIds.add((ev as any).userId);
+
+        // Load users and their target languages
+        const userIdToLanguage = new Map<string, string | undefined>();
+        for (const userId of userIds) {
+            const user = await ctx.db.get(userId as any);
+            const targetId = (user as any)?.currentTargetLanguageId;
+            if (!targetId) {
+                userIdToLanguage.set(userId, undefined);
+                continue;
+            }
+            const target = await ctx.db.get(targetId);
+            userIdToLanguage.set(userId, (target as any)?.languageCode as string | undefined);
+        }
+
+        // Delete mismatches (or missing data)
+        for (const ev of page.page) {
+            const userId = (ev as any).userId as string;
+            const lang = userIdToLanguage.get(userId);
+            if (!lang || lang !== args.contentLanguageCode) {
+                await ctx.db.delete((ev as any)._id);
+            }
+        }
+
+        if (!page.isDone && page.continueCursor) {
+            await ctx.scheduler.runAfter(0, internal.contentLabeling.cleanActivitiesForLabel, {
+                contentKey: args.contentKey,
+                contentLanguageCode: args.contentLanguageCode,
+                cursor: page.continueCursor,
+                limit: args.limit ?? 500,
+            } as any);
+        }
+
         return null;
     },
 });
@@ -138,5 +243,7 @@ export const getLabelBasics = internalQuery({
         } as any;
     },
 });
+
+
 
 

@@ -54,3 +54,51 @@ package-lock.json
 
 # nextjs
 .next
+
+# apps/browser-extension (merged from apps/browser-extension/.gitignore)
+# Scope all rules to the package directory to avoid global ignores
+
+# build outputs
+/apps/browser-extension/coverage
+/apps/browser-extension/dist
+/apps/browser-extension/dist_chrome
+/apps/browser-extension/dist_firefox
+/apps/browser-extension/public/manifest.json
+
+# common caches
+/apps/browser-extension/.cache
+/apps/browser-extension/.parcel-cache
+/apps/browser-extension/.nyc_output
+/apps/browser-extension/.eslintcache
+/apps/browser-extension/.stylelintcache
+/apps/browser-extension/.npm
+
+# framework outputs
+/apps/browser-extension/.next
+/apps/browser-extension/out
+/apps/browser-extension/.nuxt
+/apps/browser-extension/.svelte-kit
+/apps/browser-extension/.docusaurus
+
+# tooling directories
+/apps/browser-extension/.serverless
+/apps/browser-extension/.fusebox
+/apps/browser-extension/.dynamodb
+/apps/browser-extension/.tern-port
+/apps/browser-extension/.vscode-test
+
+# VSCode (scoped to extension)
+/apps/browser-extension/.vscode/*
+!/apps/browser-extension/.vscode/settings.json
+!/apps/browser-extension/.vscode/tasks.json
+!/apps/browser-extension/.vscode/launch.json
+!/apps/browser-extension/.vscode/extensions.json
+!/apps/browser-extension/.vscode/*.code-snippets
+
+# WebStorm/JetBrains (scoped to extension)
+/apps/browser-extension/.idea/*
+!/apps/browser-extension/.idea/codeStyles
+!/apps/browser-extension/.idea/runConfigurations
+
+# local history (scoped)
+/apps/browser-extension/.history

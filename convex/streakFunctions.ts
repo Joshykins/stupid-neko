@@ -11,6 +11,7 @@ export const updateStreakDays = internalMutation({
   },
   returns: v.object({
     numberOfActivities: v.number(),
+    minutesLearned: v.number(),
   }),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
@@ -32,6 +33,12 @@ export const updateStreakDays = internalMutation({
       )
       .collect();
 
+    // Sum minutesLearned for the day (durationInSeconds / 60 rounded down)
+    const minutesLearned = activitiesOnThisDay.reduce((sum: number, a: any) => {
+      const secs = Math.max(0, Math.floor(a?.durationInSeconds ?? 0));
+      return sum + Math.floor(secs / 60);
+    }, 0);
+
     // Check if we already have a record for this day
     const existingDay = await ctx.db
       .query("streakDays")
@@ -42,6 +49,7 @@ export const updateStreakDays = internalMutation({
       // Update existing record
       await ctx.db.patch(existingDay._id, {
         numberOfActivities: activitiesOnThisDay.length,
+        minutesLearned,
       });
     } else {
       // Insert new record
@@ -49,10 +57,11 @@ export const updateStreakDays = internalMutation({
         userId: args.userId,
         day: dayStart,
         numberOfActivities: activitiesOnThisDay.length,
+        minutesLearned,
       });
     }
 
-    return { numberOfActivities: activitiesOnThisDay.length };
+    return { numberOfActivities: activitiesOnThisDay.length, minutesLearned };
   },
 });
 
@@ -190,10 +199,11 @@ export const getStreakDataForHeatmap = query({
         .withIndex("by_user", (q) => q.eq("userId", userId))
         .collect();
 
-      // Create a map of day -> numberOfActivities
-      const dayToActivities = new Map<number, number>();
+      // Create a map of day -> minutesLearned
+      const dayToMinutes = new Map<number, number>();
       for (const streakDay of streakDays) {
-        dayToActivities.set(streakDay.day, streakDay.numberOfActivities);
+        const minutes = Math.max(0, Math.floor((streakDay as any).minutesLearned ?? 0));
+        dayToMinutes.set(streakDay.day, minutes);
       }
 
       // Generate the values array for the heatmap
@@ -201,17 +211,17 @@ export const getStreakDataForHeatmap = query({
       const activityCounts: number[] = [];
       for (let i = 0; i < days; i++) {
         const dayTimestamp = startDay + i * 24 * 60 * 60 * 1000;
-        const activities = dayToActivities.get(dayTimestamp) ?? 0;
+        const activities = dayToMinutes.get(dayTimestamp) ?? 0;
         
         // Store the actual activity count
         activityCounts.push(activities);
         
-        // Convert number of activities to heatmap intensity (0-4)
+        // Convert minutes learned to heatmap intensity (0-4)
         let intensity = 0;
         if (activities > 0) {
-          if (activities === 1) intensity = 1;
-          else if (activities === 2) intensity = 2;
-          else if (activities <= 4) intensity = 3;
+          if (activities < 10) intensity = 1;
+          else if (activities < 20) intensity = 2;
+          else if (activities < 40) intensity = 3;
           else intensity = 4;
         }
         

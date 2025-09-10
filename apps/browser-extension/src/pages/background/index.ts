@@ -77,7 +77,29 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
-async function postPlaybackEvent(evt: PlaybackEvent): Promise<void> {
+function deriveYouTubeId(input: string | undefined): string | undefined {
+  if (!input) return undefined;
+  try {
+    if (/^[A-Za-z0-9_-]{6,}$/i.test(input) && !input.includes('http')) return input;
+    const url = new URL(input);
+    if (url.hostname.includes('youtube.com')) {
+      const vParam = url.searchParams.get('v');
+      if (vParam) return vParam;
+      if (url.pathname.startsWith('/shorts/')) {
+        const seg = url.pathname.split('/').filter(Boolean)[1];
+        if (seg) return seg;
+      }
+    }
+    if (input.includes('youtu.be')) {
+      const url2 = new URL(input);
+      const seg = url2.pathname.replace(/^\//, '');
+      if (seg) return seg;
+    }
+  } catch {}
+  return undefined;
+}
+
+async function postContentActivityFromPlayback(evt: PlaybackEvent): Promise<void> {
   const convexUrl = getEnv('CONVEX_SITE_URL');
   if (!convexUrl) {
     console.warn('[bg] missing CONVEX_SITE_URL');
@@ -87,17 +109,34 @@ async function postPlaybackEvent(evt: PlaybackEvent): Promise<void> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
-    console.debug('[bg] posting playback event', evt);
-    const res = await fetch(`${convexUrl}/extension/playback`, {
+    const activityType = (evt.event === 'progress') ? 'heartbeat' : evt.event;
+    let contentKey: string | undefined;
+    if (evt.source === 'youtube') {
+      const id = evt.videoId || deriveYouTubeId(evt.url);
+      if (id) contentKey = `youtube:${id}`;
+    }
+    if (!contentKey) {
+      console.warn('[bg] missing contentKey, skipping post', evt);
+      return;
+    }
+    const body = {
+      source: evt.source,
+      activityType,
+      contentKey,
+      url: evt.url,
+      occurredAt: evt.ts,
+    };
+    console.debug('[bg] posting content activity', body);
+    const res = await fetch(`${convexUrl}/extension/record-content-activity`, {
       method: 'POST',
       headers,
       credentials: 'include',
-      body: JSON.stringify(evt),
+      body: JSON.stringify(body),
     });
     await res.text().catch(() => '');
-    console.log('[bg] posted playback event', res.status);
+    console.log('[bg] posted content activity', res.status);
   } catch (e) {
-    console.warn('[bg] failed posting playback event', e);
+    console.warn('[bg] failed posting content activity', e);
   }
 }
 
@@ -123,7 +162,7 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
         tabStates[tabId] = prev;
       }
     }
-    postPlaybackEvent(payload);
+    postContentActivityFromPlayback(payload);
   }
 });
 
@@ -134,7 +173,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     try {
       console.debug('[bg] tab removed, sending end', { tabId, endEvt });
     } catch {}
-    postPlaybackEvent(endEvt);
+    postContentActivityFromPlayback(endEvt);
   }
   delete tabStates[tabId];
 });

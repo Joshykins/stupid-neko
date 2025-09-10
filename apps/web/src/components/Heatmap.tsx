@@ -6,8 +6,7 @@ import { useCountUp } from "../lib/useCountUp";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Badge } from "./ui/badge";
-import { Progress } from "./ui/progress";
-import { calculateStreakBonusMultiplier, calculateStreakBonusPercent } from "../../../../lib/streakBonus";
+import { calculateStreakBonusPercent } from "../../../../lib/streakBonus";
 import HeatmapProgress from "./ui/heatmap-progress";
 
 // Heatmap normalization behavior (easy-to-tune constants)
@@ -112,22 +111,22 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
         return arr;
     }, [effectiveValues, totalDays, weeksCount, title]);
 
-    // Compute normalized intensities (0..HEATMAP_INTENSITY_STEPS-1) from activity counts using average-based saturation
+    // Compute normalized intensities (0..HEATMAP_INTENSITY_STEPS-1) from minutes learned using average-based saturation
     const normalizedValues: Array<number> | null = React.useMemo(() => {
         if (!streakData || !streakData.activityCounts || streakData.activityCounts.length !== totalDays) {
             return null;
         }
-        const counts = streakData.activityCounts;
-        const countsForAverage = HEATMAP_AVERAGE_ACTIVE_DAYS_ONLY ? counts.filter((c) => c > 0) : counts;
+        const minutes = streakData.activityCounts; // now represents minutes learned
+        const countsForAverage = HEATMAP_AVERAGE_ACTIVE_DAYS_ONLY ? minutes.filter((c) => c > 0) : minutes;
         const average = countsForAverage.length > 0 ? countsForAverage.reduce((sum, c) => sum + c, 0) / countsForAverage.length : 0;
         const saturateAt = average * HEATMAP_SATURATION_FRACTION_OF_AVERAGE;
         if (saturateAt <= 0) {
-            return counts.map(() => 0);
+            return minutes.map(() => 0);
         }
         const maxStep = HEATMAP_INTENSITY_STEPS - 1;
-        return counts.map((c) => {
-            if (c > 0 && saturateAt > 0) {
-                const fraction = Math.min(1, Math.max(0, c / saturateAt));
+        return minutes.map((m) => {
+            if (m > 0 && saturateAt > 0) {
+                const fraction = Math.min(1, Math.max(0, m / saturateAt));
                 return Math.max(1, Math.round(fraction * maxStep));
             }
             return 0;
@@ -200,10 +199,10 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
         const day = new Date(startDate);
         day.setDate(day.getDate() + absoluteIndex);
 
-        // Get the actual activity count for this day if we have real data
-        let activityCount = 0;
+        // Get the actual minutes learned for this day if we have real data
+        let minutesLearned = 0;
         if (streakData && streakData.activityCounts && streakData.activityCounts.length === totalDays) {
-            activityCount = streakData.activityCounts[absoluteIndex] ?? 0;
+            minutesLearned = streakData.activityCounts[absoluteIndex] ?? 0;
         }
 
         // Create fire emoji representation for intensity
@@ -212,12 +211,9 @@ function HeatmapInternal({ title = "Daily Streak", days = 365, values, cellSize 
 
         // Create a more descriptive label
         let label: string;
-        if (activityCount > 0) {
-            if (activityCount === 1) {
-                label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • 1 activity ${fireEmojis}`;
-            } else {
-                label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${activityCount} activities ${fireEmojis}`;
-            }
+        if (minutesLearned > 0) {
+            const mins = Math.max(0, Math.floor(minutesLearned));
+            label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${mins} min ${fireEmojis}`;
         } else {
             label = `${day.toLocaleDateString(undefined, { month: "short", day: "numeric" })} • ${intensityText}`;
         }

@@ -33,9 +33,18 @@ importers:
       '@convex-dev/auth':
         specifier: ^0.0.88
         version: 0.0.88(@auth/core@0.37.4)(convex@1.26.2(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      '@hono/zod-validator':
+        specifier: ^0.7.2
+        version: 0.7.2(hono@4.9.6)(zod@4.1.5)
       convex:
         specifier: ^1.26.2
         version: 1.26.2(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      convex-helpers:
+        specifier: ^0.1.104
+        version: 0.1.104(@standard-schema/spec@1.0.0)(convex@1.26.2(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(hono@4.9.6)(react@19.1.0)(typescript@5.9.2)(zod@4.1.5)
+      hono:
+        specifier: ^4.9.6
+        version: 4.9.6
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.1.0)
@@ -45,6 +54,9 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
+      zod:
+        specifier: ^4.1.5
+        version: 4.1.5
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.2.2
@@ -1322,6 +1334,12 @@ packages:
 
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
+
+  '@hono/zod-validator@0.7.2':
+    resolution: {integrity: sha512-ub5eL/NeZ4eLZawu78JpW/J+dugDAYhwqUIdp9KYScI6PZECij4Hx4UsrthlEUutqDDhPwRI0MscUfNkvn/mqQ==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -3333,6 +3351,28 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
+  convex-helpers@0.1.104:
+    resolution: {integrity: sha512-7CYvx7T3K6n+McDTK4ZQaQNNGBzq5aWezpjzsKbOxPXx7oNcTP9wrpef3JxeXWFzkByJv5hRCjseh9B7eNJ7Ig==}
+    hasBin: true
+    peerDependencies:
+      '@standard-schema/spec': ^1.0.0
+      convex: ^1.24.0
+      hono: ^4.0.5
+      react: ^17.0.2 || ^18.0.0 || ^19.0.0
+      typescript: ^5.5
+      zod: ^3.22.4 || ^4.0.15
+    peerDependenciesMeta:
+      '@standard-schema/spec':
+        optional: true
+      hono:
+        optional: true
+      react:
+        optional: true
+      typescript:
+        optional: true
+      zod:
+        optional: true
+
   convex@1.26.1:
     resolution: {integrity: sha512-LFDy+r13Ehqz4Zsr8zwVKrakl35kdQsAkGXdAIIjcPHP6DFd9b7Wjqomfd/Zc9+xMuqbVEh0KGyjzabiRF306g==}
     engines: {node: '>=18.0.0', npm: '>=7.0.0'}
@@ -4168,6 +4208,10 @@ packages:
 
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
+
+  hono@4.9.6:
+    resolution: {integrity: sha512-doVjXhSFvYZ7y0dNokjwwSahcrAfdz+/BCLvAMa/vHLzjj8+CFyV5xteThGUsKdkaasgN+gF2mUxao+SGLpUeA==}
+    engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
@@ -6517,6 +6561,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.1.5:
+    resolution: {integrity: sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg==}
+
 snapshots:
 
   '@0no-co/graphql.web@1.2.0(graphql@15.8.0)':
@@ -7851,6 +7898,11 @@ snapshots:
     dependencies:
       '@hapi/hoek': 9.3.0
     optional: true
+
+  '@hono/zod-validator@0.7.2(hono@4.9.6)(zod@4.1.5)':
+    dependencies:
+      hono: 4.9.6
+      zod: 4.1.5
 
   '@humanfs/core@0.19.1': {}
 
@@ -10128,6 +10180,16 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
+  convex-helpers@0.1.104(@standard-schema/spec@1.0.0)(convex@1.26.2(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(hono@4.9.6)(react@19.1.0)(typescript@5.9.2)(zod@4.1.5):
+    dependencies:
+      convex: 1.26.2(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+    optionalDependencies:
+      '@standard-schema/spec': 1.0.0
+      hono: 4.9.6
+      react: 19.1.0
+      typescript: 5.9.2
+      zod: 4.1.5
+
   convex@1.26.1(@clerk/clerk-react@5.45.0(react-dom@19.1.0(react@19.1.1))(react@19.1.1))(react@19.1.1):
     dependencies:
       esbuild: 0.25.4
@@ -11053,6 +11115,8 @@ snapshots:
   hoist-non-react-statics@3.3.2:
     dependencies:
       react-is: 16.13.1
+
+  hono@4.9.6: {}
 
   hosted-git-info@2.8.9: {}
 
@@ -13573,3 +13637,5 @@ snapshots:
   yn@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@4.1.5: {}

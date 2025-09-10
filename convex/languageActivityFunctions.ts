@@ -12,11 +12,13 @@ import { getEffectiveNow } from "./utils";
 // Create activity, update streak, then add experience (internal)
 export const addLanguageActivity = internalMutation({
     args: {
+        userId: v.optional(v.id("users")),
         title: v.string(),
         description: v.optional(v.string()),
         durationInMinutes: v.number(),
         occurredAt: v.optional(v.number()),
         languageCode: languageCodeValidator,
+        contentKey: v.optional(v.string()),
         contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
         skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
         isManuallyTracked: v.optional(v.boolean()),
@@ -56,7 +58,7 @@ export const addLanguageActivity = internalMutation({
             levelsGained: number;
         };
     }> => {
-        const userId = await getAuthUserId(ctx);
+        const userId = args.userId ?? (await getAuthUserId(ctx));
         if (!userId) throw new Error("Unauthorized");
 
 
@@ -65,7 +67,6 @@ export const addLanguageActivity = internalMutation({
         const occurredAt = args.occurredAt ?? now;
         const activityId = await ctx.db.insert("languageActivities", {
             userId,
-            source: args.source ?? "manual",
             isManuallyTracked: args.isManuallyTracked ?? (args.source ?? "manual") === "manual",
             languageCode: args.languageCode,
             title: args.title,
@@ -73,6 +74,8 @@ export const addLanguageActivity = internalMutation({
             description: args.description ?? undefined,
             durationInSeconds: Math.max(0, Math.round(args.durationInMinutes * 60)),
             occurredAt,
+            state: "completed",
+            contentKey: args.contentKey ?? undefined,
         });
 
         // 2) Update streak
@@ -94,7 +97,7 @@ export const addLanguageActivity = internalMutation({
                 skillCategories: args.skillCategories ?? undefined,
                 durationInMinutes: args.durationInMinutes,
             }),
-            isApplyingStreakBonus: false,
+            isApplyingStreakBonus: true,
             durationInMinutes: args.durationInMinutes,
         });
 
@@ -113,7 +116,6 @@ export const addLanguageActivity = internalMutation({
         };
     },
 });
-
 
 
 export const addManualLanguageActivity = mutation({
@@ -199,40 +201,25 @@ export const listRecentLanguageActivities = query({
             _creationTime: v.number(),
             userId: v.id("users"),
             userTargetLanguageId: v.id("userTargetLanguages"),
-            source: v.optional(
-                v.union(
-                    v.literal("youtube"),
-                    v.literal("spotify"),
-                    v.literal("anki"),
-                    v.literal("manual"),
-                ),
-            ),
-            contentCategories: v.optional(
-                v.array(
-                    v.union(
-                        v.literal("audio"),
-                        v.literal("video"),
-                        v.literal("text"),
-                        v.literal("other"),
-                    ),
-                ),
-            ),
-            skillCategories: v.optional(
-                v.array(
-                    v.union(
-                        v.literal("listening"),
-                        v.literal("reading"),
-                        v.literal("speaking"),
-                        v.literal("writing"),
-                    ),
-                ),
-            ),
+            // source removed from schema
+            // categories removed from persisted schema
             isManuallyTracked: v.optional(v.boolean()),
             languageCode: v.optional(languageCodeValidator),
             title: v.optional(v.string()),
             description: v.optional(v.string()),
             durationInSeconds: v.optional(v.number()),
             occurredAt: v.optional(v.number()),
+            state: v.union(v.literal("in-progress"), v.literal("completed")),
+            contentKey: v.optional(v.string()),
+            label: v.optional(
+                v.object({
+                    title: v.optional(v.string()),
+                    authorName: v.optional(v.string()),
+                    thumbnailUrl: v.optional(v.string()),
+                    fullDurationInSeconds: v.optional(v.number()),
+                    contentUrl: v.optional(v.string()),
+                }),
+            ),
         }),
     ),
     handler: async (ctx, args) => {
@@ -244,7 +231,28 @@ export const listRecentLanguageActivities = query({
             .withIndex("by_user", (q: any) => q.eq("userId", userId))
             .order("desc")
             .take(limit);
-        return items;
+        const results: Array<any> = [];
+        for (const it of items) {
+            let label: any = undefined;
+            const contentKey = (it as any).contentKey as string | undefined;
+            if (contentKey) {
+                const l = await ctx.db
+                    .query("contentLabel")
+                    .withIndex("by_content_key", (q: any) => q.eq("contentKey", contentKey))
+                    .unique();
+                if (l) {
+                    label = {
+                        title: (l as any).title,
+                        authorName: (l as any).authorName,
+                        thumbnailUrl: (l as any).thumbnailUrl,
+                        fullDurationInSeconds: (l as any).fullDurationInSeconds,
+                        contentUrl: (l as any).contentUrl,
+                    };
+                }
+            }
+            results.push({ ...(it as any), label });
+        }
+        return results;
     },
 });
 
@@ -254,8 +262,7 @@ export const recentManualLanguageActivities = query({
         v.object({
             title: v.optional(v.string()),
             durationInSeconds: v.optional(v.number()),
-            contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
-            skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
+            // categories removed from persisted schema
             description: v.optional(v.string()),
             userTargetLanguageId: v.id("userTargetLanguages"),
         }),
@@ -273,8 +280,6 @@ export const recentManualLanguageActivities = query({
             .map((it) => ({
                 title: it.title,
                 durationInSeconds: it.durationInSeconds,
-                contentCategories: it.contentCategories,
-                skillCategories: it.skillCategories,
                 description: it.description,
                 userTargetLanguageId: it.userTargetLanguageId,
             }));
@@ -429,13 +434,16 @@ export const getWeeklySourceDistribution = query({
             if (dayIndex < 0 || dayIndex > 6) continue;
             const minutes = Math.max(0, Math.round(((it as any).durationInSeconds ?? 0) / 60));
 
-            const source = (it as any).source as
-                | "youtube"
-                | "spotify"
-                | "anki"
-                | "manual"
-                | undefined;
-            switch (source) {
+            const key = (it as any).contentKey as string | undefined;
+            const inferred: "youtube" | "spotify" | "anki" | "misc" = key?.startsWith("youtube:")
+                ? "youtube"
+                : key?.startsWith("spotify:")
+                ? "spotify"
+                : key?.startsWith("anki:")
+                ? "anki"
+                : "misc";
+
+            switch (inferred) {
                 case "youtube":
                     bins[dayIndex].youtube += minutes;
                     break;
@@ -446,7 +454,7 @@ export const getWeeklySourceDistribution = query({
                     bins[dayIndex].anki += minutes;
                     break;
                 default:
-                    bins[dayIndex].misc += minutes; // manual or undefined -> misc
+                    bins[dayIndex].misc += minutes;
             }
         }
 

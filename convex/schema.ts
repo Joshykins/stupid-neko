@@ -77,6 +77,7 @@ export default defineSchema({
 		userId: v.id("users"),
 		day: v.number(),
 		numberOfActivities: v.number(),
+		minutesLearned: v.optional(v.number()),
 	}).index("by_user", ["userId"])
 		.index("by_day", ["day"])
 		.index("by_user_and_day", ["userId", "day"]),
@@ -112,10 +113,11 @@ export default defineSchema({
 		userId: v.id("users"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
 		languageCode: v.optional(languageCodeValidator),
+		contentKey: v.optional(v.string()),
 
-		source: v.optional(contentSourceValidator),  
-		contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
-		skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
+		// State
+		state: v.union(v.literal("in-progress"), v.literal("completed")), // active: the activity is currently in progress, finished: the activity has been completed
+
 		isManuallyTracked: v.optional(v.boolean()),
 
 		title: v.optional(v.string()),
@@ -126,7 +128,9 @@ export default defineSchema({
 	})
 		.index("by_user", ["userId"])
 		.index("by_occurred", ["occurredAt"]) 
-		.index("by_user_and_occurred", ["userId", "occurredAt"]),
+		.index("by_user_and_occurred", ["userId", "occurredAt"]) 
+		.index("by_user_and_state", ["userId", "state"]) 
+		.index("by_user_state_and_content_key", ["userId", "state", "contentKey"]),
 
 
 	
@@ -137,8 +141,13 @@ export default defineSchema({
 		contentKey: v.string(), // (will match a contentLabel contentKey) "youtube:VIDEO_ID", "spotify:TRACK_ID" etc.
 		activityType: v.union(v.literal("heartbeat"), v.literal("start"), v.literal("pause"), v.literal("end")),
 		occurredAt: v.optional(v.number()),
+		isWaitingOnLabeling: v.optional(v.boolean()),
+		// Translation pipeline bookkeeping
+		translated: v.optional(v.boolean()),
+		processedAt: v.optional(v.number()),
 	}).index("by_user", ["userId"])
-		.index("by_user_and_occurred", ["userId", "occurredAt"]),
+		.index("by_user_and_occurred", ["userId", "occurredAt"]) 
+		.index("by_content_key", ["contentKey"]),
 
 	// Labeling Engine
 	contentLabel: defineTable({
@@ -158,24 +167,7 @@ export default defineSchema({
 	
 		// Language signals
 		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
-		captionLanguageCodes: v.optional(v.array(languageCodeValidator)), // available captions=
 		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
-	
-		// LLM evaluation (structured + short text)
-		contentFromLanguageCode: v.optional(languageCodeValidator),// This is the from language code, its often not set, but it could be if the material is targeted something like english speakers learning x language
-		targetLanguageEvaluation: v.optional(v.string()), // short summary (rename from targetLanguageLearnigEvaluation)
-		targetLanguageEvaluationBullets: v.optional(v.array(v.string())), // brief bullet points (rename)
-		eval: v.optional(v.object({
-			version: v.string(),             // schema/versioning
-			cefr: v.optional(v.string()),    // e.g., "A2-B1"
-			speechRateWpm: v.optional(v.number()),
-			clarity: v.optional(v.number()), // 1..5
-			domainTags: v.optional(v.array(v.string())), // ["news", "daily life"]
-			useCases: v.optional(v.array(v.string())),   // ["listening practice", "shadowing"]
-			hasDirectSubs: v.optional(v.boolean()),
-			codeSwitching: v.optional(v.number()), // 0..1
-			recommendedLearnerLevels: v.optional(v.array(v.string())), // ["A2","B1"]
-		})),
 	
 		// Ops
 		attempts: v.optional(v.number()),

@@ -125,124 +125,82 @@ interface YouTubeVideoSnippet {
 
 
  
-async function getYouTubeMetadata(url: string, apiKey: string): Promise<YouTubeMetadataResponse> {
-        console.debug("[getYouTubeMetadata] start", { url, hasKey: Boolean(apiKey) });
-        // Parse the input URL to determine type and extract ID
-        const parsed = parseYouTubeUrl(url);
-        console.debug("[getYouTubeMetadata] parsed", parsed);
+    async function getYouTubeMetadata(url: string, apiKey: string): Promise<YouTubeMetadataResponse> {
+            console.debug("[getYouTubeMetadata] start", { url, hasKey: Boolean(apiKey) });
+            // Parse the input URL to determine type and extract ID
+            const parsed = parseYouTubeUrl(url);
+            console.debug("[getYouTubeMetadata] parsed", parsed);
 
-        const baseUrl = 'https://www.googleapis.com/youtube/v3/';
+            const baseUrl = 'https://www.googleapis.com/youtube/v3/';
 
-        let endpoint: string;
-        let parts: string;
+            let endpoint: string;
+            let parts: string;
 
-        switch (parsed.type) {
-          case 'video_id':
-            endpoint = 'videos';
-            parts = 'snippet,statistics,recordingDetails,status,liveStreamingDetails,localizations,contentDetails,topicDetails';
-            break;
-          case 'channel_id':
-            endpoint = 'channels';
-            parts = 'snippet,statistics,brandingSettings,contentDetails,localizations,status,topicDetails';
-            break;
-          case 'playlist_id':
-            endpoint = 'playlists';
-            parts = 'snippet,status,localizations,contentDetails';
-            break;
-          default:
-            console.debug("[getYouTubeMetadata] invalid url", { url, parsed });
-            throw new Error('Invalid YouTube URL');
-        }
+            switch (parsed.type) {
+              case 'video_id':
+                endpoint = 'videos';
+                parts = 'snippet,statistics,recordingDetails,status,liveStreamingDetails,localizations,contentDetails,topicDetails';
+                break;
+              case 'channel_id':
+                endpoint = 'channels';
+                parts = 'snippet,statistics,brandingSettings,contentDetails,localizations,status,topicDetails';
+                break;
+              case 'playlist_id':
+                endpoint = 'playlists';
+                parts = 'snippet,status,localizations,contentDetails';
+                break;
+              default:
+                console.debug("[getYouTubeMetadata] invalid url", { url, parsed });
+                throw new Error('Invalid YouTube URL');
+            }
 
-        const requestUrl = `${baseUrl}${endpoint}?part=${parts}&id=${parsed.value}&key=${apiKey}`;
-        console.debug("[getYouTubeMetadata] request", { endpoint, hasKey: Boolean(apiKey), id: parsed.value });
-        try {
-          const response = await fetch(requestUrl);
-          const ok = response.ok;
-          const status = response.status;
-          if (!ok) {
-            const text = await response.text().catch(() => "");
-            console.debug("[getYouTubeMetadata] http error", { status, body: text.slice(0, 200) });
-          } else {
-            console.debug("[getYouTubeMetadata] http ok", { status });
+            const requestUrl = `${baseUrl}${endpoint}?part=${parts}&id=${parsed.value}&key=${apiKey}`;
+            console.debug("[getYouTubeMetadata] request", { endpoint, hasKey: Boolean(apiKey), id: parsed.value });
+            try {
+              const response = await fetch(requestUrl);
+              const ok = response.ok;
+              const status = response.status;
+              if (!ok) {
+                const text = await response.text().catch(() => "");
+                console.debug("[getYouTubeMetadata] http error", { status, body: text.slice(0, 200) });
+              } else {
+                console.debug("[getYouTubeMetadata] http ok", { status });
+              }
+              const data = await response.json().catch(() => ({} as any));
+              const first = Array.isArray((data as any).items) ? (data as any).items[0] : null;
+              const result: YouTubeMetadataResponse = {
+                type: parsed.type.replace('_id', '') as 'video' | 'channel' | 'playlist',
+                id: parsed.value,
+                data: first || null,
+              } as any;
+              console.debug("[getYouTubeMetadata] done", { type: result.type, id: result.id, hasData: Boolean(result.data) });
+              return result;
+            } catch (e: any) {
+              console.debug("[getYouTubeMetadata] fetch error", { message: e?.message });
+              throw e;
+            }
           }
-          const data = await response.json().catch(() => ({} as any));
-          const first = Array.isArray((data as any).items) ? (data as any).items[0] : null;
-          const result: YouTubeMetadataResponse = {
-            type: parsed.type.replace('_id', '') as 'video' | 'channel' | 'playlist',
-            id: parsed.value,
-            data: first || null,
-          } as any;
-          console.debug("[getYouTubeMetadata] done", { type: result.type, id: result.id, hasData: Boolean(result.data) });
-          return result;
-        } catch (e: any) {
-          console.debug("[getYouTubeMetadata] fetch error", { message: e?.message });
-          throw e;
-        }
+          
+    function parseYouTubeUrl(input: string): { type: string; value: string } {
+      // Simplified URL parsing - you'd want more robust parsing
+      if (input.includes('watch?v=') || input.includes('youtu.be/')) {
+        const videoId = input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+        return { type: 'video_id', value: videoId || '' };
       }
-      
-      function parseYouTubeUrl(input: string): { type: string; value: string } {
-        // Simplified URL parsing - you'd want more robust parsing
-        if (input.includes('watch?v=') || input.includes('youtu.be/')) {
-          const videoId = input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-          return { type: 'video_id', value: videoId || '' };
-        }
-        if (input.includes('/channel/')) {
-          const channelId = input.match(/\/channel\/([^\/\n?#]+)/)?.[1];
-          return { type: 'channel_id', value: channelId || '' };
-        }
-        if (input.includes('playlist?list=')) {
-          const playlistId = input.match(/playlist\?list=([^&\n?#]+)/)?.[1];
-          return { type: 'playlist_id', value: playlistId || '' };
-        }
-        throw new Error('Unsupported URL format');
+      if (input.includes('/channel/')) {
+        const channelId = input.match(/\/channel\/([^\/\n?#]+)/)?.[1];
+        return { type: 'channel_id', value: channelId || '' };
       }
+      if (input.includes('playlist?list=')) {
+        const playlistId = input.match(/playlist\?list=([^&\n?#]+)/)?.[1];
+        return { type: 'playlist_id', value: playlistId || '' };
+      }
+      throw new Error('Unsupported URL format');
+    }
 
-// Build key and delegate to base getOrEnqueue
-export const getOrEnqueue = internalMutation({
-    args: v.object({
-        videoId: v.string(),
-        url: v.optional(v.string()),
-    }),
-    returns: v.object({
-        contentLabelId: v.id("contentLabel"),
-        contentKey: v.string(),
-        stage: v.union(
-            v.literal("queued"),
-            v.literal("processing"),
-            v.literal("completed"),
-            v.literal("failed"),
-        ),
-        existed: v.boolean(),
-    }),
-    handler: async (ctx, args): Promise<{
-        contentLabelId: any;
-        contentKey: string;
-        stage: "queued" | "processing" | "completed" | "failed";
-        existed: boolean;
-    }> => {
-        const key = `youtube:${args.videoId}`;
-        console.debug("[contentYoutubeLabeling.getOrEnqueue] start", { videoId: args.videoId, url: args.url, key });
-        const base: {
-            contentLabelId: any;
-            contentKey: string;
-            stage: "queued" | "processing" | "completed" | "failed";
-            existed: boolean;
-        } = await ctx.runMutation(internal.contentLabeling.getOrEnqueue, {
-            contentKey: key,
-            contentSource: "youtube",
-            contentUrl: args.url ?? `https://www.youtube.com/watch?v=${args.videoId}`,
-        });
-        console.debug("[contentYoutubeLabeling.getOrEnqueue] baseResult", base);
-        // schedule processing
-        await ctx.scheduler.runAfter(0, internal.contentYoutubeLabeling.processOne, { contentLabelId: base.contentLabelId });
-        console.debug("[contentYoutubeLabeling.getOrEnqueue] scheduled processOne", { contentLabelId: base.contentLabelId });
-        return base;
-    },
-});
 
 // Process one YouTube content label (provider-specific)
-export const processOne = internalAction({
+export const processOneYoutubeContentLabel = internalAction({
     args: v.object({ contentLabelId: v.id("contentLabel") }),
     returns: v.union(
         v.object({ contentLabelId: v.id("contentLabel"), stage: v.literal("completed") }),
