@@ -2,9 +2,7 @@
   "manifest_version": 3,
   "name": "Stupid Neko",
   "description": "Japanese learning companion in your browser",
-  "options_ui": {
-    "page": "src/pages/options/index.html"
-  },
+  
   "action": {
     "default_popup": "src/pages/popup/index.html",
     "default_icon": {
@@ -15,12 +13,13 @@
     "128": "icon-128.png"
   },
   "background": {
-    "service_worker": "src/pages/background/index.ts",
+    "service_worker": "src/service-worker-loader.js",
     "type": "module"
   },
   "permissions": [
     "activeTab",
-    "tabs"
+    "tabs",
+    "storage"
   ],
   "content_scripts": [
     {

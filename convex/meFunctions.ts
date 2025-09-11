@@ -3,7 +3,16 @@ import { query, mutation, action } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "./_generated/dataModel";
 import { levelFromXp, xpForNextLevel } from "../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
+import type { LanguageCode } from "./schema";
 
+
+export type MeInfo = {
+    name?: string;
+    email?: string;
+    image?: string;
+    timezone?: string;
+    languageCode?: LanguageCode;
+};
 
 export const me = query({
     args: {},

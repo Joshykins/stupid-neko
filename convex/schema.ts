@@ -60,6 +60,9 @@ export default defineSchema({
 		timezone: v.optional(v.string()),
 		currentTargetLanguageId: v.optional(v.id("userTargetLanguages")),
 
+		// Extension integration key
+		integrationKey: v.optional(v.string()),
+
 		// Streak
 		lastStreakCreditAt: v.optional(v.number()),
 		currentStreak: v.optional(v.number()), // current consecutive days
@@ -71,7 +74,8 @@ export default defineSchema({
 
 	})
 		.index("email", ["email"]) // mirror default indexes
-		.index("phone", ["phone"]),
+		.index("phone", ["phone"]) 
+		.index("by_integration_key", ["integrationKey"]),
 
 	streakDays: defineTable({
 		userId: v.id("users"),
@@ -175,5 +179,5 @@ export default defineSchema({
 		createdAt: v.optional(v.number()),
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
-	}).index("by_content_key", ["contentKey"])
+	}).index("by_content_key", ["contentKey"]),
 });

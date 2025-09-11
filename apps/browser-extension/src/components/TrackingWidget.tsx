@@ -5,10 +5,11 @@ import { LanguageFlagSVG } from './LanguageFlagSVG';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import HeatmapProgress from './ui/heatmap-progress';
 import { calculateStreakBonusPercent } from '../../../../lib/streakBonus';
+import { LanguageCode } from '../../../../convex/schema';
 
 type TrackingWidgetProps = {
-    userName?: string;
-    languageCode?: string; // ISO like "ja"
+    userName: string;
+    languageCode: LanguageCode; // ISO like "ja"
     collapsedByDefault?: boolean;
 };
 
@@ -75,7 +76,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
         }
     }, []);
 
-    const userName = props.userName ?? 'Joshowaah';
+    const userName = props.userName;
 
     // Mock stats for now
     const nekos = 1426;
@@ -257,7 +258,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
                 <div className="!flex !items-center !font-display !gap-2" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
                     <div className="!flex !items-center !gap-2 !font-semibold">
                         <span className="!text-inherit">Tracking</span>
-                        <LanguageFlagSVG language={(props.languageCode as any) || 'ja'} className="!h-4 !w-6" />
+                        <LanguageFlagSVG language={(props.languageCode) || 'ja'} className="!h-4 !w-6" />
                     </div>
                     <button
                         onClick={() => setExpanded(false)}

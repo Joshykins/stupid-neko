@@ -12,15 +12,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
 
 
 export default function AccountPage() {
     const { signOut } = useAuthActions();
     const me = useQuery(api.meFunctions.me, {});
     const updateMe = useMutation(api.meFunctions.updateMe);
+    const integrationKey = useQuery(api.integrationsKeyFunctions.getIntegrationKey, {});
+    const regenerateIntegrationKey = useMutation(api.integrationsKeyFunctions.regenerateIntegrationKey);
+    const clearIntegrationKey = useMutation(api.integrationsKeyFunctions.clearIntegrationKey);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [showRegenConfirm, setShowRegenConfirm] = useState(false);
 
     return (
         <div className="py-10">
@@ -74,6 +81,78 @@ export default function AccountPage() {
                             errorMessage={errorMessage}
                             successMessage={successMessage}
                         />
+
+                        <div className="my-6 h-px w-full bg-border" />
+
+                        <div>
+                            <h2 className=" font-heading text-xl">Browser Integration</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">Use this key in the browser extension to connect your account.</p>
+
+                            <div className="mt-3 flex items-center gap-2">
+                                <div className="relative w-full">
+                                    <Input
+                                        readOnly
+                                        value={integrationKey?.integrationId ?? "Not generated yet"}
+                                        className="pr-10"
+                                        onClick={(e) => {
+                                            const input = e.currentTarget as HTMLInputElement;
+                                            input.select();
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-base p-1 text-main-foreground/80 hover:text-main-foreground hover:bg-border/30 cursor-pointer transition-colors duration-150 disabled:opacity-50"
+                                        onClick={async () => {
+                                            const key = integrationKey?.integrationId;
+                                            if (!key) return;
+                                            try {
+                                                await navigator.clipboard.writeText(key);
+                                                setCopied(true);
+                                                setTimeout(() => setCopied(false), 1500);
+                                            } catch { }
+                                        }}
+                                        disabled={!integrationKey?.integrationId}
+                                        aria-label="Copy integration key"
+                                        title="Copy"
+                                    >
+                                        <Copy className="size-4" />
+                                    </button>
+                                    {copied && (
+                                        <div className="absolute right-2 -top-7 rounded-base bg-secondary-background border-2 border-border px-2 py-1 text-xs text-main-foreground shadow-sm">
+                                            Copied
+                                        </div>
+                                    )}
+                                </div>
+                                <Dialog open={showRegenConfirm} onOpenChange={setShowRegenConfirm}>
+                                    <DialogTrigger asChild>
+                                        <Button type="button">{integrationKey?.integrationId ? "Regenerate" : "Generate"}</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Regenerate integration key?</DialogTitle>
+                                            <DialogDescription>
+                                                This will replace your current key. You’ll need to paste the new key into your browser extension.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <Button type="button" onClick={() => setShowRegenConfirm(false)}>Cancel</Button>
+                                            <Button
+                                                type="button"
+                                                onClick={async () => {
+                                                    try {
+                                                        await regenerateIntegrationKey({});
+                                                    } finally {
+                                                        setShowRegenConfirm(false);
+                                                    }
+                                                }}
+                                            >
+                                                Confirm
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </div>
 
                     </Card>
                 </div>

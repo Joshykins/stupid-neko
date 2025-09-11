@@ -5,9 +5,12 @@ import './globals.css';
 // import { toast } from 'sonner';
 // import { Toaster } from '../../components/ui/sonner';
 import TrackingWidget from '../../components/TrackingWidget';
+import type { LanguageCode } from '../../../../../convex/schema';
+import type { MeInfo } from '../../../../../convex/meFunctions';
 
-// Lightweight client helpers
-async function bgGetAuthState(): Promise<{ isAuthed: boolean; me: any | null; }> {
+type BgAuthMe = MeInfo & { currentStreak?: number; };
+
+async function bgGetAuthState(): Promise<{ isAuthed: boolean; me: BgAuthMe | null; }> {
   return new Promise((resolve) => {
     try {
       chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' }, (resp) => {
@@ -85,20 +88,39 @@ function computeCurrentContentKey(): string | null {
 
 function TrackingWidgetGate() {
   const [show, setShow] = React.useState<boolean>(false);
+  const [userName, setUserName] = React.useState<string>("");
+  const [lang, setLang] = React.useState<LanguageCode>("ja");
   const recompute = React.useCallback(async () => {
+    // Respect user toggle
+    try {
+      const data = await new Promise<Record<string, any>>((resolve) => {
+        try { chrome.storage.sync.get(['widgetEnabled'], (items) => resolve(items || {})); } catch { resolve({}); }
+      });
+      const enabled = typeof data?.widgetEnabled === 'boolean' ? data.widgetEnabled : true;
+      if (!enabled) {
+        setShow(false);
+        return;
+      }
+    } catch { }
     const key = computeCurrentContentKey();
     if (!key) {
       setShow(false);
       return;
     }
-    const auth = await bgGetAuthState();
-    if (!auth?.isAuthed || !auth?.me?.languageCode) {
+    const authState = await bgGetAuthState();
+    if (!authState?.isAuthed || !authState?.me) {
       setShow(false);
       return;
     }
+    try {
+      if (authState.me?.name) setUserName(authState.me.name);
+      const resolvedLang = (authState.me.languageCode as LanguageCode | undefined) || (cachedTargetLanguage as LanguageCode | undefined);
+      if (resolvedLang) setLang(resolvedLang);
+    } catch { }
     const label = await bgGetContentLabel(key);
     const labelReady = label && label.stage === 'completed';
-    const matchesLang = label?.contentLanguageCode && (label.contentLanguageCode === auth.me.languageCode);
+    const effectiveLang = (authState.me.languageCode as LanguageCode | undefined) || (cachedTargetLanguage as LanguageCode | undefined);
+    const matchesLang = label?.contentLanguageCode && effectiveLang && (label.contentLanguageCode === effectiveLang);
     setShow(!!(labelReady && matchesLang));
   }, []);
 
@@ -110,7 +132,7 @@ function TrackingWidgetGate() {
   }, [recompute]);
 
   if (!show) return null;
-  return <TrackingWidget collapsedByDefault />;
+  return <TrackingWidget userName={userName} languageCode={lang} collapsedByDefault />;
 }
 
 

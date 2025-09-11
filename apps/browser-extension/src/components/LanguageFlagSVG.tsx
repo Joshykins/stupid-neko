@@ -1,7 +1,5 @@
 import * as React from "react";
-
-export type LanguageCode =
-    | "ja" | "en" | "es" | "fr" | "de" | "ko" | "it" | "zh" | "hi" | "ru" | "ar" | "pt" | "tr";
+import type { LanguageCode } from "../../../../convex/schema";
 
 function cn(...classes: Array<string | undefined | null | false>): string {
     return classes.filter(Boolean).join(" ");

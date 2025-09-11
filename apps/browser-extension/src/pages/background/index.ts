@@ -2,7 +2,11 @@
 
 console.log('background script loaded');
 
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
+
 const BUILD_CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL;
+const BUILD_CONVEX_URL = (import.meta as any)?.env?.VITE_CONVEX_URL as string | undefined;
 const BUILD_WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL;
 
 try {
@@ -10,7 +14,8 @@ try {
   // These identifiers are replaced at build via Vite `define`
   // They may be empty strings if not provided
   console.debug('[bg] env check', {
-    convex: (typeof BUILD_CONVEX_SITE_URL !== 'undefined') ? BUILD_CONVEX_SITE_URL : undefined,
+    convexCloud: (typeof BUILD_CONVEX_URL !== 'undefined') ? BUILD_CONVEX_URL : undefined,
+    convexSite: (typeof BUILD_CONVEX_SITE_URL !== 'undefined') ? BUILD_CONVEX_SITE_URL : undefined,
     web: (typeof BUILD_WEB_APP_URL !== 'undefined') ? BUILD_WEB_APP_URL : undefined,
   });
 } catch {}
@@ -56,17 +61,13 @@ let lastAuthState: { value: AuthState | null; fetchedAt: number | null } = {
   fetchedAt: null,
 };
 
-type TokenCache = {
-  token: string | null;
-  expiresAt: number | null; // ms epoch
-};
-
-const tokenCache: TokenCache = { token: null, expiresAt: null };
-
-function getEnv(name: 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string | undefined {
+function getEnv(name: 'CONVEX_URL' | 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string | undefined {
   const g: any = globalThis as any;
   const meta: any = (import.meta as any);
   // Prefer compile-time injected constants if available
+  try {
+    if (name === 'CONVEX_URL' && typeof BUILD_CONVEX_URL !== 'undefined' && BUILD_CONVEX_URL) return BUILD_CONVEX_URL;
+  } catch {}
   try {
     if (name === 'CONVEX_SITE_URL' && typeof BUILD_CONVEX_SITE_URL !== 'undefined' && BUILD_CONVEX_SITE_URL) return BUILD_CONVEX_SITE_URL;
   } catch {}
@@ -77,61 +78,37 @@ function getEnv(name: 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string | undefined {
   return g[`VITE_${name}`] || meta?.env?.[`VITE_${name}`] || g[name] || meta?.env?.[name];
 }
 
-async function getAuthToken(): Promise<string | null> {
-  const now = Date.now();
-  if (tokenCache.token && tokenCache.expiresAt && tokenCache.expiresAt - now > 60_000) {
-    return tokenCache.token;
-  }
-  const webAppUrl = getEnv('WEB_APP_URL');
-  if (!webAppUrl) return null;
+// Convex HTTP client for direct queries/mutations
+const CONVEX_URL = getEnv('CONVEX_URL') || getEnv('CONVEX_SITE_URL');
+const convex = CONVEX_URL
+  ? new ConvexHttpClient(CONVEX_URL, {
+      // Allow using .convex.site host during development if needed
+      skipConvexDeploymentUrlCheck: /\.convex\.site$/i.test(CONVEX_URL),
+    } as any)
+  : null;
+
+// Integration ID storage helpers
+async function getIntegrationId(): Promise<string | null> {
   try {
-    const res = await fetch(`${webAppUrl}/api/convex/token`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
+    const data = await new Promise<Record<string, any>>((resolve) => {
+      try { chrome.storage.sync.get(['integrationId'], (items) => resolve(items || {})); } catch { resolve({}); }
     });
-    if (!res.ok) return null;
-    const { token } = await res.json();
-    if (!token) return null;
-    tokenCache.token = token;
-    tokenCache.expiresAt = now + 10 * 60_000; // cache ~10m
-    return token;
-  } catch (e) {
-    return null;
-  }
+    const id = typeof data?.integrationId === 'string' ? data.integrationId.trim() : null;
+    if (id) return id;
+  } catch {}
+  return null;
 }
 
 async function fetchMe(): Promise<AuthState> {
-  const token = await getAuthToken();
-  if (!token) return { isAuthed: false, me: null };
-  const convexUrl = getEnv('CONVEX_SITE_URL');
-  const webAppUrl = getEnv('WEB_APP_URL');
-  const headers: Record<string, string> = { 'content-type': 'application/json', 'Authorization': `Bearer ${token}` };
-  // Try Convex extension endpoint first, then fall back to web app if present
+  const integrationId = await getIntegrationId();
+  if (!integrationId || !convex) return { isAuthed: false, me: null };
   try {
-    if (convexUrl) {
-      const res = await fetch(`${convexUrl}/extension/me`, { method: 'GET', headers, credentials: 'include' });
-      if (res.ok) {
-        const data = (await res.json().catch(() => null)) as { isAuthed?: boolean; me?: AuthMe | null; progress?: { currentStreak?: number; longestStreak?: number } | null } | null;
-        let me: AuthMe | null = data?.me ?? null;
-        const progress = data?.progress;
-        if (me && progress) {
-          me = { ...me, currentStreak: progress.currentStreak, longestStreak: progress.longestStreak } as AuthMe;
-        }
-        return { isAuthed: data?.isAuthed ?? true, me };
-      }
-    }
-  } catch {}
-  try {
-    if (webAppUrl) {
-      const res2 = await fetch(`${webAppUrl}/api/me`, { method: 'GET', headers, credentials: 'include' });
-      if (res2.ok) {
-        const me2 = (await res2.json().catch(() => null)) as AuthMe | null;
-        return { isAuthed: true, me: me2 };
-      }
-    }
-  } catch {}
-  return { isAuthed: true, me: null };
+    const me = await convex.query(api.extensionFunctions.meFromIntegration, { integrationId });
+    if (!me) return { isAuthed: false, me: null };
+    return { isAuthed: true, me: me as any };
+  } catch {
+    return { isAuthed: false, me: null };
+  }
 }
 
 function deriveYouTubeId(input: string | undefined): string | undefined {
@@ -169,14 +146,9 @@ type ContentActivityResult = {
 };
 
 async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: number): Promise<ContentActivityResult | null> {
-  const convexUrl = getEnv('CONVEX_SITE_URL');
-  if (!convexUrl) {
-    console.warn('[bg] missing CONVEX_SITE_URL');
-    return null;
-  }
-  const token = await getAuthToken();
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (!convex) return null;
+  const integrationId = await getIntegrationId();
+  if (!integrationId) return null;
   try {
     const activityType = (evt.event === 'progress') ? 'heartbeat' : evt.event;
     let contentKey: string | undefined;
@@ -188,32 +160,25 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: numbe
       console.warn('[bg] missing contentKey, skipping post', evt);
       return { ok: false, saved: false } as ContentActivityResult;
     }
-    const body = {
+    const json = await convex.mutation(api.extensionFunctions.recordContentActivityFromIntegration, {
+      integrationId,
       source: evt.source,
       activityType,
       contentKey,
       url: evt.url,
       occurredAt: evt.ts,
-    };
-    console.debug('[bg] posting content activity', body);
-    const res = await fetch(`${convexUrl}/extension/record-content-activity`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
-    const json: ContentActivityResult = await res.json().catch(() => ({ ok: false, saved: false } as ContentActivityResult));
-    console.log('[bg] posted content activity', res.status, json);
+    } as any);
+    console.log('[bg] posted content activity (convex)', json);
     // Cache label by content key when provided
     try {
-      const key = json?.contentKey || contentKey;
-      if (key && json?.contentLabel) {
-        contentLabelsByKey[key] = json.contentLabel;
+      const key = (json as any)?.contentKey || contentKey;
+      if (key && (json as any)?.contentLabel) {
+        contentLabelsByKey[key] = (json as any).contentLabel;
       }
     } catch {}
     // Notify the originating tab for a user-friendly toast only when saved
     try {
-      if (typeof tabId === 'number' && json?.saved) {
+      if (typeof tabId === 'number' && (json as any)?.saved) {
         chrome.tabs.sendMessage(tabId, {
           type: 'CONTENT_ACTIVITY_RECORDED',
           payload: {
@@ -221,16 +186,16 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: numbe
             url: evt.url,
             title: evt.title,
             videoId: evt.videoId,
-            contentKey: json.contentKey || contentKey,
+            contentKey: (json as any).contentKey || contentKey,
             occurredAt: evt.ts,
             saved: true,
-            contentLabel: json.contentLabel,
-            currentTargetLanguage: json.currentTargetLanguage,
+            contentLabel: (json as any).contentLabel,
+            currentTargetLanguage: (json as any).currentTargetLanguage,
           },
         });
       }
     } catch {}
-    return json;
+    return json as any;
   } catch (e) {
     console.warn('[bg] failed posting content activity', e);
     try {
@@ -245,8 +210,23 @@ async function postContentActivityFromPlayback(evt: PlaybackEvent, tabId?: numbe
 chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
   console.log('onMessage', message);
   // Quick RPCs from content/popup
+  if (message && message.type === 'REFRESH_AUTH') {
+    console.log('[bg] REFRESH_AUTH');
+    // Invalidate cache and refetch right away
+    lastAuthState = { value: null, fetchedAt: null };
+    fetchMe()
+      .then((auth) => {
+        lastAuthState = { value: auth, fetchedAt: Date.now() };
+        try { _sendResponse?.({ ok: true, auth }); } catch {}
+      })
+      .catch(() => {
+        try { _sendResponse?.({ ok: false }); } catch {}
+      });
+    return true; // async response
+  }
   if (message && message.type === 'GET_AUTH_STATE') {
     const now = Date.now();
+    console.log('[bg] GET_AUTH_STATE', lastAuthState);
     const fresh = lastAuthState.value && lastAuthState.fetchedAt && (now - lastAuthState.fetchedAt < 60_000);
     if (fresh) {
       try { _sendResponse?.(lastAuthState.value); } catch {}
@@ -361,4 +341,14 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
   delete tabStates[tabId];
 });
+
+// When the Integration ID changes, invalidate cached auth state so the next
+// GET_AUTH_STATE will fetch fresh data immediately.
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes && Object.prototype.hasOwnProperty.call(changes, 'integrationId')) {
+      lastAuthState = { value: null, fetchedAt: null };
+    }
+  });
+} catch {}
 
