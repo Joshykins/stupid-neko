@@ -2,6 +2,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
 import Google from "@auth/core/providers/google";
 import Discord from "@auth/core/providers/discord";
+import { generateIntegrationId } from "./integrationsKeyFunctions";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -86,6 +87,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           name: profile.name ?? undefined,
           email: profile.email ?? undefined,
           image: profile.image ?? undefined,
+          integrationKey: generateIntegrationId(),
         });
       }
 

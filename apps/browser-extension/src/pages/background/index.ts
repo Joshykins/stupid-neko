@@ -7,7 +7,7 @@ import { api } from "../../../../../convex/_generated/api";
 
 const BUILD_CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL;
 const BUILD_CONVEX_URL = (import.meta as any)?.env?.VITE_CONVEX_URL as string | undefined;
-const BUILD_WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL;
+const BUILD_SITE_URL = import.meta.env.VITE_SITE_URL;
 
 try {
   // Helpful to confirm env injection at build time
@@ -16,7 +16,7 @@ try {
   console.debug('[bg] env check', {
     convexCloud: (typeof BUILD_CONVEX_URL !== 'undefined') ? BUILD_CONVEX_URL : undefined,
     convexSite: (typeof BUILD_CONVEX_SITE_URL !== 'undefined') ? BUILD_CONVEX_SITE_URL : undefined,
-    web: (typeof BUILD_WEB_APP_URL !== 'undefined') ? BUILD_WEB_APP_URL : undefined,
+    web: (typeof BUILD_SITE_URL !== 'undefined') ? BUILD_SITE_URL : undefined,
   });
 } catch {}
 
@@ -61,7 +61,7 @@ let lastAuthState: { value: AuthState | null; fetchedAt: number | null } = {
   fetchedAt: null,
 };
 
-function getEnv(name: 'CONVEX_URL' | 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string | undefined {
+function getEnv(name: 'CONVEX_URL' | 'CONVEX_SITE_URL' | 'SITE_URL'): string | undefined {
   const g: any = globalThis as any;
   const meta: any = (import.meta as any);
   // Prefer compile-time injected constants if available
@@ -72,7 +72,7 @@ function getEnv(name: 'CONVEX_URL' | 'CONVEX_SITE_URL' | 'WEB_APP_URL'): string 
     if (name === 'CONVEX_SITE_URL' && typeof BUILD_CONVEX_SITE_URL !== 'undefined' && BUILD_CONVEX_SITE_URL) return BUILD_CONVEX_SITE_URL;
   } catch {}
   try {
-    if (name === 'WEB_APP_URL' && typeof BUILD_WEB_APP_URL !== 'undefined' && BUILD_WEB_APP_URL) return BUILD_WEB_APP_URL;
+    if (name === 'SITE_URL' && typeof BUILD_SITE_URL !== 'undefined' && BUILD_SITE_URL) return BUILD_SITE_URL;
   } catch {}
   // Fallbacks: Vite env and global shims
   return g[`VITE_${name}`] || meta?.env?.[`VITE_${name}`] || g[name] || meta?.env?.[name];

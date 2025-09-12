@@ -30,6 +30,14 @@ export function TopNav() {
     const pathname = usePathname();
     const isPlain = plainRoutes.includes(pathname ?? "");
 
+    if (isPlain) {
+        return null;
+    }
+
+    return <TopNavContent />;
+}
+
+function TopNavContent() {
     const me = useQuery(api.meFunctions.me, {});
     const { signOut } = useAuthActions();
     const updateTimezone = useMutation(api.meFunctions.updateTimezone);
@@ -53,9 +61,11 @@ export function TopNav() {
         { href: "/library", label: "Library" },
     ];
 
+    const pathname = usePathname();
+
     return (
         <>
-            {isPlain ? null : <header className="sticky top-4 z-50 w-full">
+            <header className="sticky top-4 z-50 w-full">
                 <Card className="px-4 py-2">
                     <div className="flex items-center justify-between gap-6">
                         <div className="flex items-center gap-3">
@@ -159,7 +169,7 @@ export function TopNav() {
                         </div>
                     </div>
                 </Card>
-            </header>}
+            </header>
         </>
     );
 }

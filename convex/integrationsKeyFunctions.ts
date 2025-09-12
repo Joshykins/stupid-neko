@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 // Use Web Crypto (available in Convex runtime) to generate random IDs
 
-function generateIntegrationId(): string {
+export function generateIntegrationId(): string {
 	const bytes = new Uint8Array(24);
 	crypto.getRandomValues(bytes);
 	// Hex encoding: URL-safe and no globals required

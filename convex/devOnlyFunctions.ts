@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { api, internal } from "./_generated/api";
 import { dangerousTestingEnabled, getEffectiveNow } from "./utils";
@@ -127,6 +127,172 @@ export const stepDevDate = mutation({
   },
 });
 
+export const seedAtDevDate = mutation({
+  args: {
+    items: v.number(),
+    minMinutes: v.number(),
+    maxMinutes: v.number(),
+    manualOnly: v.optional(v.boolean()),
+    probManual: v.optional(v.number()),
+    probYoutube: v.optional(v.number()),
+    probSpotify: v.optional(v.number()),
+    probAnki: v.optional(v.number()),
+  },
+  returns: v.object({ inserted: v.number() }),
+  handler: async (ctx, args) => {
+    if (!isDangerousTestingEnabled()) {
+      return { inserted: 0 };
+    }
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const nowEffective = await getEffectiveNow(ctx);
+
+    // Infer current target language
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+    const utl = await ctx.db
+      .query("userTargetLanguages")
+      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+      .order("desc")
+      .take(1);
+    const userTargetLanguageId = utl && utl[0]?._id;
+    const languageCode = utl && utl[0]?.languageCode;
+    if (!userTargetLanguageId || !languageCode) return { inserted: 0 };
+
+    const items = Math.max(0, Math.min(20, Math.floor(args.items)));
+    const minM = Math.max(1, Math.floor(args.minMinutes));
+    const maxM = Math.max(minM, Math.floor(args.maxMinutes));
+    const manualOnly = !!args.manualOnly;
+
+    // Weights for non-manual seeding (if manualOnly is false)
+    const pm = Math.max(0, Math.floor(args.probManual ?? 0));
+    const py = Math.max(0, Math.floor(args.probYoutube ?? 0));
+    const ps = Math.max(0, Math.floor(args.probSpotify ?? 0));
+    const pa = Math.max(0, Math.floor(args.probAnki ?? 0));
+    const sum = pm + py + ps + pa;
+    const weights = sum > 0 ? { manual: pm / sum, youtube: py / sum, spotify: ps / sum, anki: pa / sum } : { manual: 1, youtube: 0, spotify: 0, anki: 0 };
+
+    function pickSource() {
+      if (manualOnly) return "manual" as const;
+      const r = Math.random();
+      if (r < weights.manual) return "manual" as const;
+      if (r < weights.manual + weights.youtube) return "youtube" as const;
+      if (r < weights.manual + weights.youtube + weights.spotify) return "spotify" as const;
+      return "anki" as const;
+    }
+
+    let inserted = 0;
+    for (let i = 0; i < items; i++) {
+      const source = pickSource();
+      const durationInMinutes = Math.floor(Math.random() * (maxM - minM + 1)) + minM;
+      const title = source === "anki" ? "Anki review" : source === "youtube" ? "YouTube video" : source === "spotify" ? "Spotify listening" : "Manual entry";
+      await ctx.runMutation(internal.languageActivityFunctions.addLanguageActivity, {
+        title,
+        durationInMinutes,
+        occurredAt: nowEffective,
+        languageCode: languageCode as any,
+        contentCategories: source === "anki" ? ["other"] : source === "youtube" ? ["video"] : source === "spotify" ? ["audio"] : ["other"],
+        skillCategories: source === "anki" ? ["reading"] : ["listening"],
+        isManuallyTracked: source === "manual",
+        userTargetLanguageId: userTargetLanguageId as any,
+        source,
+      } as any);
+      inserted += 1;
+    }
+
+    return { inserted };
+  },
+});
+
+export const seedToTargetAtDevDate = mutation({
+  args: {
+    targetMinutes: v.number(),
+    minChunk: v.optional(v.number()),
+    maxChunk: v.optional(v.number()),
+    manualOnly: v.optional(v.boolean()),
+    probManual: v.optional(v.number()),
+    probYoutube: v.optional(v.number()),
+    probSpotify: v.optional(v.number()),
+    probAnki: v.optional(v.number()),
+  },
+  returns: v.object({ inserted: v.number(), seededMinutes: v.number() }),
+  handler: async (ctx, args) => {
+    if (!isDangerousTestingEnabled()) {
+      return { inserted: 0, seededMinutes: 0 };
+    }
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const nowEffective = await getEffectiveNow(ctx);
+
+    // Infer current target language
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+    const utl = await ctx.db
+      .query("userTargetLanguages")
+      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+      .order("desc")
+      .take(1);
+    const userTargetLanguageId = utl && utl[0]?._id;
+    const languageCode = utl && utl[0]?.languageCode;
+    if (!userTargetLanguageId || !languageCode) return { inserted: 0, seededMinutes: 0 };
+
+    const target = Math.max(1, Math.min(960, Math.floor(args.targetMinutes))); // cap 16h
+    const minC = Math.max(1, Math.floor(args.minChunk ?? 10));
+    const maxC = Math.max(minC, Math.floor(args.maxChunk ?? 45));
+    const manualOnly = !!args.manualOnly;
+
+    // Weights for sources
+    const pm = Math.max(0, Math.floor(args.probManual ?? 25));
+    const py = Math.max(0, Math.floor(args.probYoutube ?? 25));
+    const ps = Math.max(0, Math.floor(args.probSpotify ?? 25));
+    const pa = Math.max(0, Math.floor(args.probAnki ?? 25));
+    const sum = pm + py + ps + pa;
+    const weights = sum > 0 ? { manual: pm / sum, youtube: py / sum, spotify: ps / sum, anki: pa / sum } : { manual: 1, youtube: 0, spotify: 0, anki: 0 };
+
+    function pickSource() {
+      if (manualOnly) return "manual" as const;
+      const r = Math.random();
+      if (r < weights.manual) return "manual" as const;
+      if (r < weights.manual + weights.youtube) return "youtube" as const;
+      if (r < weights.manual + weights.youtube + weights.spotify) return "spotify" as const;
+      return "anki" as const;
+    }
+
+    function randomInt(lo: number, hi: number) { return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
+
+    let inserted = 0;
+    let seededMinutes = 0;
+    const MAX_ITEMS = 16;
+
+    while (seededMinutes < target && inserted < MAX_ITEMS) {
+      const remaining = target - seededMinutes;
+      const chunk = Math.min(remaining, randomInt(minC, maxC));
+      if (chunk <= 0) break;
+      const source = pickSource();
+      const title = source === "anki" ? "Anki review" : source === "youtube" ? "YouTube video" : source === "spotify" ? "Spotify listening" : "Manual entry";
+
+      await ctx.runMutation(internal.languageActivityFunctions.addLanguageActivity, {
+        title,
+        durationInMinutes: chunk,
+        occurredAt: nowEffective,
+        languageCode: languageCode as any,
+        contentCategories: source === "anki" ? ["other"] : source === "youtube" ? ["video"] : source === "spotify" ? ["audio"] : ["other"],
+        skillCategories: source === "anki" ? ["reading"] : ["listening"],
+        isManuallyTracked: source === "manual",
+        userTargetLanguageId: userTargetLanguageId as any,
+        source,
+      } as any);
+
+      seededMinutes += chunk;
+      inserted += 1;
+    }
+
+    return { inserted, seededMinutes };
+  },
+});
+
 export const resetMyDevState = mutation({
   args: {},
   returns: v.null(),
@@ -146,7 +312,16 @@ export const resetMyDevState = mutation({
       await ctx.db.delete(a._id);
     }
 
-    // 2) Delete experience records and multipliers for the user
+    // 1b) Delete all content activities for the user
+    const contentActs = await ctx.db
+      .query("contentActivities")
+      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+      .collect();
+    for (const ev of contentActs) {
+      await ctx.db.delete(ev._id);
+    }
+
+    // 2) Delete experience records for the user
     const exps = await ctx.db
       .query("userTargetLanguageExperiences")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
@@ -155,12 +330,22 @@ export const resetMyDevState = mutation({
       await ctx.db.delete(e._id);
     }
 
-    const mults = await ctx.db
-      .query("userTargetLanguageExperiencesMultipliers")
+    // 2b) Delete streak day ledger entries
+    const dayLedger = await ctx.db
+      .query("streakDayLedger")
+      .withIndex("by_user_and_occurred", (q: any) => q.eq("userId", userId))
+      .collect();
+    for (const row of dayLedger) {
+      await ctx.db.delete(row._id);
+    }
+
+    // 2c) Delete streak freeze ledger entries
+    const freezeLedger = await ctx.db
+      .query("streakFreezeLedger")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
       .collect();
-    for (const m of mults) {
-      await ctx.db.delete(m._id);
+    for (const row of freezeLedger) {
+      await ctx.db.delete(row._id);
     }
 
     // 3) Reset aggregate fields on user and userTargetLanguage
@@ -178,7 +363,6 @@ export const resetMyDevState = mutation({
     for (const utl of utls) {
       await ctx.db.patch(utl._id, {
         totalMinutesLearning: 0,
-        totalExperience: 0,
       });
     }
 

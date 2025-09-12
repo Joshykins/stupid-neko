@@ -79,18 +79,56 @@ export default defineSchema({
 
 	streakDays: defineTable({
 		userId: v.id("users"),
-		day: v.number(),
-		numberOfActivities: v.number(),
-		minutesLearned: v.optional(v.number()),
-	}).index("by_user", ["userId"])
-		.index("by_day", ["day"])
-		.index("by_user_and_day", ["userId", "day"]),
+		dayStartMs: v.number(),
+		trackedMinutes: v.number(),
+		xpGained: v.number(),
+		credited: v.boolean(),
+		creditedKind: v.optional(v.union(v.literal("activity"), v.literal("freeze"))),
+		streakLength: v.number(),
+		lastEventAtMs: v.number(),
+		autoFreezeAppliedAtMs: v.optional(v.number()),
+		note: v.optional(v.string()),
+	}).index("by_user_and_day", ["userId", "dayStartMs"]) 
+		.index("by_user", ["userId"]),
+
+	streakDayLedger: defineTable({
+		userId: v.id("users"),
+		dayStartMs: v.number(),
+		occurredAt: v.number(),
+		reason: v.union(
+			v.literal("activity_minutes"),
+			v.literal("xp_delta"),
+			v.literal("credit_activity"),
+			v.literal("credit_freeze"),
+			v.literal("uncredit"),
+		),
+		minutesDelta: v.optional(v.number()),
+		xpDelta: v.optional(v.number()),
+		streakLengthAfter: v.optional(v.number()),
+		source: v.optional(v.union(v.literal("user"), v.literal("system_nudge"))),
+		note: v.optional(v.string()),
+	}).index("by_user_and_day", ["userId", "dayStartMs"]) 
+		.index("by_user_and_occurred", ["userId", "occurredAt"]),
+
+	streakFreezeLedger: defineTable({
+		userId: v.id("users"),
+		occurredAt: v.number(),
+		reason: v.union(
+			v.literal("grant"),
+			v.literal("use"),
+		),
+		delta: v.number(),
+		newTotal: v.number(),
+		coveredDayStartMs: v.optional(v.number()),
+		source: v.optional(v.union(v.literal("manual"), v.literal("auto_nudge"))),
+		note: v.optional(v.string()),
+	}).index("by_user", ["userId"]) 
+		.index("by_user_and_occurred", ["userId", "occurredAt"]),
 
 	userTargetLanguages: defineTable({
 		userId: v.id("users"),
 		languageCode: v.optional(languageCodeValidator),
 		totalMinutesLearning: v.optional(v.number()),
-		totalExperience: v.optional(v.number()),
 		qualifierFormCurrentLevel: v.optional(v.string()),
 	})
 		.index("by_user", ["userId"]) 
@@ -100,18 +138,24 @@ export default defineSchema({
 		userId: v.id("users"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
 		languageActivityId: v.optional(v.id("languageActivities")),
-		experience: v.optional(v.number()),
-	}).index("by_user", ["userId"]),
-
-	userTargetLanguageExperiencesMultipliers: defineTable({
-		userId: v.id("users"),
-		type: v.union(v.literal("streak")),
-		userTargetLanguageId: v.id("userTargetLanguages"),
-		userTargetLanguageExperienceId: v.id("userTargetLanguageExperiences"),
-		multiplier: v.number(),
-	}).index("by_user", ["userId"])
-		.index("by_user_and_type", ["userId", "type"])
-		.index("by_user_and_user_target_language_experience_id", ["userId", "userTargetLanguageExperienceId"]),
+		// Event-sourced ledger fields
+		deltaExperience: v.number(),
+		baseExperience: v.optional(v.number()),
+		runningTotalAfter: v.number(),
+		occurredAt: v.optional(v.number()),
+		note: v.optional(v.string()),
+		multipliers: v.optional(
+			v.array(
+				v.object({
+					type: v.union(v.literal("streak")),
+					value: v.number(),
+				}),
+			),
+		),
+	})
+		.index("by_user", ["userId"]) 
+		.index("by_user_target_language", ["userTargetLanguageId"]) 
+		.index("by_language_activity", ["languageActivityId"]),
 
 	languageActivities: defineTable({
 		userId: v.id("users"),

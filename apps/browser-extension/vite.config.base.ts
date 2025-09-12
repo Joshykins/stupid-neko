@@ -41,8 +41,8 @@ export default defineConfig({
   publicDir: resolve(__dirname, 'public'),
   define: {
     'CONVEX_SITE_URL': JSON.stringify(process.env.CONVEX_SITE_URL || ''),
-    'WEB_APP_URL': JSON.stringify(process.env.WEB_APP_URL || process.env.NEXT_PUBLIC_WEB_APP_URL || ''),
+    'SITE_URL': JSON.stringify(process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || ''),
     'VITE_CONVEX_SITE_URL': JSON.stringify(process.env.CONVEX_SITE_URL || ''),
-    'VITE_WEB_APP_URL': JSON.stringify(process.env.WEB_APP_URL || process.env.NEXT_PUBLIC_WEB_APP_URL || ''),
+    'VITE_SITE_URL': JSON.stringify(process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || ''),
   },
 });

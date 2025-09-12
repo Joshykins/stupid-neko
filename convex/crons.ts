@@ -13,6 +13,12 @@ export const tick = internalAction({
         await ctx.runMutation(internal.languageActivitiyFromContentActivitiesFunctions.translateBatch, {
             limit: 500,
         });
+        // Nudge all users once per tick (bounded)
+        const users = await ctx.runQuery(internal.users.listAllUsersForCron, {});
+        const now = Date.now();
+        for (const u of users.slice(0, 100)) {
+            await ctx.runMutation(internal.streakFunctions.nudgeUserStreak, { userId: u._id, now });
+        }
         return null;
     },
 });

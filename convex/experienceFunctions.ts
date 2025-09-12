@@ -1,4 +1,4 @@
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { languageCodeValidator } from "./schema";
 import {
@@ -6,56 +6,21 @@ import {
     type ApplyExperienceResult,
 } from "../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
 import { internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { Id } from "./_generated/dataModel";
 
 /* ------------------- XP constants & helpers ------------------- */
 
-// Target calibration: ~100 XP per hour of baseline study (reading)
+// Target calibration: ~100 XP per hour baseline
 const HOUR_XP = 100;
 const BASE_RATE_PER_MIN = HOUR_XP / 60; // ≈ 1.6667
+// Daily cap: at most 16 hours per UTC day counted toward XP
+const DAILY_XP_CAP_MINUTES = 16 * 60;
 
-const SKILL_WEIGHTS = {
-  listening: 1,
-  reading:   1.5,
-  writing:   2.0,
-  speaking:  2.0,
-} as const;
-
-const RAMP_IN_MIN = 5;           // 0→100% credit over first 5 minutes
-const DIMINISH_AFTER_MIN = 90;   // minutes after this count at 50%
-const DIMINISH_FACTOR = 0.5;
-const MAX_ENTRY_MIN = 300;       // hard cap at 5h
-
-// ✅ Manual-only per-entry XP cap (pre-streak)
-const MAX_MANUAL_XP_PER_ENTRY = 300;
-
-type Skill = keyof typeof SKILL_WEIGHTS;
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n));
-}
-function rampInFactor(minutes: number): number {
-  if (minutes <= 0) return 0;
-  if (minutes >= RAMP_IN_MIN) return 1;
-  return minutes / RAMP_IN_MIN;
-}
-function effectiveMinutes(rawMinutes: number): number {
-  const m = clamp(Math.round(rawMinutes), 0, MAX_ENTRY_MIN);
-  if (m <= DIMINISH_AFTER_MIN) return m;
-  const extra = m - DIMINISH_AFTER_MIN;
-  return DIMINISH_AFTER_MIN + extra * DIMINISH_FACTOR;
-}
-/** Pick primary skill: prefer most effortful if multiple; infer from content; default reading. */
-function pickPrimarySkill(
-  skillCategories?: ReadonlyArray<"listening" | "reading" | "speaking" | "writing">,
-  contentCategories?: ReadonlyArray<"audio" | "video" | "text" | "other">
-): Skill {
-  const preference: Skill[] = ["speaking", "writing", "reading", "listening"]; // high → low
-  if (skillCategories?.length) for (const s of preference) if (skillCategories.includes(s)) return s;
-  if (contentCategories?.length) {
-    if (contentCategories.includes("audio") || contentCategories.includes("video")) return "listening";
-    if (contentCategories.includes("text")) return "reading";
-  }
-  return "reading";
+// Day bucketing (UTC 24h windows)
+const DAY_MS = 24 * 60 * 60 * 1000;
+function dayStartMsOf(timestampMs: number): number {
+  return Math.floor(timestampMs / DAY_MS) * DAY_MS;
 }
 
 export const getExperienceForActivity = internalQuery({
@@ -70,31 +35,36 @@ export const getExperienceForActivity = internalQuery({
       v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))
     ),
     durationInMinutes: v.optional(v.number()),
+    occurredAt: v.optional(v.number()),
   },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const {
-      isManuallyTracked,
-      contentCategories,
-      skillCategories,
-      durationInMinutes,
-    } = args;
-
-    const minutes = durationInMinutes ?? 0;
+    const { durationInMinutes } = args;
+    const minutes = Math.max(0, Math.round(durationInMinutes ?? 0));
     if (minutes <= 0) return 0;
 
-    const primarySkill = pickPrimarySkill(skillCategories ?? [], contentCategories ?? []);
-    const weight = SKILL_WEIGHTS[primarySkill];
+    const when = args.occurredAt ?? Date.now();
+    const dayStart = dayStartMsOf(when);
+    const dayEnd = dayStart + DAY_MS - 1;
 
-    const minutesEff = effectiveMinutes(minutes);
-    const ramp = rampInFactor(minutes); // ramp uses raw minutes for tiny-session discount
+    // Sum total minutes already recorded for this user today
+    const activitiesOnThisDay = await ctx.db
+      .query("languageActivities")
+      .withIndex("by_user_and_occurred", (q: any) =>
+        q.eq("userId", args.userId).gte("occurredAt", dayStart).lte("occurredAt", dayEnd)
+      )
+      .collect();
+    const totalMinutesToday = activitiesOnThisDay.reduce((sum: number, a: any) => {
+      const secs = Math.max(0, Math.floor(a?.durationInSeconds ?? 0));
+      return sum + Math.floor(secs / 60);
+    }, 0);
 
-    const rawXp = BASE_RATE_PER_MIN * minutesEff * weight * ramp;
-
-    // Manual-only cap (pre-streak). Auto-tracked items bypass this.
-    const cappedXp = isManuallyTracked ? Math.min(rawXp, MAX_MANUAL_XP_PER_ENTRY) : rawXp;
-
-    return Math.max(0, Math.round(cappedXp));
+    // Subtract this entry's minutes if it was already inserted before this query
+    const priorMinutes = Math.max(0, totalMinutesToday - minutes);
+    const remaining = Math.max(0, DAILY_XP_CAP_MINUTES - priorMinutes);
+    const effectiveMinutes = Math.max(0, Math.min(minutes, remaining));
+    const rawXp = BASE_RATE_PER_MIN * effectiveMinutes;
+    return Math.max(0, Math.round(rawXp));
   },
 });
 
@@ -110,6 +80,7 @@ export const addExperience = internalMutation({
     },
     returns: v.object({
         userTargetLanguageId: v.id("userTargetLanguages"),
+        experienceEventId: v.id("userTargetLanguageExperiences"),
         result: v.object({
             previousTotalExperience: v.number(),
             newTotalExperience: v.number(),
@@ -123,12 +94,6 @@ export const addExperience = internalMutation({
     }),
     handler: async (ctx, args) => {
         const { userId, languageCode } = args;
-        let adjustedDelta = Math.floor(args.deltaExperience ?? 0);
-
-        if (args.isApplyingStreakBonus) {
-            const multiplier: number = await ctx.runQuery(internal.streakFunctions.getStreakBonusMultiplier, { userId });
-            adjustedDelta = Math.floor(adjustedDelta * Math.max(0, multiplier));
-        }
 
         const userTargetLanguage = await ctx.db
             .query("userTargetLanguages")
@@ -141,45 +106,188 @@ export const addExperience = internalMutation({
             throw new Error(`User target language not found for user ${userId} and language ${languageCode}`);
         }
 
-        const previousTotal = userTargetLanguage.totalExperience ?? 0;
-        const result: ApplyExperienceResult = applyExperience({
-            currentTotalExperience: previousTotal,
-            deltaExperience: adjustedDelta,
-        });
+        // Load previous total from most recent ledger event
+        const latest = (await ctx.db
+            .query("userTargetLanguageExperiences")
+            .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", userTargetLanguage._id))
+            .order("desc")
+            .take(1))[0] as any | undefined;
 
-        // Update existing user target language
-        const currentTotalMinutes = userTargetLanguage.totalMinutesLearning ?? 0;
-        const newTotalMinutes = currentTotalMinutes + (args.durationInMinutes ?? 0);
-        
-        await ctx.db.patch(userTargetLanguage._id, {
-            totalExperience: result.newTotalExperience,
-            totalMinutesLearning: newTotalMinutes,
-        });
+        const previousTotal = (latest?.runningTotalAfter as number | undefined) ?? 0;
 
-        // Insert experience record
-        const userTargetLanguageExperienceId = await ctx.db
-            .insert("userTargetLanguageExperiences", {
-                userId,
-                userTargetLanguageId: userTargetLanguage._id,
-                languageActivityId: args.languageActivityId,
-                experience: result.newTotalExperience,
-            });
+        // Base delta and multipliers
+        const baseDelta = Math.floor(args.deltaExperience ?? 0);
+        let finalDelta = baseDelta;
+        const multipliers: Array<{ type: "streak"; value: number }> = [];
 
-        // If streak bonus was applied, record the multiplier
         if (args.isApplyingStreakBonus) {
-            const multiplier: number = await ctx.runQuery(internal.streakFunctions.getStreakBonusMultiplier, { userId });
-            if (multiplier > 0) {
-                await ctx.db.insert("userTargetLanguageExperiencesMultipliers", {
-                    userId,
-                    type: "streak" as const,
-                    userTargetLanguageId: userTargetLanguage._id,
-                    userTargetLanguageExperienceId,
-                    multiplier,
-                });
-            }
+            const value: number = await ctx.runQuery(internal.streakFunctions.getStreakBonusMultiplier, { userId });
+            finalDelta = Math.floor(baseDelta * Math.max(0, value));
+            multipliers.push({ type: "streak", value });
         }
 
-        return { userTargetLanguageId: userTargetLanguage._id, result };
+        const result: ApplyExperienceResult = applyExperience({
+            currentTotalExperience: previousTotal,
+            deltaExperience: finalDelta,
+        });
+
+        // Update minutes only
+        if (args.durationInMinutes && args.durationInMinutes > 0) {
+            const currentTotalMinutes = userTargetLanguage.totalMinutesLearning ?? 0;
+            const newTotalMinutes = currentTotalMinutes + args.durationInMinutes;
+            await ctx.db.patch(userTargetLanguage._id, {
+                totalMinutesLearning: newTotalMinutes,
+            });
+        }
+
+        // occurredAt from activity if available; otherwise now
+        let occurredAt: number | undefined = undefined;
+        if (args.languageActivityId) {
+            const act = await ctx.db.get(args.languageActivityId);
+            occurredAt = (act as any)?.occurredAt ?? undefined;
+        }
+        if (occurredAt === undefined) occurredAt = Date.now();
+
+        // Insert ledger event
+        const experienceEventId = await ctx.db.insert("userTargetLanguageExperiences", {
+            userId,
+            userTargetLanguageId: userTargetLanguage._id,
+            languageActivityId: args.languageActivityId,
+            baseExperience: baseDelta,
+            deltaExperience: finalDelta,
+            runningTotalAfter: result.newTotalExperience,
+            occurredAt,
+            multipliers: multipliers.length ? multipliers : undefined,
+        } as any);
+
+        // Update streak per-day aggregates (xpGained) and day ledger
+        const dayStartMs = dayStartMsOf(occurredAt!);
+        const existingDay = await ctx.db
+            .query("streakDays")
+            .withIndex("by_user_and_day", (q: any) => q.eq("userId", userId).eq("dayStartMs", dayStartMs))
+            .unique();
+        if (existingDay) {
+            await ctx.db.patch(existingDay._id, {
+                xpGained: Math.max(0, ((existingDay as any).xpGained ?? 0) + finalDelta),
+                lastEventAtMs: Math.max(((existingDay as any).lastEventAtMs ?? 0), occurredAt!),
+            } as any);
+        } else {
+            await ctx.db.insert("streakDays", {
+                userId,
+                dayStartMs,
+                trackedMinutes: 0,
+                xpGained: Math.max(0, finalDelta),
+                credited: false,
+                streakLength: 0,
+                lastEventAtMs: occurredAt!,
+            } as any);
+        }
+        await ctx.db.insert("streakDayLedger", {
+            userId,
+            dayStartMs,
+            occurredAt: occurredAt!,
+            reason: "xp_delta",
+            xpDelta: finalDelta,
+            source: "user",
+        } as any);
+
+        return { userTargetLanguageId: userTargetLanguage._id, experienceEventId, result };
+    },
+});
+
+export const listExperienceHistory = query({
+    args: { limit: v.optional(v.number()) },
+    returns: v.array(
+        v.object({
+            _id: v.id("userTargetLanguageExperiences"),
+            _creationTime: v.number(),
+            languageActivityId: v.optional(v.id("languageActivities")),
+            deltaExperience: v.number(),
+            baseExperience: v.optional(v.number()),
+            runningTotalAfter: v.number(),
+            occurredAt: v.optional(v.number()),
+            note: v.optional(v.string()),
+            multipliers: v.optional(
+                v.array(
+                    v.object({
+                        type: v.union(v.literal("streak")),
+                        value: v.number(),
+                    }),
+                ),
+            ),
+        }),
+    ),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) return [];
+
+        const user = await ctx.db.get(userId);
+        if (!user) return [];
+
+        const currentTargetLanguageId = (user as any).currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+        if (!currentTargetLanguageId) return [];
+
+        const limit = Math.max(1, Math.min(200, args.limit ?? 50));
+        const events = await ctx.db
+            .query("userTargetLanguageExperiences")
+            .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId))
+            .order("desc")
+            .take(limit);
+
+        return events as any;
+    },
+});
+
+export const deleteExperienceEvent = mutation({
+    args: { experienceId: v.id("userTargetLanguageExperiences") },
+    returns: v.object({ reversalEventId: v.id("userTargetLanguageExperiences") }),
+    handler: async (ctx, args): Promise<{ reversalEventId: Id<"userTargetLanguageExperiences"> }> => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Unauthorized");
+
+        const exp = await ctx.db.get(args.experienceId);
+        if (!exp) throw new Error("Experience event not found");
+        if ((exp as any).userId !== userId) throw new Error("Forbidden");
+
+        const delta = Math.floor((exp as any).deltaExperience ?? 0);
+        const utlId = (exp as any).userTargetLanguageId as Id<"userTargetLanguages">;
+        const utl = await ctx.db.get(utlId);
+        if (!utl) throw new Error("Target language missing");
+        const languageCode = (utl as any).languageCode;
+
+        const out: { experienceEventId: Id<"userTargetLanguageExperiences"> } = await ctx.runMutation(internal.experienceFunctions.addExperience, {
+            userId,
+            languageCode,
+            languageActivityId: (exp as any).languageActivityId,
+            deltaExperience: -delta,
+            isApplyingStreakBonus: false,
+        });
+
+        await ctx.db.patch(out.experienceEventId, { note: `reversal_of:${args.experienceId}` } as any);
+
+        // Also decrement per-day xp aggregate and write day ledger if exp had occurredAt
+        const occurredAt: number | undefined = (exp as any).occurredAt ?? undefined;
+        if (occurredAt !== undefined) {
+            const dayStartMs = dayStartMsOf(occurredAt);
+            const day = await ctx.db
+                .query("streakDays")
+                .withIndex("by_user_and_day", (q: any) => q.eq("userId", userId).eq("dayStartMs", dayStartMs))
+                .unique();
+            if (day) {
+                const newXp = Math.max(0, (((day as any).xpGained ?? 0) - delta));
+                await ctx.db.patch((day as any)._id, { xpGained: newXp } as any);
+            }
+            await ctx.db.insert("streakDayLedger", {
+                userId,
+                dayStartMs,
+                occurredAt: Date.now(),
+                reason: "xp_delta",
+                xpDelta: -delta,
+                source: "user",
+                note: `reversal_of:${args.experienceId}`,
+            } as any);
+        }
+        return { reversalEventId: out.experienceEventId };
     },
 });
 

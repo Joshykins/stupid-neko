@@ -113,73 +113,78 @@ export const translateBatch = internalMutation({
                 }
             }
 
-            // Handle trailing open session: maintain an in-progress languageActivity upsert
+            // Handle trailing open session:
+            // - If it's stale (no events for > GAP_MS), treat it as a closed session so it gets finalized
+            // - Otherwise, maintain an in-progress languageActivity upsert
             if (current && lastTimeStamp !== null) {
                 const nowMs = Date.now();
                 const openEnd = lastTimeStamp;
                 const durationMs = Math.max(0, openEnd - current.startMs);
 
-                // Load user and their current target language
-                const user = await ctx.db.get(current.userId);
-                if (user) {
-                    const userTargetLanguageId = (user.currentTargetLanguageId as Id<"userTargetLanguages"> | undefined);
-                    if (userTargetLanguageId) {
-                        const label = await ctx.db
-                            .query("contentLabel")
-                            .withIndex("by_content_key", (q: any) => q.eq("contentKey", current.contentKey))
-                            .unique();
+                if (nowMs - openEnd > GAP_MS) {
+                    // Convert to a closed session; it will be finalized in the closed-session loop below
+                    sessions.push(current);
+                } else {
+                    // Maintain in-progress
+                    // Load user and their current target language
+                    const user = await ctx.db.get(current.userId);
+                    if (user) {
+                        const userTargetLanguageId = (user.currentTargetLanguageId as Id<"userTargetLanguages"> | undefined);
+                        if (userTargetLanguageId) {
+                            const label = await ctx.db
+                                .query("contentLabel")
+                                .withIndex("by_content_key", (q: any) => q.eq("contentKey", current.contentKey))
+                                .unique();
 
-                        // If no label or not completed, mark waiting and skip creating in-progress
-                        if (!label || label.stage !== "completed" || !label.contentLanguageCode) {
-                            for (const evId of current.eventIds) {
-                                await ctx.db.patch(evId, { isWaitingOnLabeling: true });
-                            }
-                        } else {
-                            // If label language doesn't match user's target language, delete contentActivities and skip
-                            const target = await ctx.db.get(userTargetLanguageId);
-                            if (!target || target.languageCode !== label.contentLanguageCode) {
+                            // If no label or not completed, mark waiting and skip creating in-progress
+                            if (!label || label.stage !== "completed" || !label.contentLanguageCode) {
                                 for (const evId of current.eventIds) {
-                                    await ctx.db.delete(evId);
-                                    processed += 1;
+                                    await ctx.db.patch(evId, { isWaitingOnLabeling: true });
                                 }
                             } else {
-                                if (durationMs >= MIN_SESSION_MS) {
-                                    const title: string = (label?.title as string | undefined) ?? current.contentKey;
-                                    const languageCode = label?.contentLanguageCode as any;
-                                    const source = label?.contentSource as any;
-                                    const contentMediaType = label?.contentMediaType as ("audio" | "video" | "text" | undefined);
-                                    const contentCategories = contentMediaType ? [contentMediaType] as Array<"audio" | "video" | "text" | "other"> : undefined;
-
-                                    // Upsert in-progress record by (userId, state, contentKey)
-                                    const existing = await ctx.db
-                                        .query("languageActivities")
-                                        .withIndex("by_user_state_and_content_key", (q: any) =>
-                                            q.eq("userId", current.userId).eq("state", "in-progress").eq("contentKey", current.contentKey),
-                                        )
-                                        .unique();
-
-                                    if (existing) {
-                                        await ctx.db.patch(existing._id, {
-                                            durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
-                                            languageCode,
-                                            title,
-                                            occurredAt: current.startMs,
-                                        });
-                                    } else {
-                                        await ctx.db.insert("languageActivities", {
-                                            userId: current.userId,
-                                            userTargetLanguageId,
-                                            languageCode,
-                                            contentKey: current.contentKey,
-                                            state: "in-progress",
-                                            title,
-                                            isManuallyTracked: false,
-                                            durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
-                                            occurredAt: current.startMs,
-                                        });
+                                // If label language doesn't match user's target language, delete contentActivities and skip
+                                const target = await ctx.db.get(userTargetLanguageId);
+                                if (!target || target.languageCode !== label.contentLanguageCode) {
+                                    for (const evId of current.eventIds) {
+                                        await ctx.db.delete(evId);
+                                        processed += 1;
                                     }
+                                } else {
+                                    if (durationMs >= MIN_SESSION_MS) {
+                                        const title: string = (label?.title as string | undefined) ?? current.contentKey;
+                                        const languageCode = label?.contentLanguageCode as any;
+                                        const contentMediaType = label?.contentMediaType as ("audio" | "video" | "text" | undefined);
+                                        // Upsert in-progress record by (userId, state, contentKey)
+                                        const existing = await ctx.db
+                                            .query("languageActivities")
+                                            .withIndex("by_user_state_and_content_key", (q: any) =>
+                                                q.eq("userId", current.userId).eq("state", "in-progress").eq("contentKey", current.contentKey),
+                                            )
+                                            .unique();
+
+                                        if (existing) {
+                                            await ctx.db.patch(existing._id, {
+                                                durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
+                                                languageCode,
+                                                title,
+                                                occurredAt: current.startMs,
+                                            });
+                                        } else {
+                                            await ctx.db.insert("languageActivities", {
+                                                userId: current.userId,
+                                                userTargetLanguageId,
+                                                languageCode,
+                                                contentKey: current.contentKey,
+                                                state: "in-progress",
+                                                title,
+                                                isManuallyTracked: false,
+                                                durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
+                                                occurredAt: current.startMs,
+                                            });
+                                        }
+                                    }
+                                    // Note: we do NOT mark events as translated yet for in-progress
                                 }
-                                // Note: we do NOT mark events as translated yet for in-progress
                             }
                         }
                     }

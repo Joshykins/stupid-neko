@@ -3,7 +3,8 @@
 import { Authenticated, useMutation, useQuery } from "convex/react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { ArrowLeftToLine, ArrowRightSquare, ArrowRightToLine, Car, ClockAlert, X, Cog } from "lucide-react";
+import { ArrowRightSquare, ClockAlert, X, Eye, SlidersHorizontal, Sprout } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { api } from "../../../../../convex/_generated/api";
@@ -14,20 +15,16 @@ export const TestingComponent = () => {
     const isEnabled = process.env.NEXT_PUBLIC_DANGEROUS_TESTING === "enabled";
     const devDate = useQuery(api.devOnlyFunctions.getDevDate, {});
     const stepDevDate = useMutation(api.devOnlyFunctions.stepDevDate);
+    const seedToTarget = useMutation(api.devOnlyFunctions.seedToTargetAtDevDate);
     const reset = useMutation(api.devOnlyFunctions.resetMyDevState);
-    const [showSettings, setShowSettings] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
+    const [open, setOpen] = useState(false);
 
     const [manualProb, setManualProb] = useState<number>(25);
     const [youtubeProb, setYoutubeProb] = useState<number>(25);
     const [spotifyProb, setSpotifyProb] = useState<number>(25);
     const [ankiProb, setAnkiProb] = useState<number>(25);
-    // Presets for seeding volume and duration (items as a range)
-    const PRESETS = {
-        light: { label: "Light day", itemsMin: 2, itemsMax: 4, min: 5, max: 20 },
-        typical: { label: "Typical day", itemsMin: 5, itemsMax: 8, min: 10, max: 45 },
-        super: { label: "Super day", itemsMin: 10, itemsMax: 16, min: 20, max: 90 },
-    } as const;
-    const [preset, setPreset] = useState<keyof typeof PRESETS>("typical");
+    const [targetMinutes, setTargetMinutes] = useState<number>(60);
 
     const sum = manualProb + youtubeProb + spotifyProb + ankiProb;
     const safeSum = sum > 0 ? sum : 1;
@@ -38,99 +35,108 @@ export const TestingComponent = () => {
     return (
         <>
             <Authenticated>
-                <div className="fixed bottom-4 right-4 z-10 flex flex-col  gap-2 items-end">
-                    {showSettings && (
-                        <>
-                            <Card className="w-80 px-2 py-2">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-xs font-bold">Seed Settings</p>
-                                    <Button size="sm" variant="neutral" onClick={() => setShowSettings(false)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-xs">Manual Probability ({pct(manualProb)}%)</p>
-                                        <Slider mainColor="var(--color-source-misc)" value={[manualProb]} onValueChange={(v) => setManualProb(v[0] ?? 0)} />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-xs">Youtube Probability ({pct(youtubeProb)}%)</p>
-                                        <Slider mainColor="var(--color-source-youtube)" value={[youtubeProb]} onValueChange={(v) => setYoutubeProb(v[0] ?? 0)} />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-xs">Spotify Probability ({pct(spotifyProb)}%)</p>
-                                        <Slider mainColor="var(--color-source-spotify)" value={[spotifyProb]} onValueChange={(v) => setSpotifyProb(v[0] ?? 0)} />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-xs">Anki Probability ({pct(ankiProb)}%)</p>
-                                        <Slider mainColor="var(--color-source-anki)" value={[ankiProb]} onValueChange={(v) => setAnkiProb(v[0] ?? 0)} />
-                                    </div>
-                                    <div className="flex flex-col gap-2 pt-1">
-                                        <p className="text-xs font-bold">Preset</p>
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            {Object.entries(PRESETS).map(([key, p]) => (
-                                                <Button
-                                                    key={key}
-                                                    size="sm"
-                                                    className="whitespace-nowrap"
-                                                    variant={preset === (key as keyof typeof PRESETS) ? "devOnly" : "neutral"}
-                                                    onClick={() => setPreset(key as keyof typeof PRESETS)}
-                                                >
-                                                    {p.label}
-                                                </Button>
-                                            ))}
+                <div className="fixed bottom-4 right-4 z-10">
+                    <Popover open={open} onOpenChange={setOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="devOnly" className="rounded-full h-10 w-10 p-0" aria-label="Open testing tools">
+                                <Eye className="h-5 w-5" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" align="end" className="w-[min(92vw,28rem)] p-0 bg-transparent border-none shadow-none">
+                            <div className="flex flex-col gap-3">
+                                {showSettings && (
+                                    <Card className="w-full px-3 py-3 rounded-xl shadow-xl">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <p className="text-xs font-bold">Probabilities</p>
+                                            <Button aria-label="Close settings" size="sm" variant="neutral" className="rounded-full" onClick={() => setShowSettings(false)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        <p className="text-xs text-muted-foreground">Items: {PRESETS[preset].itemsMin}-{PRESETS[preset].itemsMax}, Minutes: {PRESETS[preset].min}-{PRESETS[preset].max}</p>
+                                        <p className="text-[10px] text-muted-foreground mb-2">Weights auto-normalize. Tune sources below.</p>
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-medium">Manual Probability ({pct(manualProb)}%)</p>
+                                                <Slider mainColor="var(--color-source-misc)" value={[manualProb]} onValueChange={(v) => setManualProb(v[0] ?? 0)} />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-medium">Youtube Probability ({pct(youtubeProb)}%)</p>
+                                                <Slider mainColor="var(--color-source-youtube)" value={[youtubeProb]} onValueChange={(v) => setYoutubeProb(v[0] ?? 0)} />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-medium">Spotify Probability ({pct(spotifyProb)}%)</p>
+                                                <Slider mainColor="var(--color-source-spotify)" value={[spotifyProb]} onValueChange={(v) => setSpotifyProb(v[0] ?? 0)} />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-medium">Anki Probability ({pct(ankiProb)}%)</p>
+                                                <Slider mainColor="var(--color-source-anki)" value={[ankiProb]} onValueChange={(v) => setAnkiProb(v[0] ?? 0)} />
+                                            </div>
+                                            <div className="flex flex-col gap-2 pt-2">
+                                                <div className="text-xs font-bold">Target Minutes: {targetMinutes}m</div>
+                                                <Slider value={[targetMinutes]} min={10} max={480} step={5} onValueChange={(v) => setTargetMinutes(v[0] ?? 60)} />
+                                            </div>
+                                        </div>
+                                    </Card>
+                                )}
+                                <Card className="flex flex-col gap-4 p-3 rounded-xl shadow-xl w-full">
+                                    <div className="flex w-full items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant={"destructive"}
+                                                className="bg-red-400 rounded-full"
+                                                title="Danger: Reset local dev state"
+                                                onClick={async () => {
+                                                    const ok = window.confirm("This will delete all tracking data, experience, streaks, and reset the day to today. Proceed?");
+                                                    if (!ok) return;
+                                                    await reset({});
+                                                }}
+                                            >
+                                                <ClockAlert />
+                                            </Button>
+                                            <div className="px-3 py-1 rounded-md text-black bg-white/70 shadow-sm">
+                                                <p className="text-sm font-medium whitespace-nowrap">{(devDate && dayjs(devDate).format("MMM DD, YYYY")) || "No-Date"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant={"neutral"} size="sm" aria-label="Toggle probabilities" onClick={() => setShowSettings((s) => !s)}>
+                                                <SlidersHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            </Card>
-                        </>
-                    )}
-                    <Card className="flex flex-col gap-2 p-2">
 
-                        <div className="flex gap-2">
-                            <Button
-                                variant={"destructive"}
-                                className="bg-red-400 mr-8 rounded-full"
-                                onClick={async () => {
-                                    const ok = window.confirm("This will delete all tracking data, experience, streaks, and reset the day to today. Proceed?");
-                                    if (!ok) return;
-                                    await reset({});
-                                }}
-                            >
-                                {/* Reset */}
-                                <ClockAlert />
-                            </Button>
-                            <Card className="px-2 py-1 text-black">
-                                <p className="text-right"> {devDate && dayjs(devDate).format("MMM DD, YYYY") || "No-Date"}</p>
-                            </Card>
-
-                            <Button
-                                variant={"devOnly"}
-                                onClick={async () => {
-                                    const cfg = PRESETS[preset];
-                                    const randomInt = (lo: number, hi: number) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
-                                    const items = randomInt(cfg.itemsMin, cfg.itemsMax);
-                                    await stepDevDate({
-                                        days: 1,
-                                        seedEachStep: true,
-                                        seedPerStepCount: items,
-                                        seedMinMinutes: cfg.min,
-                                        seedMaxMinutes: cfg.max,
-                                        probManual: manualProb,
-                                        probYoutube: youtubeProb,
-                                        probSpotify: spotifyProb,
-                                        probAnki: ankiProb,
-                                    });
-                                }}
-                            >
-                                Next Day <ArrowRightToLine />
-                            </Button>
-                            <Button variant={"neutral"} onClick={() => setShowSettings((s) => !s)}>
-                                <Cog className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </Card></div>
+                                    <div className="flex w-full items-center gap-3">
+                                        <Button
+                                            variant={"neutral"}
+                                            onClick={async () => {
+                                                await stepDevDate({ days: 1 });
+                                            }}
+                                        >
+                                            Advance Day <ArrowRightSquare className="ml-1" />
+                                        </Button>
+                                        <div className="flex-1" />
+                                        <Button
+                                            variant={"devOnly"}
+                                            className="gap-1"
+                                            onClick={async () => {
+                                                await seedToTarget({
+                                                    targetMinutes,
+                                                    minChunk: 10,
+                                                    maxChunk: 45,
+                                                    manualOnly: false,
+                                                    probManual: manualProb,
+                                                    probYoutube: youtubeProb,
+                                                    probSpotify: spotifyProb,
+                                                    probAnki: ankiProb,
+                                                });
+                                            }}
+                                        >
+                                            Seed Day <Sprout className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </Card>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </Authenticated >
         </>
     );

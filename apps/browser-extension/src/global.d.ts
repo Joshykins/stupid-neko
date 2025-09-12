@@ -11,6 +11,6 @@ declare module '*.json' {
 }
 
 declare const CONVEX_SITE_URL: string;
-declare const WEB_APP_URL: string;
+declare const SITE_URL: string;
 declare const VITE_CONVEX_SITE_URL: string;
-declare const VITE_WEB_APP_URL: string;
+declare const VITE_SITE_URL: string;

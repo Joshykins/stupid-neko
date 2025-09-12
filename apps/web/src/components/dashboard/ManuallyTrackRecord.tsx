@@ -64,18 +64,24 @@ export default function ManuallyTrackRecord() {
     const [seedLanguage, setSeedLanguage] = React.useState<LanguageCode | undefined>(undefined);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [isSeeding, setIsSeeding] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     async function onSubmit(values: FormValues) {
-        await addManual({
-            title: values.title,
-            description: values.description || undefined,
-            durationInMinutes: Number(values.durationInMinutes) || 0,
-            contentCategories: values.contentCategories,
-            skillCategories: values.skillCategories,
-            language: (me?.languageCode ?? "en") as "ja" | "en",
-        });
-        form.reset();
-        setIsOpen(false);
+        try {
+            setIsSubmitting(true);
+            await addManual({
+                title: values.title,
+                description: values.description || undefined,
+                durationInMinutes: Number(values.durationInMinutes) || 0,
+                contentCategories: values.contentCategories,
+                skillCategories: values.skillCategories,
+                language: (me?.languageCode ?? "en") as "ja" | "en",
+            });
+            form.reset();
+            setIsOpen(false);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -327,89 +333,15 @@ export default function ManuallyTrackRecord() {
                                 />
                             </div>
                             <DialogFooter>
-                                <Button type="submit" className="mt-2 w-full">Add Record</Button>
+                                <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
+                                    {isSubmitting ? "Adding..." : "Add Record"}
+                                </Button>
                             </DialogFooter>
                         </form>
                     </Form>
                 </DialogContent>
             </Dialog>
 
-            {isDev && (
-                <Dialog open={isSeedOpen} onOpenChange={setIsSeedOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Seed records (dev)</DialogTitle>
-                        </DialogHeader>
-                        <DialogDescription>
-                            Delete all your tracked records and/or generate semi-random manual records over a time range.
-                        </DialogDescription>
-                        <div className="space-y-4">
-                            <div className="grid gap-2">
-                                <Label>Danger</Label>
-                                <Button
-                                    variant={"destructive"}
-                                    disabled={isDeleting}
-                                    onClick={async () => {
-                                        try {
-                                            setIsDeleting(true);
-                                            await deleteAll({});
-                                        } finally {
-                                            setIsDeleting(false);
-                                        }
-                                    }}
-                                >
-                                    {isDeleting ? "Deleting..." : "Delete all my records"}
-                                </Button>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Start</Label>
-                                <Input type="datetime-local" value={seedStart} onChange={(e) => setSeedStart(e.target.value)} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>End</Label>
-                                <Input type="datetime-local" value={seedEnd} onChange={(e) => setSeedEnd(e.target.value)} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Number of records</Label>
-                                <Input type="number" min={0} step={1} value={seedNum} onChange={(e) => setSeedNum(Number(e.target.value))} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Minutes per record (range)</Label>
-                                <div className="flex items-center gap-2">
-                                    <Input className="flex-1" type="number" min={1} step={1} value={seedMinMinutes} onChange={(e) => setSeedMinMinutes(Number(e.target.value))} />
-                                    <span>to</span>
-                                    <Input className="flex-1" type="number" min={1} step={1} value={seedMaxMinutes} onChange={(e) => setSeedMaxMinutes(Number(e.target.value))} />
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button
-                                disabled={isSeeding}
-                                variant={"devOnly"}
-                                onClick={async () => {
-                                    try {
-                                        setIsSeeding(true);
-                                        const startMs = new Date(seedStart).getTime();
-                                        const endMs = new Date(seedEnd).getTime();
-                                        await seedRecords({
-                                            start: startMs,
-                                            end: endMs,
-                                            numRecords: seedNum,
-                                            minMinutes: seedMinMinutes,
-                                            maxMinutes: seedMaxMinutes,
-                                        });
-                                        setIsSeedOpen(false);
-                                    } finally {
-                                        setIsSeeding(false);
-                                    }
-                                }}
-                            >
-                                {isSeeding ? "Seeding..." : "Seed Records"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
         </>
     );
 }

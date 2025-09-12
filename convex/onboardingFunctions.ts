@@ -49,7 +49,6 @@ export const completeOnboarding = mutation({
         if (existing) {
             await ctx.db.patch(existing._id, {
                 languageCode: args.targetLanguageCode,
-                totalExperience: 0,
                 qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
             } as any);
             // Ensure user's currentTargetLanguageId is set to this target
@@ -60,7 +59,6 @@ export const completeOnboarding = mutation({
             const newTargetId = await ctx.db.insert("userTargetLanguages", {
                 userId,
                 languageCode: args.targetLanguageCode,
-                totalExperience: 0,
                 qualifierFormCurrentLevel: args.qualifierFormCurrentLevel ?? undefined,
             } as any);
             await ctx.db.patch(userId, {

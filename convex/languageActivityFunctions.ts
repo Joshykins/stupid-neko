@@ -63,8 +63,8 @@ export const addLanguageActivity = internalMutation({
 
 
         // 1) Create the language activity
-        const now = Date.now();
-        const occurredAt = args.occurredAt ?? now;
+        const nowEffective = await getEffectiveNow(ctx);
+        const occurredAt = args.occurredAt ?? nowEffective;
         const activityId = await ctx.db.insert("languageActivities", {
             userId,
             isManuallyTracked: args.isManuallyTracked ?? (args.source ?? "manual") === "manual",
@@ -96,6 +96,7 @@ export const addLanguageActivity = internalMutation({
                 contentCategories: args.contentCategories ?? undefined,
                 skillCategories: args.skillCategories ?? undefined,
                 durationInMinutes: args.durationInMinutes,
+                occurredAt,
             }),
             isApplyingStreakBonus: true,
             durationInMinutes: args.durationInMinutes,
@@ -142,8 +143,8 @@ export const addManualLanguageActivity = mutation({
        const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Unauthorized");
 
-        const now = Date.now();
-        const occurredAt = args.occurredAt ?? now;
+        const nowEffective = await getEffectiveNow(ctx);
+        const occurredAt = args.occurredAt ?? nowEffective;
 
         // Infer language from user's current target language id
         const user = await ctx.db.get(userId);
@@ -220,6 +221,7 @@ export const listRecentLanguageActivities = query({
                     contentUrl: v.optional(v.string()),
                 }),
             ),
+            awardedExperience: v.number(),
         }),
     ),
     handler: async (ctx, args) => {
@@ -228,7 +230,7 @@ export const listRecentLanguageActivities = query({
         const limit = Math.max(1, Math.min(100, args.limit ?? 20));
         const items = await ctx.db
             .query("languageActivities")
-            .withIndex("by_user", (q: any) => q.eq("userId", userId))
+            .withIndex("by_user_and_occurred", (q: any) => q.eq("userId", userId))
             .order("desc")
             .take(limit);
         const results: Array<any> = [];
@@ -250,7 +252,13 @@ export const listRecentLanguageActivities = query({
                     };
                 }
             }
-            results.push({ ...(it as any), label });
+            // Sum actual awarded experience tied to this activity from the ledger
+            const exps = await ctx.db
+                .query("userTargetLanguageExperiences")
+                .withIndex("by_language_activity", (q: any) => q.eq("languageActivityId", (it as any)._id))
+                .collect();
+            const awardedExperience = exps.reduce((sum: number, e: any) => sum + Math.floor(e?.deltaExperience ?? 0), 0);
+            results.push({ ...(it as any), label, awardedExperience: Math.max(0, awardedExperience) });
         }
         return results;
     },
@@ -286,101 +294,7 @@ export const recentManualLanguageActivities = query({
     },
 });
 
-export const deleteAllMyLanguageActivities = mutation({
-    args: {},
-    returns: v.object({ deleted: v.number() }),
-    handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) throw new Error("Unauthorized");
 
-        let deleted = 0;
-        const items = await ctx.db
-            .query("languageActivities")
-            .withIndex("by_user", (q: any) => q.eq("userId", userId))
-            .collect();
-        for (const it of items) {
-            await ctx.db.delete(it._id);
-            deleted += 1;
-        }
-        return { deleted };
-    },
-});
-
-export const seedMyLanguageActivities = mutation({
-    args: {
-        start: v.number(), // ms timestamp
-        end: v.number(),   // ms timestamp
-        numRecords: v.number(),
-        minMinutes: v.number(),
-        maxMinutes: v.number(),
-    },
-    returns: v.object({ inserted: v.number() }),
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) throw new Error("Unauthorized");
-
-        const start = Math.min(args.start, args.end);
-        const end = Math.max(args.start, args.end);
-        const total = Math.max(0, Math.min(2000, Math.floor(args.numRecords)));
-        const minM = Math.max(1, Math.floor(args.minMinutes));
-        const maxM = Math.max(minM, Math.floor(args.maxMinutes));
-
-        const titles = [
-            "Podcast episode",
-            "YouTube video",
-            "Reading article",
-            "Anki review",
-            "Grammar practice",
-            "Listening drill",
-            "Conversation practice",
-            "Writing journal",
-        ];
-        const contentOptions = ["audio", "video", "text", "other"] as const;
-        const skillOptions = ["listening", "reading", "speaking", "writing"] as const;
-
-        // Infer language from user's current target language id
-        const user = await ctx.db.get(userId);
-        if (!user) throw new Error("User not found");
-        const currentTargetLanguageId = user.currentTargetLanguageId as Id<"userTargetLanguages">;
-        if (!currentTargetLanguageId) throw new Error("User target language not found");
-        const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
-        if (!currentTargetLanguage) throw new Error("User target language not found");
-        const languageCode = currentTargetLanguage.languageCode as LanguageCode;
-
-
-        function randomInt(min: number, max: number): number {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-        function pickSome<T>(arr: ReadonlyArray<T>, min: number, max: number): Array<T> {
-            const count = randomInt(min, max);
-            const shuffled = [...arr].sort(() => Math.random() - 0.5);
-            return shuffled.slice(0, count);
-        }
-
-        let inserted = 0;
-        for (let i = 0; i < total; i++) {
-            const occurredAt = start + Math.floor(Math.random() * (end - start + 1));
-            const durationInMinutes = randomInt(minM, maxM);
-            const contentCategories = pickSome(contentOptions, 1, 2);
-            const skillCategories = pickSome(skillOptions, 1, 2);
-            const title = titles[randomInt(0, titles.length - 1)];
-
-            await ctx.runMutation(internal.languageActivityFunctions.addLanguageActivity, {
-                title,
-                durationInMinutes,
-                contentCategories,
-                skillCategories,
-                languageCode,
-                userTargetLanguageId: currentTargetLanguage._id,
-                isManuallyTracked: true,
-                occurredAt,
-            });
-            inserted += 1;
-        }
-
-        return { inserted };
-    },
-});
 
 // Weekly source distribution for the current week (Mon-Sun), aggregated in minutes
 export const getWeeklySourceDistribution = query({
@@ -459,5 +373,53 @@ export const getWeeklySourceDistribution = query({
         }
 
         return bins;
+    },
+});
+
+export const deleteLanguageActivity = mutation({
+    args: { activityId: v.id("languageActivities") },
+    returns: v.object({ deleted: v.boolean(), reversedDelta: v.number() }),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Unauthorized");
+
+        const act = await ctx.db.get(args.activityId);
+        if (!act) return { deleted: false, reversedDelta: 0 };
+        if ((act as any).userId !== userId) throw new Error("Forbidden");
+
+        const utlId = (act as any).userTargetLanguageId as Id<"userTargetLanguages">;
+        const languageCode = (act as any).languageCode;
+
+        // Sum all experience deltas tied to this activity
+        const exps = await ctx.db
+            .query("userTargetLanguageExperiences")
+            .withIndex("by_language_activity", (q: any) => q.eq("languageActivityId", args.activityId))
+            .collect();
+        const totalDelta = exps.reduce((sum, e: any) => sum + (e.deltaExperience ?? 0), 0);
+
+        if (totalDelta !== 0) {
+            await ctx.runMutation(internal.experienceFunctions.addExperience, {
+                userId,
+                languageCode,
+                languageActivityId: args.activityId,
+                deltaExperience: -totalDelta,
+                isApplyingStreakBonus: false,
+            });
+        }
+
+        // Adjust minutes
+        const durationMinutes = Math.max(0, Math.round(((act as any).durationInSeconds ?? 0) / 60));
+        if (durationMinutes > 0) {
+            const utl = await ctx.db.get(utlId);
+            if (utl) {
+                const currentTotalMinutes = (utl as any).totalMinutesLearning ?? 0;
+                await ctx.db.patch(utlId, {
+                    totalMinutesLearning: Math.max(0, currentTotalMinutes - durationMinutes),
+                } as any);
+            }
+        }
+
+        await ctx.db.delete(args.activityId);
+        return { deleted: true, reversedDelta: totalDelta };
     },
 });

@@ -115,15 +115,20 @@ export const getUserProgress = query({
         if (!currentTargetLanguageId) throw new Error("Current target language not found");
         const targetLanguage = await ctx.db.get(currentTargetLanguageId);
         if (!targetLanguage) return null;
-        const totalExperience = targetLanguage.totalExperience ?? 0
-        
-        
-        // Simple level calculation (can be refined later)
-        // For now, use a basic formula: level = sqrt(totalExperience / 100) + 1
+
+        // Read total XP from latest ledger event
+        const latest = (await ctx.db
+            .query("userTargetLanguageExperiences")
+            .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId))
+            .order("desc")
+            .take(1))[0] as any | undefined;
+
+        const totalExperience = (latest?.runningTotalAfter as number | undefined) ?? 0;
 
         const { level: currentLevel, remainder: remainderXp } = levelFromXp(totalExperience);
         const nextLevelXp = xpForNextLevel(currentLevel);
-        const experienceTowardsNextLevel = nextLevelXp - remainderXp;
+        // remainderXp is the progress accumulated toward the next level
+        const experienceTowardsNextLevel = remainderXp;
 
         return {
             name: user.name ?? undefined,
