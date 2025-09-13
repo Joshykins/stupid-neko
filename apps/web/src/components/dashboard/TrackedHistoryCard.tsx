@@ -7,6 +7,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { LanguageCode } from "../../../../../convex/schema";
 // Avoid Radix ScrollArea here to prevent inner display: table wrapper pushing content
 import { formatSeconds } from "@/lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
 
 type DisplayItem = { id: string; title: string; minutes: number; source?: string; sourceKey?: "youtube" | "spotify" | "anki" | "manual"; date: string; occurredAt?: number; description?: string; language?: string; state?: "in-progress" | "completed"; contentKey?: string; label?: { title?: string; authorName?: string; thumbnailUrl?: string; fullDurationInSeconds?: number; contentUrl?: string; }; awardedExperience?: number; };
 
@@ -133,54 +134,58 @@ export default function TrackedHistoryCard() {
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
-            <CardContent>
-                {!data && (
-                    <div className="text-sm text-muted-foreground">Loading…</div>
-                )}
-                {data && items.length === 0 && (
-                    <div className="text-sm text-muted-foreground">No tracked items yet.</div>
-                )}
-                {items.length > 0 && (
-                    <div className="max-h-[420px] overflow-y-auto">
-                        <ul className="space-y-2 p-1">
-                            {items.map((i) => {
-                                const key = i.sourceKey ?? "manual";
-                                const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
-                                const baseSeconds = Math.max(0, Math.floor((i.minutes * 60)));
-                                const sinceOccured = i.state === "in-progress" ? Math.max(0, Math.floor((nowTick - (i.occurredAt ?? nowTick)) / 1000)) : 0;
-                                const capped = i.label?.fullDurationInSeconds ?? undefined;
-                                const liveElapsed = Math.min(baseSeconds + sinceOccured, typeof capped === "number" && capped > 0 ? capped : baseSeconds + sinceOccured);
-                                return (
-                                    <li key={i.id}>
-                                        <div
-                                            className={`group flex items-center justify-between gap-3 p-2 rounded-base transition-all border-2 bg-secondary-background text-main-foreground border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow !w-full`}
-                                            aria-label={`${i.title} ${i.source ? `from ${i.source}` : ""}`}
-                                        >
-                                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                                                {SOURCE_ICON[key] ? (
-                                                    <img src={SOURCE_ICON[key]} alt={i.source ?? key} width={24} height={24} className="inline-block mt-0.5" />
-                                                ) : (
-                                                    <span className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}></span>
-                                                )}
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="font-bold truncate">{i.title}</div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {i.label?.authorName ? `By ${i.label.authorName}` : ""}
+            <CardContent className="p-0">
+                <ScrollArea className="h-[420px]">
+                    <div className="p-4">
+                        {!data && (
+                            <div className="text-sm text-muted-foreground">Loading…</div>
+                        )}
+                        {data && items.length === 0 && (
+                            <div className="text-sm text-muted-foreground">No tracked items yet.</div>
+                        )}
+                        {items.length > 0 && (
+                            <div className="">
+                                <ul className="space-y-2">
+                                    {items.map((i) => {
+                                        const key = i.sourceKey ?? "manual";
+                                        const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
+                                        const baseSeconds = Math.max(0, Math.floor((i.minutes * 60)));
+                                        const sinceOccured = i.state === "in-progress" ? Math.max(0, Math.floor((nowTick - (i.occurredAt ?? nowTick)) / 1000)) : 0;
+                                        const capped = i.label?.fullDurationInSeconds ?? undefined;
+                                        const liveElapsed = Math.min(baseSeconds + sinceOccured, typeof capped === "number" && capped > 0 ? capped : baseSeconds + sinceOccured);
+                                        return (
+                                            <li key={i.id}>
+                                                <div
+                                                    className={`group flex items-center justify-between gap-3 p-2 rounded-base transition-all border-2 bg-secondary-background text-main-foreground border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow !w-full`}
+                                                    aria-label={`${i.title} ${i.source ? `from ${i.source}` : ""}`}
+                                                >
+                                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                        {SOURCE_ICON[key] ? (
+                                                            <img src={SOURCE_ICON[key]} alt={i.source ?? key} width={24} height={24} className="inline-block mt-0.5" />
+                                                        ) : (
+                                                            <span className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}></span>
+                                                        )}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="font-bold w-[200px] truncate">{i.title}</div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {i.label?.authorName ? `By ${i.label.authorName}` : ""}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
+                                                        <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold font-display text-main-foreground">{i.state === "in-progress" ? "Tracking" : "Tracked"}</span> {formatSeconds(liveElapsed)}</div>
+                                                        <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold text-main-foreground">Awarded</span> {Math.max(0, Math.floor(i.awardedExperience ?? 0))} XP</div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
-                                                <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold font-display text-main-foreground">{i.state === "in-progress" ? "Tracking" : "Tracked"}</span> {formatSeconds(liveElapsed)}</div>
-                                                <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold text-main-foreground">Awarded</span> {Math.max(0, Math.floor(i.awardedExperience ?? 0))} XP</div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-1 text-[11px] text-muted-foreground text-right pr-1">{dateFooterLabel(i.occurredAt)}</div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                                <div className="mt-0.25 text-[11px] text-muted-foreground text-right pr-1">{dateFooterLabel(i.occurredAt)}</div>
+                                            </li>
+                                        );
+                                    })}</ul>
+
+                            </div>
+                        )}
                     </div>
-                )}
+                </ScrollArea>
             </CardContent>
         </Card>
     );

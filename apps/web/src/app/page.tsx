@@ -28,7 +28,7 @@ export default async function Home() {
 					<ProfileSummary />
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
-					<DonutChartCard />
+					{/* <DonutChartCard /> */}
 					<WeeklyBarsCard />
 				</div>
 			</div>

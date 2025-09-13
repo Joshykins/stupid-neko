@@ -3,7 +3,7 @@
 /* Fonts are self-hosted from the extension bundle via content/index.tsx injector */
 
 
-:root {
+:host {
   /* Match Next.js font CSS variables from the web app */
   --font-geist-sans: 'Plus Jakarta Sans';
   --font-display: 'Baloo 2';
@@ -85,7 +85,7 @@
   --category-writing: oklch(0.72 0.09 310);   /* lavender violet */
 }
 
-.dark {
+:host(.dark) {
   --bg-mountain-sky: oklch(0.7412 0.0762 242.96);
   --background-mountain-tier-1: oklch(0.5646 0.0762 242.96);
   --background-mountain-tier-2: oklch(0.4137 0.091 242.96);
@@ -224,12 +224,9 @@
   --font-display: var(--font-display);
 }
 
-/* Force our font inside the content root and Radix popover portal */
-#__stupid-neko-root, #__stupid-neko-root * {
+/* Force our font inside the shadow host only */
+:host, :host * {
   font-family: var(--font-geist-sans), system-ui, sans-serif !important;
 }
 
-[data-radix-popper-content-wrapper] {
-  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
-}
 

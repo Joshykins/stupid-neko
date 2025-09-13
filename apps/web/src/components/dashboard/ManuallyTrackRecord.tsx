@@ -28,8 +28,6 @@ export default function ManuallyTrackRecord() {
     const [isSeedOpen, setIsSeedOpen] = React.useState(false);
     const [useCustomMinutes, setUseCustomMinutes] = React.useState(false);
     const addManual = useMutation(api.languageActivityFunctions.addManualLanguageActivity);
-    const deleteAll = useMutation(api.languageActivityFunctions.deleteAllMyLanguageActivities);
-    const seedRecords = useMutation(api.languageActivityFunctions.seedMyLanguageActivities);
     const recentManuallyTrackedLanguageActivities = useQuery(api.languageActivityFunctions.listManualTrackedLanguageActivities, {});
     const recentItems = useQuery(api.languageActivityFunctions.recentManualLanguageActivities, { limit: 8 });
     const me = useQuery(api.meFunctions.me, {});
@@ -44,7 +42,6 @@ export default function ManuallyTrackRecord() {
         },
     });
 
-    const isDev = process.env.NODE_ENV === "development";
     const now = new Date();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const toLocalInput = (d: Date) => {
@@ -56,14 +53,6 @@ export default function ManuallyTrackRecord() {
         const min = pad(d.getMinutes());
         return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
     };
-    const [seedStart, setSeedStart] = React.useState<string>(toLocalInput(thirtyDaysAgo));
-    const [seedEnd, setSeedEnd] = React.useState<string>(toLocalInput(now));
-    const [seedNum, setSeedNum] = React.useState<number>(50);
-    const [seedMinMinutes, setSeedMinMinutes] = React.useState<number>(5);
-    const [seedMaxMinutes, setSeedMaxMinutes] = React.useState<number>(60);
-    const [seedLanguage, setSeedLanguage] = React.useState<LanguageCode | undefined>(undefined);
-    const [isDeleting, setIsDeleting] = React.useState(false);
-    const [isSeeding, setIsSeeding] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     async function onSubmit(values: FormValues) {
@@ -86,71 +75,48 @@ export default function ManuallyTrackRecord() {
 
     return (
         <>
-            <Card>
-                <CardHeader>
-                    <h1 className="font-display text-4xl md:text-2xl pb-2 leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
-                        Add a <span className="underline decoration-4 decoration-main italic">manual</span> record for a task that can't be tracked automatically.
-                    </h1>
-                    <p className="text-muted-foreground tracking-tight font-base">
-                        This is useful for tracking tasks that are not part of your daily routine, or tasks that you want to track manually.
-                    </p>
-                </CardHeader>
-                <div className="my-4 h-px w-full border-t border-border" />
-                <CardContent>
-                    <div className="flex items-center gap-2">
-                        <Button onClick={() => setIsOpen(true)} size="cta" variant={"default"} className="bg-accent grow bold flex items-center">Add Record <PlusCircle className="!size-6 !stroke-2.5" /></Button>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        onClick={() => setIsSeedOpen(true)}
-                                        size="icon"
-                                        variant={"devOnly" as any}
-                                        data-dev-hidden={process.env.NODE_ENV !== "development"}
-                                        aria-label="Seed Records"
-                                    >
-                                        <Trees className="!size-5" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Seed Records</TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                    {recentItems && recentItems.length > 0 && (
-                        <div className="mt-4">
-                            <div className="flex gap-2 items-center">
+            <Card className="p-4">
+                <h1 className="font-display text-4xl md:text-2xl pb-6 leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
+                    Add a <span className="underline decoration-4 decoration-main italic">manual</span> record for a task that can't be tracked automatically.
+                </h1>
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsOpen(true)} size="cta" variant={"default"} className="bg-accent grow bold flex items-center">Add Record <PlusCircle className="!size-6 !stroke-2.5" /></Button>
 
-                                <div className="my-4 h-px w-full translate-y-0.5 border-t border-border border-dashed" />
-                                <span>or</span>
-                                <div className="my-4 h-px w-full  translate-y-0.5 border-t border-border border-dashed" />
-                            </div>
-                            <div className="text-sm text-main-foreground/80 mb-2">Add based on recently tracked manual records:</div>
-                            <div className="flex flex-wrap gap-2">
-                                {recentItems.map((it, idx) => (
-                                    <button
-                                        key={`${it.title ?? "item"}-${idx}`}
-                                        type="button"
-                                        onClick={() => {
-                                            form.reset({
-                                                title: it.title ?? "",
-                                                durationInMinutes: Math.max(0, Math.round((it.durationInSeconds ?? 0) / 60)),
-                                                description: it.description ?? "",
-                                                contentCategories: (it.contentCategories as any) ?? [],
-                                                skillCategories: (it.skillCategories as any) ?? [],
-                                            });
-                                            setUseCustomMinutes(false);
-                                            setIsOpen(true);
-                                        }}
-                                        className={buttonVariants({ variant: "neutral", size: "sm", className: "px-3" })}
-                                    >
-                                        {(it.title ?? "Untitled")}
-                                    </button>
-                                ))}
-                            </div>
+                </div>
+                {recentItems && recentItems.length > 0 && (
+                    <div className="mt-4">
+                        <div className="flex gap-2 items-center">
+
+                            <div className="my-4 h-px w-full translate-y-0.5 border-t border-border border-dashed" />
+                            <span>or</span>
+                            <div className="my-4 h-px w-full  translate-y-0.5 border-t border-border border-dashed" />
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                        <div className="text-sm text-main-foreground/80 mb-2">Add based on recently tracked manual records:</div>
+                        <div className="flex flex-wrap gap-2">
+                            {recentItems.map((it, idx) => (
+                                <button
+                                    key={`${it.title ?? "item"}-${idx}`}
+                                    type="button"
+                                    onClick={() => {
+                                        form.reset({
+                                            title: it.title ?? "",
+                                            durationInMinutes: Math.max(0, Math.round((it.durationInSeconds ?? 0) / 60)),
+                                            description: it.description ?? "",
+                                            contentCategories: (it.contentCategories as any) ?? [],
+                                            skillCategories: (it.skillCategories as any) ?? [],
+                                        });
+                                        setUseCustomMinutes(false);
+                                        setIsOpen(true);
+                                    }}
+                                    className={buttonVariants({ variant: "neutral", size: "sm", className: "px-3" })}
+                                >
+                                    {(it.title ?? "Untitled")}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </Card >
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent>

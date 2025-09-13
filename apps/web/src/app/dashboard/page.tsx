@@ -25,7 +25,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="lg:col-span-1 space-y-4">
                     <Heatmap title="Daily Streak" cellSize={14} values={undefined} liveVersion={true} />
-                    <DonutChartCard />
+                    {/* <DonutChartCard /> */}
                     <WeeklyBarsCard />
                 </div>
             </div>

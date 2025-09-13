@@ -312,14 +312,56 @@ export const getWeeklySourceDistribution = query({
         const userId = await getAuthUserId(ctx);
         if (!userId) return [];
 
-        // Compute start of week (Monday 00:00) and end of week (Sunday 23:59:59.999) in UTC
+        // Load user's preferred timezone (fallback to UTC)
+        const user = await ctx.db.get(userId);
+        const timeZone: string = ((user as any)?.timezone as string | undefined) || "UTC";
+
+        // Helpers to work with local dates in a given timezone
+        function getLocalYmdParts(ms: number): { y: number; m: number; d: number; weekday: string } {
+            const fmt = new Intl.DateTimeFormat("en-US", {
+                timeZone,
+                year: "numeric",
+                month: "numeric",
+                day: "numeric",
+                weekday: "short",
+            });
+            const parts = fmt.formatToParts(new Date(ms));
+            const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+            const y = parseInt(lookup.year, 10);
+            const m = parseInt(lookup.month, 10);
+            const d = parseInt(lookup.day, 10);
+            const weekday = lookup.weekday as string; // e.g., "Mon"
+            return { y, m, d, weekday };
+        }
+
+        function localMidnightUtcMsForYmd(y: number, m: number, d: number): number {
+            // Compute the UTC timestamp corresponding to local midnight for the provided Y-M-D in the user's timezone.
+            const atUtcMidnight = new Date(Date.UTC(y, m - 1, d));
+            const timeFmt = new Intl.DateTimeFormat("en-US", {
+                timeZone,
+                hour: "2-digit",
+                minute: "2-digit",
+                hourCycle: "h23",
+            });
+            const parts = timeFmt.formatToParts(atUtcMidnight);
+            const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+            const hour = parseInt(lookup.hour || "0", 10);
+            const minute = parseInt(lookup.minute || "0", 10);
+            const offsetMinutes = hour * 60 + minute;
+            return Date.UTC(y, m - 1, d) - offsetMinutes * 60 * 1000;
+        }
+
+        // Determine local Monday start for the user's week window using their timezone
         const effectiveNowMs = await getEffectiveNow(ctx);
-        const now = new Date(effectiveNowMs);
-        const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        const weekday = todayUtc.getUTCDay(); // 0=Sun,1=Mon,...6=Sat
-        const daysSinceMonday = (weekday + 6) % 7; // Mon->0, Tue->1, ..., Sun->6
-        const mondayStartUtcMs = todayUtc.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000;
-        const sundayEndUtcMs = mondayStartUtcMs + 7 * 24 * 60 * 60 * 1000 - 1;
+        const { y: nowY, m: nowM, d: nowD, weekday } = getLocalYmdParts(effectiveNowMs);
+        const weekdayIndexMap: Record<string, number> = { Sun: 6, Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+        const daysSinceMonday = weekdayIndexMap[weekday] ?? 0;
+
+        // Find the local date (Y-M-D) for Monday of the current week
+        const anchorMs = Date.UTC(nowY, nowM - 1, nowD) - daysSinceMonday * 24 * 60 * 60 * 1000;
+        const mondayLocal = getLocalYmdParts(anchorMs);
+        const mondayStartLocalUtcMs = localMidnightUtcMsForYmd(mondayLocal.y, mondayLocal.m, mondayLocal.d);
+        const sundayEndLocalUtcMs = mondayStartLocalUtcMs + 7 * 24 * 60 * 60 * 1000 - 1;
 
         // Initialize 7-day bins Mon..Sun
         const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -331,21 +373,28 @@ export const getWeeklySourceDistribution = query({
             misc: 0,
         }));
 
-        // Query activities within this week using the by_user_and_occurred index
+        // Query activities within this local week window using UTC timestamps
         const items = await ctx.db
             .query("languageActivities")
             .withIndex("by_user_and_occurred", (q: any) =>
                 q
                     .eq("userId", userId)
-                    .gte("occurredAt", mondayStartUtcMs)
-                    .lte("occurredAt", sundayEndUtcMs),
+                    .gte("occurredAt", mondayStartLocalUtcMs)
+                    .lte("occurredAt", sundayEndLocalUtcMs),
             )
             .collect();
 
+        // Precompute Monday local Y-M-D to build day index using local calendar days
+        const mondayUtcOrdinal = Date.UTC(mondayLocal.y, mondayLocal.m - 1, mondayLocal.d);
+
         for (const it of items) {
             const occurred = (it as any).occurredAt ?? (it as any)._creationTime;
-            const dayIndex = Math.floor((occurred - mondayStartUtcMs) / (24 * 60 * 60 * 1000));
+            const occurredLocal = getLocalYmdParts(occurred);
+            // Day index is the difference in local calendar days from Monday
+            const occurredOrdinal = Date.UTC(occurredLocal.y, occurredLocal.m - 1, occurredLocal.d);
+            const dayIndex = Math.floor((occurredOrdinal - mondayUtcOrdinal) / (24 * 60 * 60 * 1000));
             if (dayIndex < 0 || dayIndex > 6) continue;
+
             const minutes = Math.max(0, Math.round(((it as any).durationInSeconds ?? 0) / 60));
 
             const key = (it as any).contentKey as string | undefined;

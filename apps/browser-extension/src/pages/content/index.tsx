@@ -1,6 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import './globals.css';
+// Ensure CSS asset is emitted by the build and available to fetch
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import contentCssUrl from './globals.css?url';
 // Removed sonner in favor of in-page TrackingWidget UI
 // import { toast } from 'sonner';
 // import { Toaster } from '../../components/ui/sonner';
@@ -355,19 +358,58 @@ function boot() {
   if (matched) matched.start();
 }
 
-// Optional visual debug badge (keep previous content root minimal)
-const div = document.createElement('div');
-div.id = '__stupid-neko-root';
-// Attach to document.body so Radix portal (also under body) inherits our CSS vars and fonts
-document.body.appendChild(div);
-const rootContainer = document.querySelector('#__stupid-neko-root');
-if (!rootContainer) throw new Error("Can't find Content root element");
-const root = createRoot(rootContainer);
-// Attempt to install extension-bundled fonts before rendering
+// Create Shadow DOM host and inject CSS inside to isolate styles and fonts
+const host = document.createElement('div');
+host.id = '__stupid-neko-host';
+host.style.all = 'initial';
+host.style.position = 'fixed';
+host.style.top = '0';
+host.style.left = '0';
+host.style.zIndex = '2147483647';
+document.body.appendChild(host);
+const shadow = host.attachShadow({ mode: 'open' });
+
+// Shadow root children: style, app root, and portal root for Radix
+const styleEl = document.createElement('style');
+const appRoot = document.createElement('div');
+appRoot.id = '__stupid-neko-root';
+const portalRoot = document.createElement('div');
+portalRoot.id = '__stupid-neko-portal';
+(window as any).__stupidNekoPortalEl = portalRoot;
+// Ensure overlays are interactive even if CSS isn't loaded yet
+portalRoot.style.pointerEvents = 'auto';
+shadow.appendChild(styleEl);
+shadow.appendChild(appRoot);
+shadow.appendChild(portalRoot);
+
+const root = createRoot(appRoot);
+
+// Attempt to install extension-bundled fonts and scoped CSS before rendering
 (async () => {
   await loadFontsUsingFontFace().catch(() => { });
+  try {
+    let cssText = '';
+    // Try emitted asset URL first (stable even if file name changes)
+    if (typeof contentCssUrl === 'string') {
+      try { cssText = await fetch(contentCssUrl).then((r) => r.text()); } catch { cssText = ''; }
+    }
+    // Fallback to fixed name used by crx plugin
+    if (!cssText) {
+      try {
+        const cssUrl = chrome.runtime.getURL('contentStyle.css');
+        const cssResp = await fetch(cssUrl);
+        cssText = cssResp.ok ? await cssResp.text() : '';
+      } catch { cssText = ''; }
+    }
+    styleEl.textContent = cssText || '';
+  } catch {
+    styleEl.textContent = '';
+  }
   root.render(
-    <div className='h-screen w-screen fixed z-[5000] pointer-events-none'>
+    <div
+      className='h-screen w-screen fixed z-[5000] pointer-events-none'
+      style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none' as any }}
+    >
       <TrackingWidgetGate />
     </div>
   );

@@ -3,6 +3,8 @@
 
 
 :root {
+
+  
   --bg-mountain-sky: oklch(0.70 0.06 255);
   /* Deep evening blue with a hint of purple, gives energy not gloom */
   
@@ -223,3 +225,18 @@
   body { @apply text-foreground font-base bg-background; }
   h1, h2, h3, h4, h5, h6 { @apply font-heading; }
 }
+
+@layer utilities {
+  @keyframes twinkle {
+    0% { opacity: 0.35; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.35; transform: scale(0.9); }
+  }
+
+  .twinkle {
+    animation: twinkle var(--twinkle-duration, 1500ms) ease-in-out infinite alternate;
+    will-change: opacity, transform;
+  }
+
+}
+  

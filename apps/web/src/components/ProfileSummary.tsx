@@ -92,7 +92,7 @@ export const ProfileSummary = () => {
 
     return (
         <Card>
-            <CardHeader className="border-b pb-4">
+            <CardHeader className="">
                 <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
                     <div className="flex items-center gap-3 min-w-0 sm:flex-1">
                         <Avatar className="size-12 shrink-0">
@@ -161,7 +161,7 @@ export const ProfileSummary = () => {
 
 
             </CardHeader>
-            <CardContent className="pt-6">
+            {/* <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-2 pb-2">
 
                 </div>
@@ -231,7 +231,7 @@ export const ProfileSummary = () => {
 
                     </div>
                 </div>
-            </CardContent>
+            </CardContent> */}
         </Card>
     );
 };

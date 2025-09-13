@@ -269,6 +269,16 @@ export const translateBatch = internalMutation({
                             languageCode,
                             title,
                         });
+                        // Ensure daily streak is credited for this finalized session
+                        try {
+                            const occurredAtForStreak: number = (existing.occurredAt as number | undefined) ?? s.startMs;
+                            await ctx.runMutation(internal.streakFunctions.updateStreakOnActivity, {
+                                userId: s.userId,
+                                occurredAt: occurredAtForStreak,
+                            });
+                        } catch (err) {
+                            // No-op: streak credit failures shouldn't block XP awarding
+                        }
                         // Award XP for finalized activity
                         await ctx.runMutation(internal.experienceFunctions.addExperience, {
                             userId: s.userId,

@@ -8,7 +8,7 @@ function cx(...classes: Array<string | undefined | false>): string {
 
 // Configuration (editable)
 export const MAX_BIRD_INCLINATION_DEG = 30; // Limit tilt from horizontal
-export const GROUP_COUNT_RANGE: Readonly<[number, number]> = [10, 15]; // number of traveling groups
+export const GROUP_COUNT_RANGE: Readonly<[number, number]> = [1, 6]; // number of traveling groups
 export const BIRDS_PER_GROUP_RANGE: Readonly<[number, number]> = [1, 3]; // birds in each group
 export const MIN_GROUP_SEPARATION_VH = 6; // min vertical spacing between group paths (vh)
 export const GROUP_OFFSET_RANGE_VW: Readonly<[number, number]> = [-2, 2]; // lateral spread per bird in group

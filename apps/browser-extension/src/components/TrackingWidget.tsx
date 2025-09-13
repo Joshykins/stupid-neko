@@ -225,25 +225,48 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
                 }
             }}
             animate={controls}
-            style={{ left: mvLeft, top: mvTop, cursor: isDragging ? 'grabbing' : 'grab', userSelect: 'none' as any }}
+            style={{
+                position: 'fixed',
+                left: mvLeft,
+                top: mvTop,
+                zIndex: 50000,
+                pointerEvents: 'auto',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none' as any,
+                opacity: hovered ? 1 : 0.7,
+                transition: 'opacity 150ms ease',
+            }}
         >
-            <div className="!relative">
+            <div className="!relative" style={{ position: 'relative' }}>
                 <img
                     src={iconUrl}
                     alt="stupid-neko"
                     className="!h-[40px] !w-[40px] !rounded-full !border-2 !border-black !shadow-[4px_4px_0_0_#000] !bg-white"
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); }}
-                    style={{ userSelect: 'none' as any }}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        border: '2px solid #000',
+                        background: '#fff',
+                        boxShadow: '4px 4px 0 0 #000',
+                        userSelect: 'none' as any,
+                        display: 'block',
+                    }}
                 />
-                <span className="!absolute !right-[10px] !top-[10px] !inline-flex !items-center !justify-center">
-
-
-                    <span className="!absolute -!translate-x-1/2 -!translate-y-1/2 !h-[8px] !w-[8px] !rounded-full !bg-red-500" />
-
-                    <span className="!absolute -!translate-x-1/2 -!translate-y-1/2 !h-[20px] !w-[20px] !rounded-full !bg-red-500/40" />
-
-
+                <span
+                    className="!absolute !right-[10px] !top-[10px] !inline-flex !items-center !justify-center"
+                    style={{ position: 'absolute', right: '10px', top: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <span
+                        className="!absolute -!translate-x-1/2 -!translate-y-1/2 !h-[8px] !w-[8px] !rounded-full !bg-red-500"
+                        style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}
+                    />
+                    <span
+                        className="!absolute -!translate-x-1/2 -!translate-y-1/2 !h-[20px] !w-[20px] !rounded-full !bg-red-500/40"
+                        style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(239,68,68,0.4)' }}
+                    />
                 </span>
             </div>
         </motion.div>
@@ -254,7 +277,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
             <PopoverTrigger asChild>
                 {IconButton}
             </PopoverTrigger>
-            <PopoverContent className="!p-[16px]">
+            <PopoverContent className="!p-[16px]" style={{ padding: '16px' }}>
                 <div className="!flex !items-center !font-display !gap-2" style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
                     <div className="!flex !items-center !gap-2 !font-semibold">
                         <span className="!text-inherit">Tracking</span>
@@ -264,6 +287,18 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
                         onClick={() => setExpanded(false)}
                         className="!ml-auto !inline-flex !items-center !rounded-md !border-2 !border-black !bg-white !px-[8px] !py-[4px] !text-[12px] hover:!bg-black hover:!text-white !transition-colors"
                         aria-label="Close"
+                        style={{
+                            marginLeft: 'auto',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            border: '2px solid #000',
+                            background: '#fff',
+                            padding: '4px 8px',
+                            fontSize: '12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            pointerEvents: 'auto',
+                        }}
                     >
                         <span className="!leading-none">Close</span>
                     </button>

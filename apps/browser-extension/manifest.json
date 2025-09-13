@@ -6,7 +6,7 @@
   "action": {
     "default_popup": "src/pages/popup/index.html",
     "default_icon": {
-      "32": "icon-32.png"
+      "128": "icon-128.png"
     }
   },
   "icons": {
@@ -30,9 +30,6 @@
       ],
       "js": [
         "src/pages/content/index.tsx"
-      ],
-      "css": [
-        "contentStyle.css"
       ]
     }
   ],
