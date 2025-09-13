@@ -1,13 +1,14 @@
 "use client";
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { motion } from "framer-motion";
-import { useCountUp } from "../lib/useCountUp";
+import { useCountUp } from "../../lib/useCountUp";
 import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import { Badge } from "./ui/badge";
-import { calculateStreakBonusPercent } from "../../../../lib/streakBonus";
-import HeatmapProgress from "./ui/heatmap-progress";
+import { api } from "../../../../../convex/_generated/api";
+import { Badge } from "../ui/badge";
+import { calculateStreakBonusPercent } from "../../../../../lib/streakBonus";
+import HeatmapProgress from "../ui/heatmap-progress";
+import { StreakVacation } from "./StreakVacation";
 
 // Heatmap normalization behavior (easy-to-tune constants)
 // - The color saturates when a day's activity count reaches this fraction of the average

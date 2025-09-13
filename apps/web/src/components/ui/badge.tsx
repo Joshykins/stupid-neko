@@ -14,7 +14,7 @@ const badgeVariants = cva(
         neutral: "bg-secondary-background text-background",
         dark: "bg-background text-foreground",
         card: "bg-foreground text-main-foreground",
-        white: "bg-white text-background",
+        white: "bg-white/40 text-background",
         devOnly: "bg-dev-only text-background data-[dev-hidden=true]:hidden",
       },
     },

@@ -1,16 +1,14 @@
+"use client";
 import { Moon } from "lucide-react";
 import { Card } from "../ui/card";
-import { CSSProperties } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 const STAR_COUNT = 14;
 const STAR_SIZE_RANGE = [3, 10];
 const STAR_TWINKLE_DURATION_RANGE = [2000, 4000];
 
 
-const Star = ({ leftPercent, topPercent }: { leftPercent: number, topPercent: number; }) => {
-
-    const size = Math.random() * (STAR_SIZE_RANGE[1] - STAR_SIZE_RANGE[0]) + STAR_SIZE_RANGE[0];
-    const twinkleDuration = Math.random() * (STAR_TWINKLE_DURATION_RANGE[1] - STAR_TWINKLE_DURATION_RANGE[0]) + STAR_TWINKLE_DURATION_RANGE[0];
+const Star = ({ leftPercent, topPercent, size, twinkleDuration }: { leftPercent: number, topPercent: number, size: number, twinkleDuration: number; }) => {
 
     const style = {
         left: `${leftPercent * 100}%`,
@@ -42,48 +40,55 @@ export const UnreleasedBanner = ({ className }: { className?: string; }) => {
     const MIN_DISTANCE = 0.12; // in normalized [0,1] units (~12% of banner width/height)
     const MAX_ATTEMPTS_PER_STAR = 50;
 
-    const placed: Array<{ x: number; y: number; }> = [];
-    const positions: Array<{ x: number; y: number; }> = [];
+    const [stars, setStars] = useState<Array<{ x: number; y: number; size: number; twinkleMs: number; }>>([]);
 
-    for (let i = 0; i < STAR_COUNT; i++) {
-        let attempts = 0;
-        let placedPoint: { x: number; y: number; } | null = null;
-        while (attempts < MAX_ATTEMPTS_PER_STAR && !placedPoint) {
-            attempts++;
-            const x = Math.random();
-            const y = Math.random();
-            let ok = true;
-            for (const p of placed) {
-                const dx = x - p.x;
-                const dy = y - p.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist < MIN_DISTANCE) {
-                    ok = false;
-                    break;
+    useEffect(() => {
+        const placed: Array<{ x: number; y: number; }> = [];
+        const generated: Array<{ x: number; y: number; size: number; twinkleMs: number; }> = [];
+
+        for (let i = 0; i < STAR_COUNT; i++) {
+            let attempts = 0;
+            let placedPoint: { x: number; y: number; } | null = null;
+            while (attempts < MAX_ATTEMPTS_PER_STAR && !placedPoint) {
+                attempts++;
+                const x = Math.random();
+                const y = Math.random();
+                let ok = true;
+                for (const p of placed) {
+                    const dx = x - p.x;
+                    const dy = y - p.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < MIN_DISTANCE) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    placedPoint = { x, y };
+                    placed.push(placedPoint);
                 }
             }
-            if (ok) {
+            // Fallback to random if no valid position found
+            if (!placedPoint) {
+                const x = Math.random();
+                const y = Math.random();
                 placedPoint = { x, y };
                 placed.push(placedPoint);
-                positions.push(placedPoint);
             }
-        }
-        // Fallback to random if no valid position found
-        if (!placedPoint) {
-            const x = Math.random();
-            const y = Math.random();
-            placed.push({ x, y });
-            positions.push({ x, y });
-        }
-    }
 
-    const stars = positions.map((p, index) => (
-        <Star key={index} leftPercent={p.x} topPercent={p.y} />
-    ));
+            const size = Math.random() * (STAR_SIZE_RANGE[1] - STAR_SIZE_RANGE[0]) + STAR_SIZE_RANGE[0];
+            const twinkleMs = Math.random() * (STAR_TWINKLE_DURATION_RANGE[1] - STAR_TWINKLE_DURATION_RANGE[0]) + STAR_TWINKLE_DURATION_RANGE[0];
+            generated.push({ x: placedPoint.x, y: placedPoint.y, size, twinkleMs });
+        }
+
+        setStars(generated);
+    }, []);
 
     return (
         <Card className={cn("bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] p-4 relative overflow-hidden", className)} style={{ ['--card-bg' as any]: 'oklch(0.2441 0.0096 34.94)' }}>
-            {stars}
+            {stars.map((p, index) => (
+                <Star key={index} leftPercent={p.x} topPercent={p.y} size={p.size} twinkleDuration={p.twinkleMs} />
+            ))}
             <h2 className="text-orange-100 text-xl relative z-10">StupidNeko still in development. Pre-Release users only!</h2>
             <Moon className="opacity-50 size-16 text-orange-200 fill-orange-200 absolute rotate-260 top-2 right-2 z-0" />
             <p className="text-slate-500 text-xs relative z-10">Something is lurking in the shadows…</p>

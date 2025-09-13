@@ -25,10 +25,8 @@ import {
     }
 
     // Handle get-started page
-    if (isGetStartedPage(request)) {
-      if (!isAuthenticated) {
-        return nextjsMiddlewareRedirect(request, "/");
-      }
+    if (isGetStartedPage(request) && !isAuthenticated) {
+      return nextjsMiddlewareRedirect(request, "/");
     }
 
     // Redirect root to dashboard if authenticated

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { Award, Flame, MessageCircle, Zap } from "lucide-react";
+import { Award, BookOpenText, CalendarDays, Flame, MessageCircle, Zap } from "lucide-react";
 import LanguageFlagSVG from "./LanguageFlagSVG";
 import { useEffect, useState } from "react";
 import type { LanguageCode } from "../../../../convex/schema";
@@ -13,6 +13,7 @@ import { api } from "../../../../convex/_generated/api";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { COMMON_LANGUAGES } from "../lib/languages";
 import LevelExperienceInfo from "./LevelExperienceInfo";
+import XpAreaChart from "./XpAreaChart";
 
 type MockUser = {
     name: string;
@@ -31,6 +32,8 @@ type MockUser = {
     image?: string;
     currentStreak?: number;
     longestStreak?: number;
+    targetLanguageCreatedAt: number;
+    userCreatedAt: number;
 };
 
 const mockUser: MockUser = {
@@ -52,9 +55,11 @@ const mockUser: MockUser = {
     experienceTowardsNextLevel: 700,
     totalMinutesLearning: 560 * 60, // Convert hours to minutes
     nextLevelXp: 1900,
+    targetLanguageCreatedAt: Date.now() - 1000 * 60 * 60 * 24 * 200,
+    userCreatedAt: Date.now() - 1000 * 60 * 60 * 24 * 365,
 };
 
-export const ProfileSummary = () => {
+export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boolean; }) => {
     const userProgress = useQuery(api.meFunctions.getUserProgress, {});
 
     // Use real data if available, otherwise fall back to mock data
@@ -91,9 +96,9 @@ export const ProfileSummary = () => {
     const languageInfo = getLanguageInfo(userProgress?.languageCode);
 
     return (
-        <Card>
-            <CardHeader className="">
-                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+        <Card className="flex flex-col">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex w-full justify-between">
                     <div className="flex items-center gap-3 min-w-0 sm:flex-1">
                         <Avatar className="size-12 shrink-0">
                             <AvatarImage src={displayData.image || mockUser.avatarUrl} alt={displayData.name || mockUser.name} />
@@ -114,25 +119,26 @@ export const ProfileSummary = () => {
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 items-end sm:items-end shrink-0">
-                        <Authenticated>
 
-                            {/* <Badge variant={"neutral"} className="whitespace-nowrap">
-                                    <LanguageFlagSVG language={languageInfo.flag} className="!h-4 !w-4" />
-                                    Learning {languageInfo.name}
-                                </Badge> */}
+                        <Badge variant={"neutral"} className="whitespace-nowrap">
+                            <LanguageFlagSVG language={languageInfo.flag} className="!h-4 !w-4" />
+                            Learning {languageInfo.name}
+                        </Badge>
 
 
-                            {mockUser.isLeaderboardPlacer && (
-                                <Badge className="inline-flex items-center gap-1 whitespace-nowrap">
-                                    <Award className="size-3" /> Top 3%
-                                </Badge>
-                            )}
-                        </Authenticated>
+                        {mockUser.isLeaderboardPlacer && (
+                            <Badge className="inline-flex items-center gap-1 whitespace-nowrap">
+                                <Award className="size-3" /> Top 3%
+                            </Badge>
+                        )}
 
                         {/* Show leaderboard badge for all users */}
                     </div>
 
-                </div>
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4">
+
                 <div className="flex gap-4 items-baseline">
                     <div className="shadow-shadow border-border border-2 rounded-base mt-2 p-2 ">
                         <div className="font-semibold text-xs">Tracked Hours</div>
@@ -158,9 +164,31 @@ export const ProfileSummary = () => {
                         </div>
                     </div>
                 </div>
+                <div className="flex gap-4 flex-wrap pt-4 items-start">
+
+                    {/*  */}
+                    <div className="flex items-center gap-2 font-normal text-sm">
+                        <BookOpenText className="size-4" /> Studying {userProgress?.languageCode || mockUser.language} since {new Date(userProgress?.targetLanguageCreatedAt || mockUser.targetLanguageCreatedAt).toLocaleDateString()}
+                    </div>
+
+                    {/* <div className="items-center text-sm font-normal flex gap-1">
+                        <CalendarDays className="size-4" /> Joined {new Date(userProgress?.userCreatedAt || mockUser.userCreatedAt).toLocaleDateString()}
+                    </div> */}
+
+                    {/* <div className="items-center text-sm font-normal flex gap-1">
+                        <span className="font-bold">23</span> Followers
+                    </div>
 
 
-            </CardHeader>
+                    <div className="items-center text-sm font-normal flex gap-1">
+                        <span className="font-bold">3</span> Following
+                    </div> */}
+
+
+                </div>
+            </CardContent>
+
+
             {/* <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-2 pb-2">
 

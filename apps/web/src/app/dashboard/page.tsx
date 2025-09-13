@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { ProfileSummary } from "../../components/ProfileSummary";
 import ManuallyTrackRecord from "../../components/dashboard/ManuallyTrackRecord";
 import TrackedHistoryCard from "../../components/dashboard/TrackedHistoryCard";
-import Heatmap from "../../components/Heatmap";
+import Heatmap from "../../components/streaks/Heatmap";
 import { api } from "../../../../../convex/_generated/api";
 import { DonutChartCard } from "../../components/marketing/DonutChartCard";
 import { WeeklyBarsCard } from "../../components/marketing/WeeklyBarsCard";
 import { DashboardTopBar } from "./DashboardTopBar";
+import XpAreaChart from "../../components/XpAreaChart";
+import { StreakVacation } from "../../components/streaks/StreakVacation";
 
 export default async function DashboardPage() {
 
@@ -21,10 +23,13 @@ export default async function DashboardPage() {
                     <TrackedHistoryCard />
                 </div>
                 <div className="lg:col-span-1 space-y-4">
-                    <ProfileSummary />
+                    <ProfileSummary isLiveVersion={true} />
+                    <XpAreaChart isLiveVersion={true} />
                 </div>
                 <div className="lg:col-span-1 space-y-4">
                     <Heatmap title="Daily Streak" cellSize={14} values={undefined} liveVersion={true} />
+
+                    <StreakVacation />
                     {/* <DonutChartCard /> */}
                     <WeeklyBarsCard />
                 </div>

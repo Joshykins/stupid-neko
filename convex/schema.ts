@@ -72,6 +72,9 @@ export default defineSchema({
 		// Testing
 		devDate: v.optional(v.number()),
 
+		// Pre-release access gate
+		preReleaseGranted: v.optional(v.boolean()),
+
 	})
 		.index("email", ["email"]) // mirror default indexes
 		.index("phone", ["phone"]) 
@@ -224,4 +227,18 @@ export default defineSchema({
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
 	}).index("by_content_key", ["contentKey"]),
+
+	// Pre-release single-use codes for early access
+	preReleaseCodes: defineTable({
+		code: v.string(),
+		normalizedCode: v.string(),
+		message: v.optional(v.string()),
+		used: v.boolean(),
+		usedBy: v.optional(v.id("users")),
+		usedAt: v.optional(v.number()),
+		createdBy: v.optional(v.id("users")),
+	})
+		.index("by_code", ["code"]) 
+		.index("by_normalized_code", ["normalizedCode"]) 
+		.index("by_user", ["usedBy"]),
 });

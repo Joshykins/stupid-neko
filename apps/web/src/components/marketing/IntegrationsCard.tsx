@@ -4,35 +4,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export function IntegrationsCard() {
     const integrations = [
-        {
-            name: "Spotify",
-            icon: "/brands/spotify.svg",
-            points: [
-                "Only Japanese music (artist locale/title script)",
-                "Songs you play",
-                "Artists you listen to",
-                "Minutes listened",
-            ],
-        },
+        // {
+        //     name: "Spotify",
+        //     icon: "/brands/spotify.svg",
+        //     points: [
+        //         "Only Japanese music (artist locale/title script)",
+        //         "Songs you play",
+        //         "Artists you listen to",
+        //         "Minutes listened",
+        //     ],
+        // },
         {
             name: "YouTube",
             icon: "/brands/youtube.svg",
             points: [
-                "Only Japanese channels/videos (channel locale/title script)",
-                "Videos you watch",
-                "Time watched",
+                "Auto-tracks videos you watch.",
+                "Detects the language of the video.",
+                "Tracks the time watched.",
+                "Experience earned for watching.",
             ],
         },
         {
-            name: "Anki",
-            icon: "/brands/anki.svg",
+            name: "More coming soon",
+            icon: "/brands/more-stars.svg",
             points: [
-                "Only Japanese decks or tagged 'jp'",
-                "Reviews completed",
-                "New cards learned",
-                "Study time",
+                "Discord, track your conversations.",
+                "Spotify, track your listening.",
+                "Anki, track your reviews.",
+                "More coming soon...",
             ],
-        },
+        }
+        // {
+        //     name: "Anki",
+        //     icon: "/brands/anki.svg",
+        //     points: [
+        //         "Only Japanese decks or tagged 'jp'",
+        //         "Reviews completed",
+        //         "New cards learned",
+        //         "Study time",
+        //     ],
+        // },
     ];
     return (
         <Card>

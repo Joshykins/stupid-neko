@@ -28,9 +28,11 @@ import type * as languageActivitiyFromContentActivitiesFunctions from "../langua
 import type * as languageActivityFunctions from "../languageActivityFunctions.js";
 import type * as meFunctions from "../meFunctions.js";
 import type * as onboardingFunctions from "../onboardingFunctions.js";
+import type * as preReleaseCodeFunctions from "../preReleaseCodeFunctions.js";
 import type * as streakFunctions from "../streakFunctions.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
+import type * as xpChartFunctions from "../xpChartFunctions.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -56,9 +58,11 @@ declare const fullApi: ApiFromModules<{
   languageActivityFunctions: typeof languageActivityFunctions;
   meFunctions: typeof meFunctions;
   onboardingFunctions: typeof onboardingFunctions;
+  preReleaseCodeFunctions: typeof preReleaseCodeFunctions;
   streakFunctions: typeof streakFunctions;
   users: typeof users;
   utils: typeof utils;
+  xpChartFunctions: typeof xpChartFunctions;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

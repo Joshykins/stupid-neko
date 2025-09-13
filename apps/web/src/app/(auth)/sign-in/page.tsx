@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "convex/react";
 
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import Image from "next/image";
-import { ArrowBigLeft, ArrowBigLeftDash, ArrowLeft } from "lucide-react";
+import { ArrowBigLeft, ArrowBigLeftDash, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { UnreleasedBanner } from "../../../components/marketing/UnreleasedBanner";
+import { api } from "../../../../../../convex/_generated/api";
 
 export default function SignInPage() {
     const router = useRouter();
@@ -30,6 +32,32 @@ export default function SignInPage() {
         }
     }, []);
 
+    const [preReleaseCode, setPreReleaseCode] = useState("");
+    const [debouncedCode, setDebouncedCode] = useState("");
+    const [isValidating, setIsValidating] = useState(false);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedCode(preReleaseCode), 1000);
+        return () => clearTimeout(t);
+    }, [preReleaseCode]);
+
+    const validation = useQuery(api.preReleaseCodeFunctions.validateCode, { code: debouncedCode });
+    const derivedFormatted = validation?.formatted ?? preReleaseCode;
+    const isDebouncing = debouncedCode !== preReleaseCode;
+    const codeIsValid = preReleaseCode.trim().length > 0 && validation?.valid === true;
+
+    useEffect(() => {
+        if (debouncedCode.trim().length === 0) {
+            setIsValidating(false);
+            return;
+        }
+        setIsValidating(true);
+    }, [debouncedCode]);
+
+    useEffect(() => {
+        if (debouncedCode.trim().length === 0) return;
+        if (validation !== undefined) setIsValidating(false);
+    }, [validation, debouncedCode]);
+
     const form = useForm<{ email: string; password: string; }>({
         defaultValues: {
             email: "",
@@ -38,6 +66,15 @@ export default function SignInPage() {
         onSubmit: async ({ value }: { value: { email: string; password: string; }; }) => {
             setErrorMessage(null);
             try {
+                if (!codeIsValid) {
+                    setErrorMessage(validation?.reason || "Enter a valid pre-release code");
+                    return;
+                }
+                try {
+                    if (typeof window !== "undefined") {
+                        window.localStorage.setItem("preReleaseCode", preReleaseCode.trim());
+                    }
+                } catch { }
                 const form = new FormData();
                 form.set("flow", "signIn");
                 form.set("email", value.email);
@@ -63,10 +100,15 @@ export default function SignInPage() {
 
     return (
         <>
+            <div className="flex justify-center absolute top-4 left-0 right-0">
+
+                <UnreleasedBanner />
+
+            </div>
             <div className="h-[95vh]"></div>
             <div className="fixed inset-0 z-40 grid place-items-center px-4">
                 <div className="flex flex-col gap-8 items-center">
-                    <div className="w-full max-w-md rounded-[var(--radius-base)] border-2 border-border bg-secondary-background shadow-shadow text-main-foreground">
+                    <div className="w-full max-w-md rounded-[var(--radius-base)] border-2 border-border bg-secondary-background shadow-shadow text-main-foreground min-w-[460px]">
                         <div className="relative p-6 ">
                             <div className="absolute left-0 -top-2 -translate-y-[100%] ">
                                 <Link href="/">
@@ -99,13 +141,74 @@ export default function SignInPage() {
 
 
                         <div className="flex flex-col gap-4 px-6">
+                            {!validation?.valid && (
+                                <div className="grid gap-1">
+                                    <Label htmlFor="code" className="font-heading text-sm">Pre-release access code</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="code"
+                                            placeholder="XXXX-XXXX-XXXX"
+                                            value={preReleaseCode}
+                                            onChange={(e) => {
+                                                const raw = e.target.value.toUpperCase();
+                                                const only = raw.replace(/[^A-Z0-9]/g, "");
+                                                const a = only.slice(0, 4);
+                                                const b = only.slice(4, 8);
+                                                const c = only.slice(8, 12);
+                                                const parts = [a, b, c].filter(Boolean);
+                                                setPreReleaseCode(parts.join("-"));
+                                            }}
+                                            onPaste={(e) => {
+                                                try {
+                                                    const text = e.clipboardData.getData("text").toUpperCase();
+                                                    if (text) {
+                                                        e.preventDefault();
+                                                        const only = text.replace(/[^A-Z0-9]/g, "");
+                                                        const a = only.slice(0, 4);
+                                                        const b = only.slice(4, 8);
+                                                        const c = only.slice(8, 12);
+                                                        const parts = [a, b, c].filter(Boolean);
+                                                        const formatted = parts.join("-");
+                                                        setPreReleaseCode(formatted);
+                                                    }
+                                                } catch { }
+                                            }}
+                                            className="uppercase tracking-widest pr-8"
+                                        />
+                                        {isValidating && (
+                                            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 size-4 animate-spin text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    {!isValidating && !isDebouncing && preReleaseCode && validation && validation.valid === false && (
+                                        <p className="text-sm text-red-500">{validation.reason ?? "Invalid code"}</p>
+                                    )}
+                                </div>
+                            )}
+                            {validation?.message && validation.valid && (
+                                <div className="mt-2">
+                                    <div className="bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] p-3 rounded-md ">
+                                        <p className="text-orange-100 text-sm">{validation.message}</p>
+                                        <p className="text-slate-500 text-xs flex items-center gap-1"><span>Your </span><Sparkles className="mt-1 size-3 fill-orange-100" /><i>special</i><Sparkles className="size-3 fill-orange-100 mt-1" /><span> message from Josh!</span></p>
+                                    </div>
+                                </div>
+                            )}
                             <Button
                                 type="button"
                                 variant="neutral"
                                 size={"cta"}
                                 className="w-full bg-[#5865F2] text-white"
+                                disabled={!codeIsValid}
                                 onClick={async () => {
                                     try {
+                                        if (!codeIsValid) {
+                                            setErrorMessage("Enter a valid pre-release code");
+                                            return;
+                                        }
+                                        try {
+                                            if (typeof window !== "undefined") {
+                                                window.localStorage.setItem("preReleaseCode", preReleaseCode.trim());
+                                            }
+                                        } catch { }
                                         await signIn("discord", { redirectTo: "/get-started" });
                                     } catch (err: any) {
                                         setErrorMessage(err?.errors?.[0]?.message || "OAuth failed");
@@ -121,8 +224,18 @@ export default function SignInPage() {
                                 variant="neutral"
                                 size={"cta"}
                                 className="w-full bg-white text-black"
+                                disabled={!codeIsValid}
                                 onClick={async () => {
                                     try {
+                                        if (!codeIsValid) {
+                                            setErrorMessage("Enter a valid pre-release code");
+                                            return;
+                                        }
+                                        try {
+                                            if (typeof window !== "undefined") {
+                                                window.localStorage.setItem("preReleaseCode", preReleaseCode.trim());
+                                            }
+                                        } catch { }
                                         await signIn("google", { redirectTo: "/get-started" });
                                     } catch (err: any) {
                                         setErrorMessage(err?.errors?.[0]?.message || "OAuth failed");
@@ -187,13 +300,12 @@ export default function SignInPage() {
                                 </form.Field>
                             </div>
 
-                            <Button type="submit" className="mt-2 w-full">Continue</Button>
+                            <Button type="submit" className="mt-2 w-full" disabled={!codeIsValid}>Continue</Button>
 
                         </form>
 
 
                     </div>
-                    <UnreleasedBanner />
                 </div>
             </div>
         </>

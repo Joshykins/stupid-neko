@@ -222,6 +222,31 @@ export default function GetStartedClient() {
         </>)
         : currentStep?.title;
 
+    const redeem = useMutation(api.preReleaseCodeFunctions.redeem);
+
+    React.useEffect(() => {
+        try {
+            if (typeof window === "undefined") return;
+            const stored = window.localStorage.getItem("preReleaseCode");
+            if (!stored) return;
+            void (async () => {
+                try {
+                    const res = await redeem({ code: stored });
+                    if (!res.success) {
+                        if (typeof document !== "undefined") {
+                            document.cookie = `onboarding=true; path=/; max-age=${60 * 60 * 24 * 365}`;
+                        }
+                        router.replace("/sign-in?oauthError=invalid_code");
+                    }
+                } catch {
+                    router.replace("/sign-in?oauthError=invalid_code");
+                } finally {
+                    try { window.localStorage.removeItem("preReleaseCode"); } catch { }
+                }
+            })();
+        } catch { }
+    }, [redeem, router]);
+
     const handleComplete = React.useCallback(async () => {
         if (!currentState.language) return;
         try {
