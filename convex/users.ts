@@ -24,11 +24,12 @@ export const listAllUsersForCron = internalQuery({
   returns: v.array(
     v.object({
       _id: v.id("users"),
+      devDate: v.optional(v.number()),
     })
   ),
   handler: async (ctx) => {
     const rows = await ctx.db.query("users").take(10000);
-    return rows.map((r) => ({ _id: r._id }));
+    return rows.map((r) => ({ _id: r._id, devDate: (r as any).devDate }));
   },
 });
 

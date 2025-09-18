@@ -24,6 +24,7 @@ export const me = query({
             username: v.optional(v.string()),
             timezone: v.optional(v.string()),
             languageCode: v.optional(v.string()),
+            streakDisplayMode: v.optional(v.union(v.literal("grid"), v.literal("week"))),
         }),
         v.null(),
     ),
@@ -46,6 +47,7 @@ export const me = query({
             image: user.image ?? undefined,
             timezone: user.timezone ?? undefined,
             languageCode: languageCode ?? undefined,
+            streakDisplayMode: (user as any).streakDisplayMode ?? undefined,
         };
     },
 });
@@ -87,6 +89,22 @@ export const updateTimezone = mutation({
     },
 });
 
+export const updateStreakDisplayMode = mutation({
+    args: {
+        mode: v.union(v.literal("grid"), v.literal("week")),
+    },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Unauthorized");
+        const user = await ctx.db.get(userId);
+        if (!user) throw new Error("User not found");
+
+        await ctx.db.patch(userId, { streakDisplayMode: args.mode } as any);
+        return null;
+    },
+});
+
 export const getUserProgress = query({
     args: {},
     returns: v.union(
@@ -102,6 +120,7 @@ export const getUserProgress = query({
             currentLevel: v.number(),
             nextLevelXp: v.number(),
             experienceTowardsNextLevel: v.number(),
+            hasPreReleaseCode: v.boolean(),
         }),
         v.null(),
     ),
@@ -118,19 +137,26 @@ export const getUserProgress = query({
         const targetLanguage = await ctx.db.get(currentTargetLanguageId);
         if (!targetLanguage) return null;
 
+        // Determine if the user has a pre-release code (or was manually granted)
+        const code = await ctx.db
+            .query("preReleaseCodes")
+            .withIndex("by_user", (q: any) => q.eq("usedBy", userId))
+            .take(1);
+        const hasPreReleaseCode = Boolean((user as any)?.preReleaseGranted) || code.length > 0;
+
         // Read total XP from latest ledger event
         const latest = (await ctx.db
-            .query("userTargetLanguageExperiences")
+            .query("userTargetLanguageExperienceLedger")
             .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId))
             .order("desc")
             .take(1))[0] as any | undefined;
 
         const totalExperience = (latest?.runningTotalAfter as number | undefined) ?? 0;
 
-        const { level: currentLevel, remainder: remainderXp } = levelFromXp(totalExperience);
-        const nextLevelXp = xpForNextLevel(currentLevel);
-        // remainderXp is the progress accumulated toward the next level
-        const experienceTowardsNextLevel = remainderXp;
+        // Prefer values from the ledger snapshot; fall back to calculator for older events
+        const currentLevel = (latest?.newLevel as number | undefined) ?? levelFromXp(totalExperience).level;
+        const experienceTowardsNextLevel = (latest?.remainderTowardsNextLevel as number | undefined) ?? levelFromXp(totalExperience).remainder;
+        const nextLevelXp = (latest?.nextLevelCost as number | undefined) ?? xpForNextLevel(currentLevel);
 
         return {
             name: user.name ?? undefined,
@@ -144,6 +170,7 @@ export const getUserProgress = query({
             currentLevel,
             experienceTowardsNextLevel,
             nextLevelXp,
+            hasPreReleaseCode,
         };
     },
 });

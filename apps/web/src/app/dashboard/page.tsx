@@ -1,15 +1,16 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { ProfileSummary } from "../../components/ProfileSummary";
+import { UserSummary } from "../../components/UserSummary";
 import ManuallyTrackRecord from "../../components/dashboard/ManuallyTrackRecord";
 import TrackedHistoryCard from "../../components/dashboard/TrackedHistoryCard";
-import Heatmap from "../../components/streaks/Heatmap";
+import StreakDisplay from "../../components/streaks/StreakDisplay";
 import { api } from "../../../../../convex/_generated/api";
 import { DonutChartCard } from "../../components/marketing/DonutChartCard";
 import { WeeklyBarsCard } from "../../components/marketing/WeeklyBarsCard";
 import { DashboardTopBar } from "./DashboardTopBar";
 import XpAreaChart from "../../components/XpAreaChart";
 import { StreakVacation } from "../../components/streaks/StreakVacation";
+import IntegrationsCard from "../../components/dashboard/IntegrationsCard";
 
 export default async function DashboardPage() {
 
@@ -23,13 +24,14 @@ export default async function DashboardPage() {
                     <TrackedHistoryCard />
                 </div>
                 <div className="lg:col-span-1 space-y-4">
-                    <ProfileSummary isLiveVersion={true} />
+                    <UserSummary isLiveVersion={true} />
                     <XpAreaChart isLiveVersion={true} />
+                    <IntegrationsCard />
                 </div>
                 <div className="lg:col-span-1 space-y-4">
-                    <Heatmap title="Daily Streak" cellSize={14} values={undefined} liveVersion={true} />
+                    <StreakDisplay title="Daily Streak" cellSize={14} liveVersion={true} />
 
-                    <StreakVacation />
+                    <StreakVacation isLiveVersion={true} />
                     {/* <DonutChartCard /> */}
                     <WeeklyBarsCard />
                 </div>

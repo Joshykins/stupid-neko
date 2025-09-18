@@ -8,6 +8,7 @@ import { LanguageCode } from "../../../../../convex/schema";
 // Avoid Radix ScrollArea here to prevent inner display: table wrapper pushing content
 import { formatSeconds } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
+import { BookA, Zap, ZapOff } from "lucide-react";
 
 type DisplayItem = { id: string; title: string; minutes: number; source?: string; sourceKey?: "youtube" | "spotify" | "anki" | "manual"; date: string; occurredAt?: number; description?: string; language?: string; state?: "in-progress" | "completed"; contentKey?: string; label?: { title?: string; authorName?: string; thumbnailUrl?: string; fullDurationInSeconds?: number; contentUrl?: string; }; awardedExperience?: number; };
 
@@ -61,6 +62,8 @@ function dateFooterLabel(ts?: number): string {
     const dateStr = d.toLocaleDateString(undefined, { month: "long", day: "numeric" });
     return `${dateStr}, ${formatTime(ts)}`;
 }
+
+
 
 export default function TrackedHistoryCard() {
     const data = useQuery(api.languageActivityFunctions.listRecentLanguageActivities, { limit: 20 });
@@ -146,7 +149,9 @@ export default function TrackedHistoryCard() {
                         {items.length > 0 && (
                             <div className="">
                                 <ul className="space-y-2">
-                                    {items.map((i) => {
+                                    {items.map((i, idx) => {
+                                        const doc = data?.[idx] as any;
+                                        const fromFavorite: boolean = Boolean(doc?.favoriteLanguageActivityId);
                                         const key = i.sourceKey ?? "manual";
                                         const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
                                         const baseSeconds = Math.max(0, Math.floor((i.minutes * 60)));
@@ -160,13 +165,18 @@ export default function TrackedHistoryCard() {
                                                     aria-label={`${i.title} ${i.source ? `from ${i.source}` : ""}`}
                                                 >
                                                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                                                        {SOURCE_ICON[key] ? (
+                                                        {key === "manual" ? (
+                                                            <Zap size={24} className="fill-black stroke-black inline-block mt-0.5" />
+                                                        ) : SOURCE_ICON[key] ? (
                                                             <img src={SOURCE_ICON[key]} alt={i.source ?? key} width={24} height={24} className="inline-block mt-0.5" />
                                                         ) : (
                                                             <span className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}></span>
                                                         )}
                                                         <div className="min-w-0 flex-1">
-                                                            <div className="font-bold w-[200px] truncate">{i.title}</div>
+                                                            <div className="font-bold w-[200px] truncate flex items-center gap-1">
+                                                                {i.title}
+                                                                {fromFavorite && <span title="Created from favorite" className="inline-block text-amber-500">★</span>}
+                                                            </div>
                                                             <div className="text-xs text-muted-foreground">
                                                                 {i.label?.authorName ? `By ${i.label.authorName}` : ""}
                                                             </div>

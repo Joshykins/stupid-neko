@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { getEffectiveNow } from "./utils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 function dayStartMsOf(timestampMs: number): number {
@@ -20,22 +21,27 @@ export const getXpTimeseries = query({
     ),
     totalXp: v.number(),
     days: v.number(),
+    now: v.number(),
+    startInclusive: v.number(),
   }),
   handler: async (ctx, args) => {
+    // Determine window (respect devDate when testing)
+    const days = args.range === "7d" ? 7 : args.range === "30d" ? 30 : 365; // cap all-time at 1 year for perf
+    const now = await getEffectiveNow(ctx);
+    const startInclusive = dayStartMsOf(now - (days - 1) * DAY_MS);
+    console.log("xpTimeseries window", { now, startInclusive, days, range: args.range });
+
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      return { points: [], totalXp: 0, days: 0 };
+      const emptyPoints: Array<{ dayStartMs: number; xp: number; }> = [];
+      return { points: emptyPoints, totalXp: 0, days, now, startInclusive };
     }
 
     const user = await ctx.db.get(userId);
     if (!user) {
-      return { points: [], totalXp: 0, days: 0 };
+      const emptyPoints: Array<{ dayStartMs: number; xp: number; }> = [];
+      return { points: emptyPoints, totalXp: 0, days, now, startInclusive };
     }
-
-    // Determine window
-    const now = Date.now();
-    const days = args.range === "7d" ? 7 : args.range === "30d" ? 30 : 365; // cap all-time at 1 year for perf
-    const startInclusive = dayStartMsOf(now - (days - 1) * DAY_MS);
 
     // Prefer current target language if available for better relevance
     const currentTargetLanguageId = (user as any).currentTargetLanguageId;
@@ -44,14 +50,14 @@ export const getXpTimeseries = query({
     if (currentTargetLanguageId) {
       // Filter by userTargetLanguageId for specificity
       const q = ctx.db
-        .query("userTargetLanguageExperiences")
+        .query("userTargetLanguageExperienceLedger")
         .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId));
       const rows = await q.collect();
       events = rows;
     } else {
       // Fallback: all XP for the user
       const q = ctx.db
-        .query("userTargetLanguageExperiences")
+        .query("userTargetLanguageExperienceLedger")
         .withIndex("by_user", (q: any) => q.eq("userId", userId));
       const rows = await q.collect();
       events = rows;
@@ -75,7 +81,7 @@ export const getXpTimeseries = query({
     }
 
     const totalXp = points.reduce((s, p) => s + p.xp, 0);
-    return { points, totalXp, days };
+    return { points, totalXp, days, now, startInclusive };
   },
 });
 

@@ -9,6 +9,7 @@ import { api } from "../../../../convex/_generated/api";
 
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
+import { PlusCircle } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -74,18 +75,7 @@ function TopNavContent() {
                             </Link>
                             <nav className="hidden md:flex items-center gap-8 ml-4 text-base">
                                 <Authenticated>
-                                    <Link
-                                        href="/dashboard"
-                                        aria-current={pathname?.startsWith("/dashboard") ? "page" : undefined}
-                                        className={[
-                                            "text-background/90 font-sans text-xl font-bold transition-colors",
-                                            pathname?.startsWith("/dashboard")
-                                                ? "relative text-background after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:origin-left "
-                                                : "hover:text-background relative after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform after:duration-200",
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" ")}
-                                    >
+                                    <Link href="/dashboard" className="text-background/90 font-sans text-xl font-bold transition-colors hover:text-background">
                                         Dashboard
                                     </Link>
                                 </Authenticated>

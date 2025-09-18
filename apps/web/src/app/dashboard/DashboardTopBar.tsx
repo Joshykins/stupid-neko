@@ -1,12 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import LanguageFlagSVG from "../../components/LanguageFlagSVG";
 import { Button } from "../../components/ui/button";
 import { COMMON_LANGUAGES } from "../../lib/languages";
 import { Card, CardContent } from "../../components/ui/card";
-import { BookOpen, Clock } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 export const DashboardTopBar = () => {
     const me = useQuery(api.meFunctions.me);
@@ -15,7 +16,8 @@ export const DashboardTopBar = () => {
     const targetLanguageLabel = COMMON_LANGUAGES.find((l) => l.code === targetLanguage)?.label ?? "English";
     return (
         <div className="p-4">
-            <div className="flex gap-10 pl-20">
+            <div className="flex gap-10 pl-20 items-center">
+                {/* Track Activity button moved into the manual tile */}
                 <Button variant={"neutral"} className="overflow-hidden">
                     <LanguageFlagSVG language={targetLanguage} className="!size-6" />
                     Learning {targetLanguageLabel}
@@ -35,10 +37,6 @@ export const DashboardTopBar = () => {
                     </Button>
                 </div>
 
-                <Button variant={"neutral"} className="overflow-hidden">
-                    <Clock />
-                    Timeline
-                </Button>
                 <Button variant={"neutral"} className="overflow-hidden">
                     <BookOpen />
                     Flashcards

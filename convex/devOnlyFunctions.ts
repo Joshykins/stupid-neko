@@ -73,6 +73,17 @@ export const stepDevDate = mutation({
 
     await ctx.db.patch(userId, { devDate: next } as any);
 
+    // After moving the effective day forward, try auto-bridging a single missed day
+    // so streak vacations are applied during dev time travel.
+    try {
+      await ctx.runMutation(internal.streakFunctions.nudgeUserStreak, {
+        userId,
+        now: next,
+      });
+    } catch (e) {
+      // Best-effort; ignore if nudge fails
+    }
+
     if (args.seedEachStep) {
       const count = Math.max(0, Math.floor(args.seedPerStepCount ?? 0));
       const minM = Math.max(1, Math.floor(args.seedMinMinutes ?? 5));
@@ -323,7 +334,7 @@ export const resetMyDevState = mutation({
 
     // 2) Delete experience records for the user
     const exps = await ctx.db
-      .query("userTargetLanguageExperiences")
+      .query("userTargetLanguageExperienceLedger")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
       .collect();
     for (const e of exps) {
@@ -339,9 +350,9 @@ export const resetMyDevState = mutation({
       await ctx.db.delete(row._id);
     }
 
-    // 2c) Delete streak freeze ledger entries
+    // 2c) Delete streak vacation ledger entries
     const freezeLedger = await ctx.db
-      .query("streakFreezeLedger")
+      .query("streakVacationLedger")
       .withIndex("by_user", (q: any) => q.eq("userId", userId))
       .collect();
     for (const row of freezeLedger) {

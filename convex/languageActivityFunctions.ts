@@ -19,10 +19,11 @@ export const addLanguageActivity = internalMutation({
         occurredAt: v.optional(v.number()),
         languageCode: languageCodeValidator,
         contentKey: v.optional(v.string()),
+        externalUrl: v.optional(v.string()),
         contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
-        skillCategories: v.optional(v.array(v.union(v.literal("listening"), v.literal("reading"), v.literal("speaking"), v.literal("writing")))),
         isManuallyTracked: v.optional(v.boolean()),
         userTargetLanguageId: v.id("userTargetLanguages"),
+        
         source: v.optional(
             v.union(
                 v.literal("youtube"),
@@ -76,6 +77,7 @@ export const addLanguageActivity = internalMutation({
             occurredAt,
             state: "completed",
             contentKey: args.contentKey ?? undefined,
+            externalUrl: args.externalUrl ?? undefined,
         });
 
         // 2) Update streak
@@ -93,8 +95,6 @@ export const addLanguageActivity = internalMutation({
                 userId,
                 languageCode: args.languageCode,
                 isManuallyTracked: args.isManuallyTracked ?? false,
-                contentCategories: args.contentCategories ?? undefined,
-                skillCategories: args.skillCategories ?? undefined,
                 durationInMinutes: args.durationInMinutes,
                 occurredAt,
             }),
@@ -126,17 +126,9 @@ export const addManualLanguageActivity = mutation({
         durationInMinutes: v.number(),
         occurredAt: v.optional(v.number()),
         language: v.optional(languageCodeValidator),
+        externalUrl: v.optional(v.string()),
         contentCategories: v.optional(v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other")))),
-        skillCategories: v.optional(
-            v.array(
-                v.union(
-                    v.literal("listening"),
-                    v.literal("reading"),
-                    v.literal("speaking"),
-                    v.literal("writing"),
-                ),
-            ),
-        ),
+        
     },
     returns: v.object({ activityId: v.id("languageActivities") }),
     handler: async (ctx, args): Promise<{ activityId: Id<"languageActivities"> }> => {
@@ -162,10 +154,10 @@ export const addManualLanguageActivity = mutation({
             description: args.description ?? undefined,
             durationInMinutes: args.durationInMinutes,
             occurredAt,
-            contentCategories: args.contentCategories ?? undefined,
-            skillCategories: args.skillCategories ?? undefined,
+            externalUrl: args.externalUrl ?? undefined,
             isManuallyTracked: true,
             languageCode: languageCode as LanguageCode,
+            
         });
        
         
@@ -212,6 +204,7 @@ export const listRecentLanguageActivities = query({
             occurredAt: v.optional(v.number()),
             state: v.union(v.literal("in-progress"), v.literal("completed")),
             contentKey: v.optional(v.string()),
+            externalUrl: v.optional(v.string()),
             label: v.optional(
                 v.object({
                     title: v.optional(v.string()),
@@ -254,7 +247,7 @@ export const listRecentLanguageActivities = query({
             }
             // Sum actual awarded experience tied to this activity from the ledger
             const exps = await ctx.db
-                .query("userTargetLanguageExperiences")
+                .query("userTargetLanguageExperienceLedger")
                 .withIndex("by_language_activity", (q: any) => q.eq("languageActivityId", (it as any)._id))
                 .collect();
             const awardedExperience = exps.reduce((sum: number, e: any) => sum + Math.floor(e?.deltaExperience ?? 0), 0);
@@ -441,7 +434,7 @@ export const deleteLanguageActivity = mutation({
 
         // Sum all experience deltas tied to this activity
         const exps = await ctx.db
-            .query("userTargetLanguageExperiences")
+            .query("userTargetLanguageExperienceLedger")
             .withIndex("by_language_activity", (q: any) => q.eq("languageActivityId", args.activityId))
             .collect();
         const totalDelta = exps.reduce((sum, e: any) => sum + (e.deltaExperience ?? 0), 0);

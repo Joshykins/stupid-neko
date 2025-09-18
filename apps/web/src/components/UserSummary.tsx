@@ -14,6 +14,7 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { COMMON_LANGUAGES } from "../lib/languages";
 import LevelExperienceInfo from "./LevelExperienceInfo";
 import XpAreaChart from "./XpAreaChart";
+import dayjs from "@dayjs";
 
 type MockUser = {
     name: string;
@@ -59,7 +60,8 @@ const mockUser: MockUser = {
     userCreatedAt: Date.now() - 1000 * 60 * 60 * 24 * 365,
 };
 
-export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boolean; }) => {
+
+export const UserSummary = ({ isLiveVersion = false }: { isLiveVersion: boolean; }) => {
     const userProgress = useQuery(api.meFunctions.getUserProgress, {});
 
     // Use real data if available, otherwise fall back to mock data
@@ -94,6 +96,7 @@ export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boole
     };
 
     const languageInfo = getLanguageInfo(userProgress?.languageCode);
+    const hasPreReleaseCode = Boolean(userProgress?.hasPreReleaseCode);
 
     return (
         <Card className="flex flex-col">
@@ -126,13 +129,17 @@ export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boole
                         </Badge>
 
 
-                        {mockUser.isLeaderboardPlacer && (
+                        {!isLiveVersion && (
                             <Badge className="inline-flex items-center gap-1 whitespace-nowrap">
                                 <Award className="size-3" /> Top 3%
                             </Badge>
                         )}
 
-                        {/* Show leaderboard badge for all users */}
+                        {isLiveVersion && hasPreReleaseCode && (
+                            <Badge className="inline-flex items-center gap-1 whitespace-nowrap bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] text-orange-100">
+                                Insider
+                            </Badge>
+                        )}
                     </div>
 
                 </CardTitle>
@@ -168,12 +175,8 @@ export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boole
 
                     {/*  */}
                     <div className="flex items-center gap-2 font-normal text-sm">
-                        <BookOpenText className="size-4" /> Studying {userProgress?.languageCode || mockUser.language} since {new Date(userProgress?.targetLanguageCreatedAt || mockUser.targetLanguageCreatedAt).toLocaleDateString()}
+                        <BookOpenText className="size-4" /><span>Tracking <b>{languageInfo.name}</b> since <b>{dayjs(userProgress?.targetLanguageCreatedAt || mockUser.targetLanguageCreatedAt).format("MMM Do, YYYY")}</b>.</span>
                     </div>
-
-                    {/* <div className="items-center text-sm font-normal flex gap-1">
-                        <CalendarDays className="size-4" /> Joined {new Date(userProgress?.userCreatedAt || mockUser.userCreatedAt).toLocaleDateString()}
-                    </div> */}
 
                     {/* <div className="items-center text-sm font-normal flex gap-1">
                         <span className="font-bold">23</span> Followers
@@ -189,79 +192,10 @@ export const ProfileSummary = ({ isLiveVersion = false }: { isLiveVersion: boole
             </CardContent>
 
 
-            {/* <CardContent className="pt-6">
-                <div className="flex flex-wrap gap-2 pb-2">
-
-                </div>
-                <div className="space-y-4">
-
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 font-semibold text-lg">
-                            <Award className="size-4" /> Latest achievements
-                        </div>
-                        <ul className="text-sm text-muted-foreground space-y-2">
-                            {mockUser.recentWins.map((win) => {
-                                const lower = win.toLowerCase();
-                                let Icon = Award;
-                                let colorVar = "var(--color-accent)";
-                                if (lower.includes("streak")) {
-                                    Icon = Flame;
-                                    colorVar = "var(--color-heatmap-3)";
-                                } else if (lower.includes("xp") || lower.includes("level") || lower.includes("lv")) {
-                                    Icon = Zap;
-                                    if (lower.includes("speaking")) colorVar = "var(--color-speaking)";
-                                    else if (lower.includes("listening")) colorVar = "var(--color-listening)";
-                                    else if (lower.includes("reading")) colorVar = "var(--color-reading)";
-                                    else if (lower.includes("writing")) colorVar = "var(--color-writing)";
-                                    else colorVar = "var(--color-chart-1)";
-                                }
-                                return (
-                                    <li key={win.toLowerCase()} className="flex items-center gap-2">
-                                        <span
-                                            className="inline-flex items-center justify-center rounded-full border-2 border-border"
-                                            style={{ width: 24, height: 24, backgroundColor: colorVar }}
-                                        >
-                                            <Icon className="size-3 text-background" />
-                                        </span>
-                                        <span>{win}</span>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="font-semibold text-lg">Category Levels</div>
-                        <div className="grid grid-cols-1 gap-3">
-                            {mockUser.skills.map((skill) => {
-                                const key = skill.label.toLowerCase();
-                                const colorVarMap: Record<string, string> = {
-                                    reading: "var(--color-reading)",
-                                    listening: "var(--color-listening)",
-                                    speaking: "var(--color-speaking)",
-                                    writing: "var(--color-writing)",
-                                };
-                                const colorVar = colorVarMap[key] || "var(--color-main)";
-                                return (
-                                    <div key={skill.label} className="space-y-1">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span>{skill.label}</span>
-                                            <span className="text-muted-foreground">{skill.value}% • {skill.hours} hrs</span>
-                                        </div>
-                                        <Progress value={isMounted ? skill.value : 0} indicatorColor={colorVar} />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-muted-foreground">
-
-                    </div>
-                </div>
-            </CardContent> */}
         </Card>
     );
 };
+
+
 
 

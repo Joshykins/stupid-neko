@@ -35,10 +35,8 @@ export const validateCode = query({
         if (!found) {
             return { valid: false, reason: "Code not found", formatted } as const;
         }
-        if (found.used) {
-            return { valid: false, reason: "Code already used", formatted } as const;
-        }
-
+        // Allow used codes to proceed to OAuth; ownership is enforced in redeem().
+        // This lets the original owner re-login with their code while others will be rejected later.
         return { valid: true, message: found.message, formatted } as const;
     },
 });
@@ -51,6 +49,12 @@ export const redeem = mutation({
         if (!userId) return { success: false, reason: "Unauthorized" } as const;
 
         const { normalized } = normalizeCode(args.code);
+        // Ensure the authenticated user's document exists. In dev, sessions can
+        // outlive database resets which leads to patching a nonexistent id.
+        const user = await ctx.db.get(userId);
+        if (!user) {
+            return { success: false, reason: "User not found. Please sign out and sign in again." } as const;
+        }
         const found = await ctx.db
             .query("preReleaseCodes")
             .withIndex("by_normalized_code", (q) => q.eq("normalizedCode", normalized))
@@ -59,7 +63,14 @@ export const redeem = mutation({
             return { success: false, reason: "Code not found" } as const;
         }
         if (found.used) {
-            return { success: false, reason: "Code already used" } as const;
+            // If the code was already used by this same user, allow idempotent success
+            if (found.usedBy === userId) {
+                // Ensure the flag remains set even if it was lost due to a reset
+                await ctx.db.patch(userId, { preReleaseGranted: true } as any);
+                return { success: true } as const;
+            }
+            // Otherwise, reject: code belongs to another user
+            return { success: false, reason: "Code belongs to another user" } as const;
         }
 
         await ctx.db.patch(found._id, {

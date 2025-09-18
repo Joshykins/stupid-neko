@@ -62,15 +62,17 @@ export default function XpAreaChart({ isLiveVersion = false }: XpAreaChartProps)
 
     // Build chart-friendly data
     const chartData = React.useMemo(() => {
-        if (!isLiveVersion || !data) {
+        if (!isLiveVersion) {
             const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
             return demoPoints(days);
         }
+        if (!data) return [];
         return data.points.map(p => ({ name: formatDay(p.dayStartMs), xp: p.xp }));
     }, [data, isLiveVersion, range]);
 
     const total = React.useMemo(() => {
-        if (!isLiveVersion || !data) return chartData.reduce((s, p) => s + p.xp, 0);
+        if (!isLiveVersion) return chartData.reduce((s, p) => s + p.xp, 0);
+        if (!data) return 0;
         return data.totalXp ?? 0;
     }, [chartData, data, isLiveVersion]);
 
@@ -108,7 +110,7 @@ export default function XpAreaChart({ isLiveVersion = false }: XpAreaChartProps)
                             content={((props: any) => (
                                 <ChartTooltipContent
                                     {...props}
-                                    labelFormatter={() => ""}
+                                    labelFormatter={(value: any) => String(value)}
                                     formatter={(v: number) => [`${Number(v).toLocaleString()} XP`, ""]}
                                 />
                             )) as any}

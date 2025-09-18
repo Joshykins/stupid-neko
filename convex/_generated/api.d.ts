@@ -22,6 +22,7 @@ import type * as crons from "../crons.js";
 import type * as devOnlyFunctions from "../devOnlyFunctions.js";
 import type * as experienceFunctions from "../experienceFunctions.js";
 import type * as extensionFunctions from "../extensionFunctions.js";
+import type * as favoritedLanguageActivityFunctions from "../favoritedLanguageActivityFunctions.js";
 import type * as http from "../http.js";
 import type * as integrationsKeyFunctions from "../integrationsKeyFunctions.js";
 import type * as languageActivitiyFromContentActivitiesFunctions from "../languageActivitiyFromContentActivitiesFunctions.js";
@@ -29,6 +30,8 @@ import type * as languageActivityFunctions from "../languageActivityFunctions.js
 import type * as meFunctions from "../meFunctions.js";
 import type * as onboardingFunctions from "../onboardingFunctions.js";
 import type * as preReleaseCodeFunctions from "../preReleaseCodeFunctions.js";
+import type * as spotify from "../spotify.js";
+import type * as spotifyActions from "../spotifyActions.js";
 import type * as streakFunctions from "../streakFunctions.js";
 import type * as users from "../users.js";
 import type * as utils from "../utils.js";
@@ -52,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   devOnlyFunctions: typeof devOnlyFunctions;
   experienceFunctions: typeof experienceFunctions;
   extensionFunctions: typeof extensionFunctions;
+  favoritedLanguageActivityFunctions: typeof favoritedLanguageActivityFunctions;
   http: typeof http;
   integrationsKeyFunctions: typeof integrationsKeyFunctions;
   languageActivitiyFromContentActivitiesFunctions: typeof languageActivitiyFromContentActivitiesFunctions;
@@ -59,6 +63,8 @@ declare const fullApi: ApiFromModules<{
   meFunctions: typeof meFunctions;
   onboardingFunctions: typeof onboardingFunctions;
   preReleaseCodeFunctions: typeof preReleaseCodeFunctions;
+  spotify: typeof spotify;
+  spotifyActions: typeof spotifyActions;
   streakFunctions: typeof streakFunctions;
   users: typeof users;
   utils: typeof utils;

@@ -48,6 +48,9 @@
   --chart-5: #9CB1C3; /* light steel blue */
   --chart-active-dot: #1F3B51; /* navy */
 
+  /* streak vacation color */
+  --vacation: oklch(0.8304 0.0752 179.8); /* emerald-600 */
+
   /* dev-only color (highly distinct) */
   --dev-only: oklch(0.6176 0.276 280.59); 
 
@@ -123,6 +126,9 @@
   --heatmap-2: #EA580C; /* orange-600 */
   --heatmap-3: #DC2626; /* red-600 */
   --heatmap-4: #B91C1C; /* red-700 */
+
+  /* streak vacation color (dark) */
+  --vacation: oklch(0.8304 0.0752 179.8); /* emerald-600 */
 
   /* source brand colors (dark) */
   --source-youtube: #FF0000;
@@ -206,6 +212,9 @@
   --color-heatmap-2: var(--heatmap-2);
   --color-heatmap-3: var(--heatmap-3);
   --color-heatmap-4: var(--heatmap-4);
+
+  /* streak vacation mapped color */
+  --color-vacation: var(--vacation);
 
   --spacing-boxShadowX: 2px;
   --spacing-boxShadowY: 2px;

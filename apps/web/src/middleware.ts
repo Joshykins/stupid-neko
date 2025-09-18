@@ -13,10 +13,14 @@ import {
     const isAuthenticated = await convexAuth.isAuthenticated();
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const oauthError = url.searchParams.get("oauthError");
 
     // Handle sign-in page redirects
     if (isSignInPage(request) && isAuthenticated) {
-      return nextjsMiddlewareRedirect(request, "/dashboard");
+      // Allow visiting sign-in while authenticated if we need to show an OAuth error
+      if (!oauthError) {
+        return nextjsMiddlewareRedirect(request, "/dashboard");
+      }
     }
 
     // Handle protected routes

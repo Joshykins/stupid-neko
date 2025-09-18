@@ -23,10 +23,33 @@ export const tick = internalAction({
     },
 });
 
+// Hourly vacation enforcement via streak nudge mimicking TestingComponent behavior
+export const hourlyNudge = internalAction({
+    args: {},
+    returns: v.null(),
+    handler: async (ctx) => {
+        const users = await ctx.runQuery(internal.users.listAllUsersForCron, {});
+        // Small batches to keep within action time; rely on hourly cadence for coverage
+        const batch = users.slice(0, 250);
+        for (const u of batch) {
+            const now = (u as any).devDate ?? Date.now();
+            await ctx.runMutation(internal.streakFunctions.nudgeUserStreak, { userId: u._id, now });
+        }
+        return null;
+    },
+});
+
 crons.interval(
     "translate content activities",
     { seconds: 30 },
     internal.crons.tick,
+    {},
+);
+
+crons.interval(
+    "hourly streak nudge",
+    { hours: 1 },
+    internal.crons.hourlyNudge,
     {},
 );
 

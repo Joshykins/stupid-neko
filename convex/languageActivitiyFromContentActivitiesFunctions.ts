@@ -290,7 +290,6 @@ export const translateBatch = internalMutation({
                                 userId: s.userId,
                                 languageCode,
                                 isManuallyTracked: false,
-                                contentCategories: contentMediaType ? [contentMediaType] : undefined,
                                 durationInMinutes,
                             }),
                         });
@@ -305,7 +304,6 @@ export const translateBatch = internalMutation({
                             contentKey: s.contentKey,
                             languageCode,
                             contentCategories: contentMediaType ? [contentMediaType] : undefined,
-                            skillCategories: undefined,
                             isManuallyTracked: false,
                         });
                         createdActivities += 1;

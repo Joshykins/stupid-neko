@@ -1,20 +1,74 @@
-import { Palmtree } from "lucide-react";
-import { Button } from "../ui/button";
-import { Progress } from "../ui/progress";
+"use client";
+import * as React from "react";
+import { Info, Palmtree } from "lucide-react";
 import { Card } from "../ui/card";
+import Image from "next/image";
+import { Progress } from "../ui/progress";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { cn } from "../../lib/utils";
 
-export const StreakVacation = () => {
+type StreakVacationProps = {
+    isLiveVersion?: boolean;
+};
+
+export const StreakVacation = ({ isLiveVersion = false }: StreakVacationProps) => {
+    const status = useQuery(
+        api.streakFunctions.getVacationStatus,
+        isLiveVersion ? {} : "skip"
+    );
+
+    // Demo fallback when not live
+    const demo = { balance: 2, percent: 65, autoHours: 24, cap: 7, capped: false };
+
+    const balance = isLiveVersion ? (status?.balance ?? 0) : demo.balance;
+    const percent = isLiveVersion ? (status?.percentTowardsNext ?? 0) : demo.percent;
+    const autoHours = isLiveVersion ? (status?.autoApplyHours ?? 24) : demo.autoHours;
+    const cap = isLiveVersion ? (status?.cap ?? 7) : demo.cap;
+    const capped = isLiveVersion ? (status?.capped ?? false) : demo.capped;
+
     return (
-        <Card className="p-2">
-            <div className="flex gap-2 items-center">
-                <p>
-                    Streak Vacation
-                </p>
-                <Progress className="flex-1 bg-sky-200" value={70} />
-                <Button className="bg-sky-200 filter-black overflow-hidden rounded-full relative" size="icon">
-                    <Palmtree className="!size-6 fill-green-400 stroke-green-700" />
-                    <div className="absolute bg-yellow-100 absolute left-0 right-0 bottom-0 h-2" />
-                </Button>
+        <Card className="p-4">
+            <div className="flex items-center gap-4">
+                {/* Icon badge */}
+                <div className="flex justify-center">
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 shadow-shadow">
+                        <Image src="/streak-vacation/streak-vacation-palm-tree.svg" alt="Streak vacation" fill className="object-cover" />
+                    </div>
+                </div>
+
+                <div className="flex-1">
+                    {/* Count and label */}
+                    <div className="text-left pb-2 flex items-end justify-start gap-1">
+                        <div className="text-lg font-black text-main-foreground">{balance}</div>
+                        <div className="text-lg font-semibold text-main-foreground">/ {cap} <span className="font-normal">Vacations</span></div>
+                    </div>
+
+                    {/* Progress bar with label */}
+                    <div className="grid gap-2 relative">
+                        <Progress
+                            className="h-5 rounded-full bg-teal-100/50 border-border border-2"
+                            value={capped ? 100 : percent}
+                            indicatorColor="#90D8C9"
+                            showBubble
+                            bubble={
+                                <div className="relative w-5 h-5">
+                                    <Image src="/streak-vacation/streak-vacation-beach-ball.svg" alt="Progress" fill className="object-contain" />
+                                </div>
+                            }
+
+                        >
+                        </Progress>
+                        <div className={cn("text-right text-xs font-semibold text-main-foreground absolute top-0.5", (capped || percent >= 70) ? "left-2" : "right-2")}>{capped ? "At cap" : `${percent}% to next`}</div>
+                    </div>
+
+                    {/* Info row */}
+                    <div className="flex items-center gap-2 text-main-foreground pt-2">
+                        <Info className="w-5 h-5 stroke-2.5" />
+
+                        <div className="text-sm leading-tight font-semibold">Used automatically if you miss a day.</div>
+                    </div>
+                </div>
             </div>
         </Card>
     );

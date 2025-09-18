@@ -5,11 +5,12 @@ import Pricing from "../components/Pricing";
 import { WeeklyBarsCard } from "../components/marketing/WeeklyBarsCard";
 import { DiscordCard } from "../components/marketing/DiscordCard";
 import { IntegrationsCard } from "../components/marketing/IntegrationsCard";
-import Heatmap from "../components/streaks/Heatmap";
+import StreakDisplay from "../components/streaks/StreakDisplay";
 import ReviewsShowcase, { demoReviews } from "../components/marketing/Reviews";
-import { ProfileSummary } from "../components/ProfileSummary";
+import { UserSummary } from "../components/UserSummary";
 import { DonutChartCard } from "../components/marketing/DonutChartCard";
 import XpAreaChart from "../components/XpAreaChart";
+import { StreakVacation } from "../components/streaks/StreakVacation";
 
 export default async function Home() {
 
@@ -22,7 +23,7 @@ export default async function Home() {
 			</div>
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4" id="demo">
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
-					<ProfileSummary isLiveVersion={false} />
+					<UserSummary isLiveVersion={false} />
 					<XpAreaChart isLiveVersion={false} />
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
@@ -31,7 +32,8 @@ export default async function Home() {
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
 					{/* <DonutChartCard /> */}
-					<Heatmap title="Daily Streak" cellSize={14} />
+					<StreakDisplay title="Daily Streak" cellSize={14} />
+					<StreakVacation isLiveVersion={false} />
 				</div>
 			</div>
 			<div className="pt-4">

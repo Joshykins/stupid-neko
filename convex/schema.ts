@@ -59,6 +59,8 @@ export default defineSchema({
 		qualifierFormLearningReason: v.optional(v.string()),
 		timezone: v.optional(v.string()),
 		currentTargetLanguageId: v.optional(v.id("userTargetLanguages")),
+		// UI preferences
+		streakDisplayMode: v.optional(v.union(v.literal("grid"), v.literal("week"))),
 
 		// Extension integration key
 		integrationKey: v.optional(v.string()),
@@ -86,10 +88,10 @@ export default defineSchema({
 		trackedMinutes: v.number(),
 		xpGained: v.number(),
 		credited: v.boolean(),
-		creditedKind: v.optional(v.union(v.literal("activity"), v.literal("freeze"))),
+		creditedKind: v.optional(v.union(v.literal("activity"), v.literal("vacation"))),
 		streakLength: v.number(),
 		lastEventAtMs: v.number(),
-		autoFreezeAppliedAtMs: v.optional(v.number()),
+		autoVacationAppliedAtMs: v.optional(v.number()),
 		note: v.optional(v.string()),
 	}).index("by_user_and_day", ["userId", "dayStartMs"]) 
 		.index("by_user", ["userId"]),
@@ -102,7 +104,7 @@ export default defineSchema({
 			v.literal("activity_minutes"),
 			v.literal("xp_delta"),
 			v.literal("credit_activity"),
-			v.literal("credit_freeze"),
+			v.literal("credit_vacation"),
 			v.literal("uncredit"),
 		),
 		minutesDelta: v.optional(v.number()),
@@ -113,7 +115,7 @@ export default defineSchema({
 	}).index("by_user_and_day", ["userId", "dayStartMs"]) 
 		.index("by_user_and_occurred", ["userId", "occurredAt"]),
 
-	streakFreezeLedger: defineTable({
+	streakVacationLedger: defineTable({
 		userId: v.id("users"),
 		occurredAt: v.number(),
 		reason: v.union(
@@ -137,7 +139,7 @@ export default defineSchema({
 		.index("by_user", ["userId"]) 
 		.index("by_user_and_language", ["userId", "languageCode"]),
 
-	userTargetLanguageExperiences: defineTable({
+	userTargetLanguageExperienceLedger: defineTable({
 		userId: v.id("users"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
 		languageActivityId: v.optional(v.id("languageActivities")),
@@ -155,16 +157,43 @@ export default defineSchema({
 				}),
 			),
 		),
+		// Level snapshot fields at time of this ledger event
+		previousLevel: v.number(),
+		newLevel: v.number(),
+		levelsGained: v.number(),
+		remainderTowardsNextLevel: v.number(),
+		nextLevelCost: v.number(),
+		lastLevelCost: v.number(),
 	})
 		.index("by_user", ["userId"]) 
 		.index("by_user_target_language", ["userTargetLanguageId"]) 
 		.index("by_language_activity", ["languageActivityId"]),
+
+	// User favorited manual activity templates
+	favoritedLanguageActivities: defineTable({
+		userId: v.id("users"),
+		userTargetLanguageId: v.id("userTargetLanguages"),
+		title: v.string(),
+		description: v.optional(v.string()),
+		externalUrl: v.optional(v.string()),
+		defaultDurationInMinutes: v.optional(v.number()),
+		contentCategories: v.optional(
+			v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other"))),
+		),
+		createdFromLanguageActivityId: v.optional(v.id("languageActivities")),
+		usageCount: v.optional(v.number()),
+		lastUsedAt: v.optional(v.number()),
+	})
+		.index("by_user", ["userId"]) 
+		.index("by_user_target_language", ["userTargetLanguageId"]) 
+		.index("by_user_target_language_and_title", ["userTargetLanguageId", "title"]),
 
 	languageActivities: defineTable({
 		userId: v.id("users"),
 		userTargetLanguageId: v.id("userTargetLanguages"),
 		languageCode: v.optional(languageCodeValidator),
 		contentKey: v.optional(v.string()),
+		externalUrl: v.optional(v.string()),
 
 		// State
 		state: v.union(v.literal("in-progress"), v.literal("completed")), // active: the activity is currently in progress, finished: the activity has been completed
@@ -227,6 +256,30 @@ export default defineSchema({
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
 	}).index("by_content_key", ["contentKey"]),
+
+	// Spotify OAuth linkage and token storage
+	spotifyAccounts: defineTable({
+		userId: v.id("users"),
+		spotifyUserId: v.optional(v.string()),
+		displayName: v.optional(v.string()),
+		accessToken: v.string(),
+		refreshToken: v.string(),
+		expiresAt: v.number(),
+		tokenType: v.optional(v.string()),
+		scope: v.optional(v.string()),
+		status: v.optional(v.union(v.literal("connected"), v.literal("error"))),
+		lastError: v.optional(v.string()),
+		createdAt: v.optional(v.number()),
+		updatedAt: v.optional(v.number()),
+	}).index("by_user", ["userId"]).index("by_spotify_user", ["spotifyUserId"]),
+
+	// Ephemeral OAuth states for callback CSRF and mapping to user
+	spotifyAuthStates: defineTable({
+		state: v.string(),
+		userId: v.id("users"),
+		createdAt: v.number(),
+		redirectTo: v.optional(v.string()),
+	}).index("by_state", ["state"]).index("by_user", ["userId"]),
 
 	// Pre-release single-use codes for early access
 	preReleaseCodes: defineTable({

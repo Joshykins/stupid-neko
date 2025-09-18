@@ -1,5 +1,5 @@
 import { internal } from "./_generated/api";
-import { internalMutation, internalQuery, query } from "./_generated/server";
+import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { getEffectiveNow } from "./utils";
@@ -10,18 +10,35 @@ import { Id } from "./_generated/dataModel";
 // -----------------------------
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const VACATION_CAP = 7;
+const VACATION_COST = 1500;
 
 function dayStartMsOf(timestampMs: number): number {
   return Math.floor(timestampMs / DAY_MS) * DAY_MS;
 }
 
-async function getFreezeBalance(ctx: any, userId: Id<"users">): Promise<number> {
-  const latest = (await ctx.db
-    .query("streakFreezeLedger")
-    .withIndex("by_user_and_occurred", (q: any) => q.eq("userId", userId))
-    .order("desc")
-    .take(1))[0] as any | undefined;
-  return (latest?.newTotal as number | undefined) ?? 0;
+async function getVacationBalance(ctx: any, userId: Id<"users">): Promise<number> {
+  const user = await ctx.db.get(userId);
+  if (!user) return 0;
+  const currentTargetLanguageId = (user as any).currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+  let totalExperience = 0;
+  if (currentTargetLanguageId) {
+    const latest = (await ctx.db
+      .query("userTargetLanguageExperienceLedger")
+      .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId))
+      .order("desc")
+      .take(1))[0] as any | undefined;
+    totalExperience = Math.max(0, (latest?.runningTotalAfter as number | undefined) ?? 0);
+  }
+  const earned = Math.floor(totalExperience / VACATION_COST);
+  const ledger = await ctx.db
+    .query("streakVacationLedger")
+    .withIndex("by_user", (q: any) => q.eq("userId", userId))
+    .collect();
+  const grants = ledger.filter((e: any) => e.reason === "grant").length;
+  const uses = ledger.filter((e: any) => e.reason === "use").length;
+  const balance = Math.max(0, earned + grants - uses);
+  return Math.min(VACATION_CAP, balance);
 }
 
 // Fetch the most recent credited streak day for a user, optionally before a given day.
@@ -73,7 +90,7 @@ async function getOrCreateStreakDay(
   return row;
 }
 
-async function creditMissingDayWithFreeze(
+async function creditMissingDayWithVacation(
   ctx: any,
   userId: Id<"users">,
   missingDayStartMs: number,
@@ -81,7 +98,7 @@ async function creditMissingDayWithFreeze(
   nowUtc: number,
   source: "user" | "system_nudge",
 ): Promise<boolean> {
-  const balance = await getFreezeBalance(ctx, userId);
+  const balance = await getVacationBalance(ctx, userId);
   if (balance <= 0) return false;
 
   const coveredStreakLen = prevStreakLen + 1;
@@ -96,28 +113,28 @@ async function creditMissingDayWithFreeze(
       trackedMinutes: 0,
       xpGained: 0,
       credited: true,
-      creditedKind: "freeze",
+      creditedKind: "vacation",
       streakLength: coveredStreakLen,
       lastEventAtMs: nowUtc,
-      autoFreezeAppliedAtMs: nowUtc,
+      autoVacationAppliedAtMs: nowUtc,
     } as any);
   } else if (!existing.credited) {
     await ctx.db.patch(existing._id, {
       credited: true,
-      creditedKind: "freeze",
+      creditedKind: "vacation",
       streakLength: coveredStreakLen,
-      autoFreezeAppliedAtMs: nowUtc,
+      autoVacationAppliedAtMs: nowUtc,
     } as any);
   }
   await ctx.db.insert("streakDayLedger", {
     userId,
     dayStartMs: missingDayStartMs,
     occurredAt: nowUtc,
-    reason: "credit_freeze",
+    reason: "credit_vacation",
     streakLengthAfter: coveredStreakLen,
     source,
   } as any);
-  await ctx.db.insert("streakFreezeLedger", {
+  await ctx.db.insert("streakVacationLedger", {
     userId,
     occurredAt: nowUtc,
     reason: "use",
@@ -191,8 +208,8 @@ export const updateStreakDays = internalMutation({
     }, 0);
 
     // Aggregate XP deltas from experience ledger by occurredAt
-    const xpEvents = await ctx.db
-      .query("userTargetLanguageExperiences")
+  const xpEvents = await ctx.db
+      .query("userTargetLanguageExperienceLedger")
       .withIndex("by_user", (q: any) => q.eq("userId", args.userId))
       .collect();
     const xpGained = xpEvents.reduce((sum: number, e: any) => {
@@ -276,7 +293,7 @@ export const updateStreakOnActivity = internalMutation({
         streakLength = (prev.streakLength ?? 0) + 1;
       } else if (gap === 2 * DAY_MS) {
         const missingDayStart = prev.dayStartMs + DAY_MS;
-        const used = await creditMissingDayWithFreeze(
+        const used = await creditMissingDayWithVacation(
           ctx,
           args.userId as any,
           missingDayStart,
@@ -331,6 +348,7 @@ export const getStreakDataForHeatmap = query({
     v.object({
       values: v.array(v.number()),
       activityCounts: v.array(v.number()),
+      vacationFlags: v.array(v.boolean()),
       currentStreak: v.number(),
       longestStreak: v.number(),
       totalDays: v.number(),
@@ -361,38 +379,69 @@ export const getStreakDataForHeatmap = query({
         .withIndex("by_user", (q: any) => q.eq("userId", userId))
         .collect();
 
-      // Create a map of dayStartMs -> trackedMinutes
+      // Create maps for quick lookups
+      // 1) dayStartMs -> trackedMinutes
       const dayToMinutes = new Map<number, number>();
+      // 2) set of dayStartMs covered by a streak vacation
+      const vacationDays = new Set<number>();
       for (const row of daysRows) {
         const minutes = Math.max(0, Math.floor((row as any).trackedMinutes ?? 0));
-        dayToMinutes.set((row as any).dayStartMs, minutes);
+        const day = (row as any).dayStartMs as number;
+        dayToMinutes.set(day, minutes);
+        if ((row as any).credited && (row as any).creditedKind === "vacation") {
+          vacationDays.add(day);
+        }
       }
 
-      // Generate the values array for the heatmap
-      const values: number[] = [];
-      const activityCounts: number[] = [];
+      // First pass: collect minutes per day across the window
+      const minutesWindow: number[] = [];
+      const vacationFlags: boolean[] = [];
       for (let i = 0; i < days; i++) {
         const dayTimestamp = startDay + i * DAY_MS;
         const activities = dayToMinutes.get(dayTimestamp) ?? 0;
-        
-        // Store the actual activity count
+        minutesWindow.push(activities);
+        vacationFlags.push(vacationDays.has(dayTimestamp));
+      }
+
+      // Compute average minutes across the window (include zeros)
+      const totalMinutes = minutesWindow.reduce((sum, n) => sum + n, 0);
+      const avgMinutes = days > 0 ? totalMinutes / days : 0;
+
+      // Dynamic thresholds based on average
+      const t1 = avgMinutes * 0.35; // start of gradient
+      const t2 = avgMinutes * 0.40; // mid gradient
+      const t3 = avgMinutes * 0.45; // brightest threshold (max color)
+
+      // Second pass: compute intensities and expose activity counts
+      const activityCounts: number[] = [];
+      const values: number[] = [];
+      for (let i = 0; i < days; i++) {
+        const activities = minutesWindow[i] ?? 0;
         activityCounts.push(activities);
-        
+
         // Convert minutes learned to heatmap intensity (0-4)
         let intensity = 0;
         if (activities > 0) {
-          if (activities < 10) intensity = 1;
-          else if (activities < 20) intensity = 2;
-          else if (activities < 40) intensity = 3;
-          else intensity = 4;
+          if (avgMinutes <= 0) {
+            // Fallback absolute thresholds if average is 0
+            if (activities < 10) intensity = 1;
+            else if (activities < 20) intensity = 2;
+            else if (activities < 40) intensity = 3;
+            else intensity = 4;
+          } else {
+            if (activities < t1) intensity = 1;
+            else if (activities < t2) intensity = 2;
+            else if (activities < t3) intensity = 3;
+            else intensity = 4; // 45%+ of average minutes => max color
+          }
         }
-        
         values.push(intensity);
       }
 
       return {
         values,
         activityCounts,
+        vacationFlags,
         currentStreak,
         longestStreak,
         totalDays: days,
@@ -443,8 +492,8 @@ export const nudgeUserStreak = internalMutation({
       return { usedFreeze: false } as any;
     }
 
-    // Need a freeze available
-    const balance = await getFreezeBalance(ctx, args.userId as any);
+    // Need a vacation available
+    const balance = await getVacationBalance(ctx, args.userId as any);
     if (balance <= 0) return { usedFreeze: false } as any;
 
     const coveredStreakLen = (prev.streakLength ?? 0) + 1;
@@ -456,17 +505,17 @@ export const nudgeUserStreak = internalMutation({
         trackedMinutes: 0,
         xpGained: 0,
         credited: true,
-        creditedKind: "freeze",
+        creditedKind: "vacation",
         streakLength: coveredStreakLen,
         lastEventAtMs: nowUtc,
-        autoFreezeAppliedAtMs: nowUtc,
+        autoVacationAppliedAtMs: nowUtc,
       } as any);
     } else {
       await ctx.db.patch(missing._id, {
         credited: true,
-        creditedKind: "freeze",
+        creditedKind: "vacation",
         streakLength: coveredStreakLen,
-        autoFreezeAppliedAtMs: nowUtc,
+        autoVacationAppliedAtMs: nowUtc,
       } as any);
     }
 
@@ -474,12 +523,12 @@ export const nudgeUserStreak = internalMutation({
       userId: args.userId,
       dayStartMs: missingDayStart,
       occurredAt: nowUtc,
-      reason: "credit_freeze",
+      reason: "credit_vacation",
       streakLengthAfter: coveredStreakLen,
       source: "system_nudge",
     } as any);
 
-    await ctx.db.insert("streakFreezeLedger", {
+    await ctx.db.insert("streakVacationLedger", {
       userId: args.userId,
       occurredAt: nowUtc,
       reason: "use",
@@ -495,5 +544,62 @@ export const nudgeUserStreak = internalMutation({
     await ctx.db.patch(args.userId, { currentStreak, longestStreak } as any);
 
     return { usedFreeze: true, coveredDayStartMs: missingDayStart } as any;
+  },
+});
+
+// -----------------------------
+// Streak Vacation status & purchase
+// -----------------------------
+
+export const getVacationStatus = query({
+  args: {},
+  returns: v.union(
+    v.object({
+      balance: v.number(),
+      cost: v.number(),
+      remainderTowardsNext: v.number(),
+      percentTowardsNext: v.number(),
+      totalExperience: v.number(),
+      autoApplyHours: v.number(),
+      moneyPriceUsd: v.number(),
+      cap: v.number(),
+      capped: v.boolean(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    const currentTargetLanguageId = (user as any).currentTargetLanguageId as Id<"userTargetLanguages"> | undefined;
+    if (!currentTargetLanguageId) return null;
+
+  const latest = (await ctx.db
+      .query("userTargetLanguageExperienceLedger")
+      .withIndex("by_user_target_language", (q: any) => q.eq("userTargetLanguageId", currentTargetLanguageId))
+      .order("desc")
+      .take(1))[0] as any | undefined;
+
+    const totalExperience = Math.max(0, (latest?.runningTotalAfter as number | undefined) ?? 0);
+    const remainderTowardsNext = totalExperience % VACATION_COST;
+    const percentTowardsNext = Math.max(0, Math.min(100, Math.floor((remainderTowardsNext / VACATION_COST) * 100)));
+    const balance = await getVacationBalance(ctx, userId as any);
+    const cap = VACATION_CAP;
+    const capped = balance >= cap;
+
+    return {
+      balance,
+      cost: VACATION_COST,
+      remainderTowardsNext,
+      percentTowardsNext: capped ? 100 : percentTowardsNext,
+      totalExperience,
+      autoApplyHours: 24,
+      moneyPriceUsd: 2.99,
+      cap,
+      capped,
+    } as any;
   },
 });
