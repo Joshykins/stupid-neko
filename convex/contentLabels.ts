@@ -18,7 +18,7 @@ export const getByContentKey = internalQuery({
       authorUrl: v.optional(v.string()),
       description: v.optional(v.string()),
       thumbnailUrl: v.optional(v.string()),
-      fullDurationInSeconds: v.optional(v.number()),
+      fullDurationInMs: v.optional(v.number()),
       contentLanguageCode: v.optional(languageCodeValidator),
       languageEvidence: v.optional(v.array(v.string())),
     })
@@ -42,7 +42,7 @@ export const getByContentKey = internalQuery({
       authorUrl: label.authorUrl,
       description: label.description,
       thumbnailUrl: label.thumbnailUrl,
-      fullDurationInSeconds: label.fullDurationInSeconds,
+      fullDurationInMs: (label as any).fullDurationInMs,
       contentLanguageCode: label.contentLanguageCode,
       languageEvidence: label.languageEvidence,
     } as any;

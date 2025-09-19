@@ -6,6 +6,7 @@ import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { contentSourceValidator } from "./schema";
+import { getEffectiveNow, dangerousTestingEnabled } from "./utils";
 
 
 export const recordContentActivity = internalMutation({
@@ -47,8 +48,8 @@ export const recordContentActivity = internalMutation({
 
         const contentKey = args.contentKey;
 
-        const now = Date.now();
-
+        const occurredAt = await getEffectiveNow(ctx);
+        
         // Inspect existing content label
         const label = await ctx.db
             .query("contentLabel")
@@ -61,7 +62,7 @@ export const recordContentActivity = internalMutation({
                 userId,
                 contentKey,
                 activityType: args.activityType,
-                occurredAt: args.occurredAt ?? now,
+                occurredAt,
                 isWaitingOnLabeling: true,
             });
             const enqueue: { contentLabelId: Id<"contentLabel">; contentKey: string; stage: "queued" | "processing" | "completed" | "failed"; existed: boolean } = await ctx.runMutation(internal.contentLabeling.getOrEnqueue, {
@@ -85,7 +86,7 @@ export const recordContentActivity = internalMutation({
                 userId,
                 contentKey,
                 activityType: args.activityType,
-                occurredAt: args.occurredAt ?? now,
+                occurredAt,
                 isWaitingOnLabeling: true,
             });
             return {
@@ -116,7 +117,7 @@ export const recordContentActivity = internalMutation({
             userId,
             contentKey,
             activityType: args.activityType,
-            occurredAt: args.occurredAt ?? now,
+            occurredAt,
             isWaitingOnLabeling: false,
         });
         return {

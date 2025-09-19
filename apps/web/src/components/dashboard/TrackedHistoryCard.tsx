@@ -5,29 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { LanguageCode } from "../../../../../convex/schema";
+// Use Convex-generated return types; avoid local type definitions
 // Avoid Radix ScrollArea here to prevent inner display: table wrapper pushing content
-import { formatSeconds } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
-import { BookA, Zap, ZapOff } from "lucide-react";
+import { BookA, Zap, ZapOff, ExternalLink, Rocket } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { LanguageFlagSVG } from "../LanguageFlagSVG";
 
-type DisplayItem = { id: string; title: string; minutes: number; source?: string; sourceKey?: "youtube" | "spotify" | "anki" | "manual"; date: string; occurredAt?: number; description?: string; language?: string; state?: "in-progress" | "completed"; contentKey?: string; label?: { title?: string; authorName?: string; thumbnailUrl?: string; fullDurationInSeconds?: number; contentUrl?: string; }; awardedExperience?: number; };
-
-type LanguageActivityResult = {
-    _id: string;
-    _creationTime: number;
-    userId: string;
-    source?: "youtube" | "spotify" | "anki" | "manual";
-    isManuallyTracked?: boolean;
-    languageCode?: LanguageCode;
-    title?: string;
-    description?: string;
-    durationInSeconds?: number;
-    occurredAt?: number;
-    state: "in-progress" | "completed";
-    contentKey?: string;
-    label?: { title?: string; authorName?: string; thumbnailUrl?: string; fullDurationInSeconds?: number; contentUrl?: string; };
-    awardedExperience?: number;
-};
 
 function capitalize(word: string | undefined): string {
     if (!word) return "";
@@ -57,7 +41,7 @@ function dateFooterLabel(ts?: number): string {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     if (ts >= startOfToday) {
-        return `Today at ${formatTime(ts)}`;
+        return `${formatTime(ts)}`;
     }
     const dateStr = d.toLocaleDateString(undefined, { month: "long", day: "numeric" });
     return `${dateStr}, ${formatTime(ts)}`;
@@ -65,63 +49,35 @@ function dateFooterLabel(ts?: number): string {
 
 
 
-export default function TrackedHistoryCard() {
-    const data = useQuery(api.languageActivityFunctions.listRecentLanguageActivities, { limit: 20 });
+function formatHoursMinutesLabel(totalSeconds?: number): string {
+    const seconds = Math.max(0, Math.floor(totalSeconds ?? 0));
+    const totalMinutes = Math.floor(seconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const parts: Array<string> = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    // Show minutes if there are any, or always when hours is 0 (e.g., 0h 05m -> 5m)
+    if (minutes > 0 || hours === 0) parts.push(`${minutes}m`);
+    return parts.join(" ");
+}
 
-    const items: Array<DisplayItem> = React.useMemo(() => {
-        if (!data) return [];
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const mapped = data.map((doc: LanguageActivityResult) => {
-            const minutes = Math.max(0, Math.round((doc.durationInSeconds ?? 0) / 60));
-            const occurredAt = doc.occurredAt ?? doc._creationTime;
-            const inferredSource = (() => {
-                const key = doc.contentKey ?? "";
-                if (key.startsWith("youtube:")) return "youtube" as const;
-                if (key.startsWith("spotify:")) return "spotify" as const;
-                if (key.startsWith("anki:")) return "anki" as const;
-                return "manual" as const;
-            })();
-            return {
-                id: doc._id,
-                title: doc.title ?? doc.label?.title ?? "(untitled)",
-                minutes,
-                source: capitalize(inferredSource),
-                sourceKey: inferredSource,
-                date: humanDate(occurredAt),
-                occurredAt,
-                description: doc.description ?? undefined,
-                language: doc.languageCode,
-                state: doc.state,
-                contentKey: doc.contentKey,
-                label: doc.label,
-                awardedExperience: doc.awardedExperience ?? 0,
-            } as DisplayItem;
-        });
-        // Only include items from today (local time)
-        const todays = mapped.filter((i) => (i.occurredAt ?? 0) >= startOfToday);
-        // Prioritize in-progress first, then by occurredAt desc
-        return todays.sort((a, b) => {
-            const aActive = a.state === "in-progress";
-            const bActive = b.state === "in-progress";
-            if (aActive && !bActive) return -1;
-            if (!aActive && bActive) return 1;
-            return (b.occurredAt ?? 0) - (a.occurredAt ?? 0);
-        });
-    }, [data]);
+// Language flag SVG is provided by LanguageFlagSVG component
 
-    // Live ticking for in-progress items only (completed items are frozen)
-    const [nowTick, setNowTick] = React.useState<number>(Date.now());
-    React.useEffect(() => {
-        const interval = setInterval(() => setNowTick(Date.now()), 1000);
-        return () => clearInterval(interval);
-    }, []);
+
+type RecentItems = NonNullable<ReturnType<typeof useQuery<typeof api.languageActivityFunctions.listRecentLanguageActivities>>>;
+type RecentItem = RecentItems extends Array<infer T> ? T : never;
+
+const TrackedHistoryItem = ({ item }: { item: RecentItem; }) => {
+    const key = item.sourceKey ?? "manual";
+
+    const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
+
 
     const SOURCE_STYLES: Record<string, { dot: string; border: string; badge: string; }> = React.useMemo(() => ({
-        youtube: { dot: "bg-red-500", border: "border-red-500", badge: "text-red-600 bg-red-600/10" },
-        spotify: { dot: "bg-green-500", border: "border-green-500", badge: "text-green-600 bg-green-600/10" },
-        anki: { dot: "bg-indigo-500", border: "border-indigo-500", badge: "text-indigo-600 bg-indigo-600/10" },
-        manual: { dot: "bg-slate-400", border: "border-slate-400", badge: "text-slate-600 bg-slate-600/10" },
+        youtube: { dot: "bg-[var(--source-youtube)]", border: "border-[var(--source-youtube)]", badge: "bg-[var(--source-youtube-soft)]" },
+        spotify: { dot: "bg-[var(--source-spotify)]", border: "border-[var(--source-spotify)]", badge: "bg-[var(--source-spotify-soft)]" },
+        anki: { dot: "bg-[var(--source-anki)]", border: "border-[var(--source-anki)]", badge: "bg-[var(--source-anki-soft)]" },
+        manual: { dot: "bg-[var(--source-misc)]", border: "border-[var(--source-misc)]", badge: "bg-[var(--source-misc-soft)]" },
     }), []);
 
     const SOURCE_ICON: Record<string, string> = React.useMemo(() => ({
@@ -130,7 +86,131 @@ export default function TrackedHistoryCard() {
         anki: "/brands/anki.svg",
     }), []);
 
-    // No progress bar; we only display current listened time
+
+    const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
+
+    // Derive presentation fields
+    const minutes = Math.max(0, Math.round(((item as any).durationInMs ?? ((item.durationInSeconds ?? 0) * 1000)) / 60000));
+    const occurredAt = item.occurredAt ?? item._creationTime;
+    const title = item.title ?? item.label?.title ?? "(untitled)";
+
+    return (
+        <li key={item._id as unknown as string} >
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div
+                        className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
+                        aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
+                    >
+                        <div className="flex items-center gap-3 flex-1">
+                            {key === "manual" ? (
+                                <Zap size={24} className="fill-black stroke-black inline-block" />
+                            ) : SOURCE_ICON[key] ? (
+                                <img src={SOURCE_ICON[key]} alt={item.source ?? key} width={24} height={24} className="inline-block" />
+                            ) : (
+                                <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}></span>
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <div className="font-bold flex items-center gap-1 min-w-0">
+                                    {item.label?.contentUrl ? (
+                                        <>
+                                            <a
+                                                href={item.label.contentUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="underline w-[200px] decoration-main !truncate min-w-0 flex-1"
+                                            >
+                                                <span className="truncate block min-w-0">{title}</span>
+                                            </a>
+                                            <a
+                                                href={item.label.contentUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                aria-label="Open link"
+                                                className="text-main-foreground/80 hover:text-main-foreground flex-shrink-0"
+                                            >
+                                                <ExternalLink className="!size-4" />
+                                            </a>
+
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="truncate block min-w-0 flex-1">{title}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex-shrink-0 text-sm whitespace-nowrap font-bold font-display text-main-foreground">{xp} XP • {formatHoursMinutesLabel(minutes)}</div>
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={16} align="start" className="w-80">
+                    <div className="space-y-2">
+                        <div className="text-base font-extrabold leading-tight">
+                            {title}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 text-[11px]">
+                            {item.languageCode && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
+                                    <LanguageFlagSVG language={item.languageCode as LanguageCode} className="!w-4 !h-3 rounded-[2px]" />
+                                    <span className="uppercase tracking-wide">{item.languageCode}</span>
+                                </span>
+                            )}
+                            {item.source && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${styles.badge}`}>
+                                    <span className="opacity-90">{item.source}</span>
+                                </span>
+                            )}
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
+                                {dateFooterLabel(occurredAt)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
+                                {formatHoursMinutesLabel(minutes)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-[var(--color-heatmap-1)]">
+                                <Rocket className="!size-3" /> {xp.toLocaleString()} XP
+                            </span>
+
+                        </div>
+                        {item.label?.authorName && (
+                            <div className="text-xs opacity-80">By {item.label.authorName}</div>
+                        )}
+                        {item.description && (
+                            <div className="text-xs opacity-90 leading-relaxed">
+                                {item.description}
+                            </div>
+                        )}
+                        {item.label?.contentUrl && (
+                            <a href={item.label.contentUrl} target="_blank" rel="noreferrer" className="text-xs underline">
+                                Open content
+                            </a>
+                        )}
+                    </div>
+                </TooltipContent>
+            </Tooltip>
+        </li>
+    );
+};
+
+export default function TrackedHistoryCard() {
+    const data = useQuery(api.languageActivityFunctions.listRecentLanguageActivities, { limit: 20 });
+
+    const items = React.useMemo(() => {
+        if (!data) return [] as RecentItems;
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todays = data.filter((doc) => (doc.occurredAt ?? doc._creationTime) >= startOfToday);
+        return todays.sort((a, b) => {
+            const aActive = a.state === "in-progress";
+            const bActive = b.state === "in-progress";
+            if (aActive && !bActive) return -1;
+            if (!aActive && bActive) return 1;
+            return ((b.occurredAt ?? b._creationTime) - (a.occurredAt ?? a._creationTime));
+        }) as RecentItems;
+    }, [data]);
+
+
+
 
     return (
         <Card>
@@ -147,52 +227,13 @@ export default function TrackedHistoryCard() {
                             <div className="text-sm text-muted-foreground">No tracked items yet.</div>
                         )}
                         {items.length > 0 && (
-                            <div className="">
+                            <TooltipProvider>
                                 <ul className="space-y-2">
-                                    {items.map((i, idx) => {
-                                        const doc = data?.[idx] as any;
-                                        const fromFavorite: boolean = Boolean(doc?.favoriteLanguageActivityId);
-                                        const key = i.sourceKey ?? "manual";
-                                        const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
-                                        const baseSeconds = Math.max(0, Math.floor((i.minutes * 60)));
-                                        const sinceOccured = i.state === "in-progress" ? Math.max(0, Math.floor((nowTick - (i.occurredAt ?? nowTick)) / 1000)) : 0;
-                                        const capped = i.label?.fullDurationInSeconds ?? undefined;
-                                        const liveElapsed = Math.min(baseSeconds + sinceOccured, typeof capped === "number" && capped > 0 ? capped : baseSeconds + sinceOccured);
-                                        return (
-                                            <li key={i.id}>
-                                                <div
-                                                    className={`group flex items-center justify-between gap-3 p-2 rounded-base transition-all border-2 bg-secondary-background text-main-foreground border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow !w-full`}
-                                                    aria-label={`${i.title} ${i.source ? `from ${i.source}` : ""}`}
-                                                >
-                                                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                                                        {key === "manual" ? (
-                                                            <Zap size={24} className="fill-black stroke-black inline-block mt-0.5" />
-                                                        ) : SOURCE_ICON[key] ? (
-                                                            <img src={SOURCE_ICON[key]} alt={i.source ?? key} width={24} height={24} className="inline-block mt-0.5" />
-                                                        ) : (
-                                                            <span className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}></span>
-                                                        )}
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="font-bold w-[200px] truncate flex items-center gap-1">
-                                                                {i.title}
-                                                                {fromFavorite && <span title="Created from favorite" className="inline-block text-amber-500">★</span>}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {i.label?.authorName ? `By ${i.label.authorName}` : ""}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
-                                                        <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold font-display text-main-foreground">{i.state === "in-progress" ? "Tracking" : "Tracked"}</span> {formatSeconds(liveElapsed)}</div>
-                                                        <div className="text-xs text-muted-foreground whitespace-nowrap"><span className="font-bold text-main-foreground">Awarded</span> {Math.max(0, Math.floor(i.awardedExperience ?? 0))} XP</div>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-0.25 text-[11px] text-muted-foreground text-right pr-1">{dateFooterLabel(i.occurredAt)}</div>
-                                            </li>
-                                        );
-                                    })}</ul>
-
-                            </div>
+                                    {items.map((i) => (
+                                        <TrackedHistoryItem key={String(i._id)} item={i} />
+                                    ))}
+                                </ul>
+                            </TooltipProvider>
                         )}
                     </div>
                 </ScrollArea>

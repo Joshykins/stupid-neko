@@ -8,7 +8,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { PlusCircle, Star } from "lucide-react";
 import { ManualTrackDialog } from "../ManualTrackDialog";
-import { FavoritesAddDialog } from "../FavoritesAddDialog";
+import { AddFromFavorite } from "../AddFromFavorite";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Form, FormField } from "../ui/form";
 import { useForm } from "react-hook-form";
@@ -89,20 +89,21 @@ export default function ManuallyTrackRecord() {
                     >
                         <span className="truncate">Add New</span> <PlusCircle className="!size-6 !stroke-2.5 ml-2 flex-shrink-0" />
                     </Button>
-                    <Button
-                        onClick={() => { setFavoritesOpen(true); }}
-                        size="cta"
-                        variant={"neutral"}
-                        className="px-2 bold flex items-center justify-center"
-                    >
-                        <Star className="!size-6 fill-yellow-300 stroke-border" />
-                    </Button>
+                    <AddFromFavorite>
+                        <Button
+                            onClick={() => { /* handled by PopoverTrigger */ }}
+                            size="cta"
+                            variant={"neutral"}
+                            className="px-2 bold flex items-center justify-center"
+                        >
+                            <Star className="!size-6 fill-yellow-300 stroke-border" />
+                        </Button>
+                    </AddFromFavorite>
                 </div>
 
             </Card >
 
             <ManualTrackDialog open={manualOpen} onOpenChange={setManualOpen} />
-            <FavoritesAddDialog open={favoritesOpen} onOpenChange={setFavoritesOpen} />
 
         </>
     );

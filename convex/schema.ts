@@ -85,7 +85,7 @@ export default defineSchema({
 	streakDays: defineTable({
 		userId: v.id("users"),
 		dayStartMs: v.number(),
-		trackedMinutes: v.number(),
+	trackedMs: v.number(),
 		xpGained: v.number(),
 		credited: v.boolean(),
 		creditedKind: v.optional(v.union(v.literal("activity"), v.literal("vacation"))),
@@ -107,7 +107,7 @@ export default defineSchema({
 			v.literal("credit_vacation"),
 			v.literal("uncredit"),
 		),
-		minutesDelta: v.optional(v.number()),
+	minutesDeltaMs: v.optional(v.number()),
 		xpDelta: v.optional(v.number()),
 		streakLengthAfter: v.optional(v.number()),
 		source: v.optional(v.union(v.literal("user"), v.literal("system_nudge"))),
@@ -133,7 +133,7 @@ export default defineSchema({
 	userTargetLanguages: defineTable({
 		userId: v.id("users"),
 		languageCode: v.optional(languageCodeValidator),
-		totalMinutesLearning: v.optional(v.number()),
+	totalMsLearning: v.optional(v.number()),
 		qualifierFormCurrentLevel: v.optional(v.string()),
 	})
 		.index("by_user", ["userId"]) 
@@ -176,7 +176,7 @@ export default defineSchema({
 		title: v.string(),
 		description: v.optional(v.string()),
 		externalUrl: v.optional(v.string()),
-		defaultDurationInMinutes: v.optional(v.number()),
+	defaultDurationInMs: v.optional(v.number()),
 		contentCategories: v.optional(
 			v.array(v.union(v.literal("audio"), v.literal("video"), v.literal("text"), v.literal("other"))),
 		),
@@ -203,7 +203,8 @@ export default defineSchema({
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 
-		durationInSeconds: v.optional(v.number()),
+		// Canonical duration in milliseconds
+		durationInMs: v.optional(v.number()),
 		occurredAt: v.optional(v.number()),  
 	})
 		.index("by_user", ["userId"])
@@ -243,7 +244,7 @@ export default defineSchema({
 		authorUrl: v.optional(v.string()),
 		description: v.optional(v.string()),
 		thumbnailUrl: v.optional(v.string()),
-		fullDurationInSeconds: v.optional(v.number()),
+	fullDurationInMs: v.optional(v.number()),
 	
 		// Language signals
 		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language

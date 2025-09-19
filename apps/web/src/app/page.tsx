@@ -28,12 +28,12 @@ export default async function Home() {
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
 					<IntegrationsCard />
-					<WeeklyBarsCard />
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
 					{/* <DonutChartCard /> */}
 					<StreakDisplay title="Daily Streak" cellSize={14} />
 					<StreakVacation isLiveVersion={false} />
+					<WeeklyBarsCard />
 				</div>
 			</div>
 			<div className="pt-4">

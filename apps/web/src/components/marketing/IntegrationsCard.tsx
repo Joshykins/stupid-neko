@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export function IntegrationsCard() {
     const integrations = [
-        // {
-        //     name: "Spotify",
-        //     icon: "/brands/spotify.svg",
-        //     points: [
-        //         "Only Japanese music (artist locale/title script)",
-        //         "Songs you play",
-        //         "Artists you listen to",
-        //         "Minutes listened",
-        //     ],
-        // },
+        {
+            name: "Spotify",
+            icon: "/brands/spotify.svg",
+            points: [
+                "Only music in your target language (artist locale/title script).",
+                "Songs you play.",
+                "Artists you listen to.",
+                "Minutes listened.",
+            ],
+        },
         {
             name: "YouTube",
             icon: "/brands/youtube.svg",
@@ -22,6 +22,16 @@ export function IntegrationsCard() {
                 "Detects the language of the video.",
                 "Tracks the time watched.",
                 "Experience earned for watching.",
+            ],
+        },
+        {
+            name: "Browser Plugin",
+            icon: "/brands/browser-extension.svg",
+            points: [
+                "Auto-tracks websites you read and videos you watch.",
+                "Detects the language of pages and videos.",
+                "Tracks time on page.",
+                "Experience earned for reading and watching.",
             ],
         },
         {
@@ -34,16 +44,6 @@ export function IntegrationsCard() {
                 "More coming soon...",
             ],
         }
-        // {
-        //     name: "Anki",
-        //     icon: "/brands/anki.svg",
-        //     points: [
-        //         "Only Japanese decks or tagged 'jp'",
-        //         "Reviews completed",
-        //         "New cards learned",
-        //         "Study time",
-        //     ],
-        // },
     ];
     return (
         <Card>
@@ -70,5 +70,3 @@ export function IntegrationsCard() {
         </Card>
     );
 }
-
-

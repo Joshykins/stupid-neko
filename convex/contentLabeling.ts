@@ -115,7 +115,7 @@ export const completeWithPatch = internalMutation({
             authorUrl: v.optional(v.string()),
             description: v.optional(v.string()),
             thumbnailUrl: v.optional(v.string()),
-            fullDurationInSeconds: v.optional(v.number()),
+            fullDurationInMs: v.optional(v.number()),
             
             // Language signals
             contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language

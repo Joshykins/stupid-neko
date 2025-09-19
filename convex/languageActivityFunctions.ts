@@ -73,7 +73,8 @@ export const addLanguageActivity = internalMutation({
             title: args.title,
             userTargetLanguageId: args.userTargetLanguageId ,
             description: args.description ?? undefined,
-            durationInSeconds: Math.max(0, Math.round(args.durationInMinutes * 60)),
+            // Canonical ms field
+            durationInMs: Math.max(0, Math.round(args.durationInMinutes * 60 * 1000)),
             occurredAt,
             state: "completed",
             contentKey: args.contentKey ?? undefined,
@@ -200,7 +201,7 @@ export const listRecentLanguageActivities = query({
             languageCode: v.optional(languageCodeValidator),
             title: v.optional(v.string()),
             description: v.optional(v.string()),
-            durationInSeconds: v.optional(v.number()),
+            durationInMs: v.optional(v.number()),
             occurredAt: v.optional(v.number()),
             state: v.union(v.literal("in-progress"), v.literal("completed")),
             contentKey: v.optional(v.string()),
@@ -262,7 +263,7 @@ export const recentManualLanguageActivities = query({
     returns: v.array(
         v.object({
             title: v.optional(v.string()),
-            durationInSeconds: v.optional(v.number()),
+            durationInMs: v.optional(v.number()),
             // categories removed from persisted schema
             description: v.optional(v.string()),
             userTargetLanguageId: v.id("userTargetLanguages"),
@@ -280,7 +281,7 @@ export const recentManualLanguageActivities = query({
             .filter((it) => it.isManuallyTracked)
             .map((it) => ({
                 title: it.title,
-                durationInSeconds: it.durationInSeconds,
+                durationInMs: (it as any).durationInMs,
                 description: it.description,
                 userTargetLanguageId: it.userTargetLanguageId,
             }));
@@ -388,7 +389,7 @@ export const getWeeklySourceDistribution = query({
             const dayIndex = Math.floor((occurredOrdinal - mondayUtcOrdinal) / (24 * 60 * 60 * 1000));
             if (dayIndex < 0 || dayIndex > 6) continue;
 
-            const minutes = Math.max(0, Math.round(((it as any).durationInSeconds ?? 0) / 60));
+            const minutes = Math.max(0, Math.round(((it as any).durationInMs ?? 0) / 60000));
 
             const key = (it as any).contentKey as string | undefined;
             const inferred: "youtube" | "spotify" | "anki" | "misc" = key?.startsWith("youtube:")
@@ -450,7 +451,7 @@ export const deleteLanguageActivity = mutation({
         }
 
         // Adjust minutes
-        const durationMinutes = Math.max(0, Math.round(((act as any).durationInSeconds ?? 0) / 60));
+        const durationMinutes = Math.max(0, Math.round(((act as any).durationInMs ?? 0) / 60000));
         if (durationMinutes > 0) {
             const utl = await ctx.db.get(utlId);
             if (utl) {

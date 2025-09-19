@@ -180,7 +180,7 @@ export const updateStreakDays = internalMutation({
     occurredAt: v.optional(v.number()),
   },
   returns: v.object({
-    trackedMinutes: v.number(),
+    trackedMs: v.number(),
     xpGained: v.number(),
   }),
   handler: async (ctx, args) => {
@@ -202,9 +202,9 @@ export const updateStreakDays = internalMutation({
       )
       .collect();
 
-    const trackedMinutes = activitiesOnThisDay.reduce((sum: number, a: any) => {
-      const secs = Math.max(0, Math.floor(a?.durationInSeconds ?? 0));
-      return sum + Math.floor(secs / 60);
+    const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {
+      const ms = Math.max(0, Math.floor(a?.durationInMs ?? 0));
+      return sum + ms;
     }, 0);
 
     // Aggregate XP deltas from experience ledger by occurredAt
@@ -226,7 +226,7 @@ export const updateStreakDays = internalMutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        trackedMinutes,
+        trackedMs,
         xpGained,
         lastEventAtMs: Math.max(existing.lastEventAtMs ?? 0, nowUtc),
       } as any);
@@ -234,7 +234,7 @@ export const updateStreakDays = internalMutation({
       await ctx.db.insert("streakDays", {
         userId: args.userId,
         dayStartMs: dayStart,
-        trackedMinutes,
+        trackedMs,
         xpGained,
         credited: false,
         streakLength: 0,
@@ -242,7 +242,7 @@ export const updateStreakDays = internalMutation({
       } as any);
     }
 
-    return { trackedMinutes, xpGained };
+    return { trackedMs, xpGained };
   },
 });
 

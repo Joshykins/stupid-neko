@@ -49,8 +49,8 @@ export const getExperienceForActivity = internalQuery({
       )
       .collect();
     const totalMinutesToday = activitiesOnThisDay.reduce((sum: number, a: any) => {
-      const secs = Math.max(0, Math.floor(a?.durationInSeconds ?? 0));
-      return sum + Math.floor(secs / 60);
+      const ms = Math.max(0, Math.floor(a?.durationInMs ?? 0));
+      return sum + Math.floor(ms / 60000);
     }, 0);
 
     // Subtract this entry's minutes if it was already inserted before this query
@@ -127,10 +127,10 @@ export const addExperience = internalMutation({
 
         // Update minutes only
         if (args.durationInMinutes && args.durationInMinutes > 0) {
-            const currentTotalMinutes = userTargetLanguage.totalMinutesLearning ?? 0;
+    const currentTotalMinutes = Math.floor(((userTargetLanguage as any).totalMsLearning ?? 0) / 60000);
             const newTotalMinutes = currentTotalMinutes + args.durationInMinutes;
             await ctx.db.patch(userTargetLanguage._id, {
-                totalMinutesLearning: newTotalMinutes,
+                totalMsLearning: newTotalMinutes * 60000,
             });
         }
 
@@ -175,7 +175,7 @@ export const addExperience = internalMutation({
             await ctx.db.insert("streakDays", {
                 userId,
                 dayStartMs,
-                trackedMinutes: 0,
+        trackedMs: 0,
                 xpGained: Math.max(0, finalDelta),
                 credited: false,
                 streakLength: 0,

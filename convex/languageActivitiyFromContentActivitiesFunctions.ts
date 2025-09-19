@@ -1,7 +1,9 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
+import { dangerousTestingEnabled } from "./utils";
+import type { MediaType, LanguageCode } from "./schema";
 
 type ActivityType = "heartbeat" | "start" | "pause" | "end";
 
@@ -31,13 +33,13 @@ export const translateBatch = internalMutation({
             .take(limit);
 
         // Filter to those ready to translate
-        const ready = candidates.filter((row: any) => !row.translated);
+        const ready = candidates.filter((row) => !row.translated);
         if (ready.length === 0) {
             return { processed: 0, createdActivities: 0 } as const;
         }
 
         // Group by userId + contentKey
-        const keyToEvents: Map<string, Array<any>> = new Map();
+        const keyToEvents: Map<string, Array<Doc<"contentActivities">>> = new Map();
         for (const row of ready) {
             const key = `${row.userId}:${row.contentKey}`;
             if (!keyToEvents.has(key)) keyToEvents.set(key, []);
@@ -56,8 +58,8 @@ export const translateBatch = internalMutation({
             let lastTimeStamp: number | null = null;
 
             for (const event of events) {
-                const timeStamp: number = (event.occurredAt ?? event._creationTime) as number;
-                const type: ActivityType = event.activityType as ActivityType;
+                const timeStamp: number = (event.occurredAt ?? event._creationTime);
+                const type: ActivityType = event.activityType;
 
                 if (!current) {
                     if (type === "start" || type === "heartbeat") {
@@ -150,10 +152,12 @@ export const translateBatch = internalMutation({
                                         processed += 1;
                                     }
                                 } else {
+                                    const devDate: number | undefined = user.devDate;
+                                    const startMsEffective: number = dangerousTestingEnabled() && typeof devDate === "number" ? devDate : current.startMs;
                                     if (durationMs >= MIN_SESSION_MS) {
-                                        const title: string = (label?.title as string | undefined) ?? current.contentKey;
-                                        const languageCode = label?.contentLanguageCode as any;
-                                        const contentMediaType = label?.contentMediaType as ("audio" | "video" | "text" | undefined);
+                                        const title: string = (label?.title ?? current.contentKey);
+                                        const languageCode: LanguageCode | undefined = label?.contentLanguageCode;
+                                        const contentMediaType: MediaType | undefined = label?.contentMediaType;
                                         // Upsert in-progress record by (userId, state, contentKey)
                                         const existing = await ctx.db
                                             .query("languageActivities")
@@ -164,10 +168,10 @@ export const translateBatch = internalMutation({
 
                                         if (existing) {
                                             await ctx.db.patch(existing._id, {
-                                                durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
+                                                durationInMs: Math.max(0, Math.round(durationMs)),
                                                 languageCode,
                                                 title,
-                                                occurredAt: current.startMs,
+                                                occurredAt: startMsEffective,
                                             });
                                         } else {
                                             await ctx.db.insert("languageActivities", {
@@ -178,8 +182,8 @@ export const translateBatch = internalMutation({
                                                 state: "in-progress",
                                                 title,
                                                 isManuallyTracked: false,
-                                                durationInSeconds: Math.max(0, Math.round(durationMs / 1000)),
-                                                occurredAt: current.startMs,
+                                                durationInMs: Math.max(0, Math.round(durationMs)),
+                                                occurredAt: startMsEffective,
                                             });
                                         }
                                     }
@@ -246,12 +250,13 @@ export const translateBatch = internalMutation({
                     continue;
                 }
 
-                const title: string = (label?.title as string | undefined) ?? s.contentKey;
-                const languageCode = label?.contentLanguageCode as any;
-                const source = label?.contentSource as any;
-                const contentMediaType = label?.contentMediaType as ("audio" | "video" | "text" | undefined);
+                const title: string = (label?.title ?? s.contentKey);
+                const languageCode: LanguageCode | undefined = label?.contentLanguageCode;
+                const contentMediaType: MediaType | undefined = label?.contentMediaType;
 
                 const durationInMinutes = Math.max(1, Math.round(durationMs / 60000));
+                const devDate: number | undefined = user.devDate;
+                const startMsEffective: number = dangerousTestingEnabled() && typeof devDate === "number" ? devDate : s.startMs;
 
                 try {
                     // If an in-progress exists for this contentKey, patch to completed; else insert completed
@@ -265,13 +270,14 @@ export const translateBatch = internalMutation({
                     if (existing) {
                         await ctx.db.patch(existing._id, {
                             state: "completed",
-                            durationInSeconds: Math.max(0, Math.round((s.endMs - (existing.occurredAt ?? s.startMs)) / 1000)),
+                            durationInMs: Math.max(0, Math.round((s.endMs - startMsEffective))),
                             languageCode,
                             title,
+                            occurredAt: startMsEffective,
                         });
                         // Ensure daily streak is credited for this finalized session
                         try {
-                            const occurredAtForStreak: number = (existing.occurredAt as number | undefined) ?? s.startMs;
+                            const occurredAtForStreak: number = startMsEffective;
                             await ctx.runMutation(internal.streakFunctions.updateStreakOnActivity, {
                                 userId: s.userId,
                                 occurredAt: occurredAtForStreak,
@@ -300,7 +306,7 @@ export const translateBatch = internalMutation({
                             title,
                             description: undefined,
                             durationInMinutes,
-                            occurredAt: s.startMs,
+                            occurredAt: startMsEffective,
                             contentKey: s.contentKey,
                             languageCode,
                             contentCategories: contentMediaType ? [contentMediaType] : undefined,

@@ -125,7 +125,6 @@ export const stepDevDate = mutation({
             occurredAt: next,
             languageCode: languageCode as any,
             contentCategories: source === "anki" ? ["other"] : source === "youtube" ? ["video"] : source === "spotify" ? ["audio"] : ["other"],
-            skillCategories: source === "anki" ? ["reading"] : ["listening"],
             isManuallyTracked: source === "manual",
             userTargetLanguageId: userTargetLanguageId as any,
             source,
@@ -204,7 +203,6 @@ export const seedAtDevDate = mutation({
         occurredAt: nowEffective,
         languageCode: languageCode as any,
         contentCategories: source === "anki" ? ["other"] : source === "youtube" ? ["video"] : source === "spotify" ? ["audio"] : ["other"],
-        skillCategories: source === "anki" ? ["reading"] : ["listening"],
         isManuallyTracked: source === "manual",
         userTargetLanguageId: userTargetLanguageId as any,
         source,
@@ -290,7 +288,6 @@ export const seedToTargetAtDevDate = mutation({
         occurredAt: nowEffective,
         languageCode: languageCode as any,
         contentCategories: source === "anki" ? ["other"] : source === "youtube" ? ["video"] : source === "spotify" ? ["audio"] : ["other"],
-        skillCategories: source === "anki" ? ["reading"] : ["listening"],
         isManuallyTracked: source === "manual",
         userTargetLanguageId: userTargetLanguageId as any,
         source,
@@ -373,8 +370,8 @@ export const resetMyDevState = mutation({
       .collect();
     for (const utl of utls) {
       await ctx.db.patch(utl._id, {
-        totalMinutesLearning: 0,
-      });
+        totalMsLearning: 0,
+      } as any);
     }
 
     // 4) Clear streakDays for the user

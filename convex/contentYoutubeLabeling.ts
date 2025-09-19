@@ -244,7 +244,7 @@ export const processOneYoutubeContentLabel = internalAction({
 
                     // Duration parse from ISO8601
                     const iso = vid.contentDetails?.duration;
-                    if (iso) patch.fullDurationInSeconds = iso8601ToSeconds(iso);
+                    if (iso) patch.fullDurationInMs = iso8601ToSeconds(iso) * 1000;
 
                     // Language inference
                     const defaultAudioLang = vid.snippet?.defaultAudioLanguage;
@@ -261,7 +261,7 @@ export const processOneYoutubeContentLabel = internalAction({
                         title: patch.title,
                         authorName: patch.authorName,
                         hasThumb: Boolean(patch.thumbnailUrl),
-                        fullDurationInSeconds: patch.fullDurationInSeconds,
+                        fullDurationInMs: patch.fullDurationInMs,
                         contentLanguageCode: patch.contentLanguageCode,
                     });
                 }
