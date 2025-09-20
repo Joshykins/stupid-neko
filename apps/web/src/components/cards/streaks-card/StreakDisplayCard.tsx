@@ -17,11 +17,9 @@ type Props = {
 	title?: string;
 	days?: number;
 	values?: Array<number>;
-	cellSize?: number;
 	liveVersion?: boolean;
 };
 
-const HEATMAP_INTENSITY_STEPS = 5;
 
 function createSeededRng(seedInput: number): () => number {
 	let seed = seedInput % 2147483647;
@@ -46,7 +44,6 @@ export default function StreakDisplayCard({
 	title = "Daily Streak",
 	days = 365,
 	values,
-	cellSize = 12,
 	liveVersion = false,
 }: Props) {
 	const streakData = useQuery(
@@ -58,7 +55,7 @@ export default function StreakDisplayCard({
 
 	// Generate rich mock data for marketing (non-live) view
 	const mock = React.useMemo(() => {
-		if (liveVersion) return null as any;
+		if (liveVersion) return null;
 		const total = days;
 		const seed = hashStringToSeed(`${title}-${days}-mock-v2`);
 		const rng = createSeededRng(seed);
@@ -196,24 +193,43 @@ export default function StreakDisplayCard({
 			if (!me) return;
 			try {
 				await updateMode({ mode: next });
-			} catch {}
+			} catch { }
 		},
 		[updateMode, liveVersion, me],
 	);
 
+	// Heatmap configuration
+	const heatmapConfig = [
+		{ // Level 0 - Background
+			backgroundColor: "var(--color-heatmap-bg)",
+			opacity: 1,
+		},
+		{ // Level 1 - Low activity
+			backgroundColor: "var(--color-heatmap-1)",
+			opacity: 1,
+		},
+		{ // Level 2 - Medium activity
+			backgroundColor: "var(--color-heatmap-2)",
+			opacity: 1,
+		},
+		{ // Level 3 - High activity
+			backgroundColor: "var(--color-heatmap-3)",
+			opacity: 1,
+		},
+		{ // Level 4 - Maximum activity
+			backgroundColor: "var(--color-heatmap-4)",
+			opacity: 1,
+		},
+	] as const;
+
+	const vacationConfig = {
+		backgroundColor: "var(--color-vacation, #10B981)",
+		opacity: 0.9,
+	} as const;
+
 	const intensityStyle = (n: number): React.CSSProperties => {
-		const colors = [
-			"var(--color-heatmap-bg)",
-			"var(--color-heatmap-0)",
-			"var(--color-heatmap-1)",
-			"var(--color-heatmap-2)",
-			"var(--color-heatmap-3)",
-			"var(--color-heatmap-4)",
-		];
-		return {
-			backgroundColor:
-				colors[Math.max(0, Math.min(HEATMAP_INTENSITY_STEPS - 1, n))],
-		};
+		const levelIndex = Math.max(0, Math.min(heatmapConfig.length - 1, n));
+		return heatmapConfig[levelIndex];
 	};
 
 	const [tooltip, setTooltip] = React.useState<{
@@ -246,12 +262,16 @@ export default function StreakDisplayCard({
 		return () => ro.disconnect();
 	}, []);
 	React.useLayoutEffect(() => {
-		if (tooltipRef.current)
-			setTooltipSize({
+		if (tooltip.visible && tooltipRef.current) {
+			const newSize = {
 				w: tooltipRef.current.offsetWidth,
 				h: tooltipRef.current.offsetHeight,
-			});
-	}, [tooltip.visible, tooltip.label]);
+			};
+			setTooltipSize(prevSize =>
+				prevSize.w !== newSize.w || prevSize.h !== newSize.h ? newSize : prevSize
+			);
+		}
+	}, [tooltip.visible]);
 
 	const totalDaysEffective = streakData?.totalDays ?? mock?.totalDays ?? days;
 	const activityCounts = (streakData?.activityCounts ?? mock?.activityCounts) as
@@ -261,7 +281,7 @@ export default function StreakDisplayCard({
 		| boolean[]
 		| undefined;
 
-	const onHover = (absoluteIndex: number, value: number) => {
+	const onHover = (absoluteIndex: number) => {
 		if (absoluteIndex >= totalDaysEffective) return;
 		const day = new Date(startDate);
 		day.setDate(day.getDate() + absoluteIndex);
@@ -283,8 +303,8 @@ export default function StreakDisplayCard({
 
 		const isVacation = Boolean(
 			vacationFlags &&
-				vacationFlags.length === totalDaysEffective &&
-				vacationFlags[absoluteIndex],
+			vacationFlags.length === totalDaysEffective &&
+			vacationFlags[absoluteIndex],
 		);
 		const vacationSuffix = isVacation ? " • Vacation" : "";
 
@@ -297,10 +317,10 @@ export default function StreakDisplayCard({
 		setTooltip((t) =>
 			t.visible
 				? {
-						...t,
-						x: ev.clientX - rect.left + 12,
-						y: ev.clientY - rect.top + 12,
-					}
+					...t,
+					x: ev.clientX - rect.left + 12,
+					y: ev.clientY - rect.top + 12,
+				}
 				: t,
 		);
 	};
@@ -329,7 +349,8 @@ export default function StreakDisplayCard({
 					<div className="flex items-center gap-2">
 						{title}
 						<span className="inline-flex items-center gap-1 text-lg font-black">
-							<svg width="16" height="18" viewBox="0 0 16 18" aria-hidden>
+							<svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true">
+								<title>Flame icon</title>
 								<path
 									d="M8 1 C10 4 5 6 8 9 C10 11 12 9 12 7 C14 9 15 11 15 13 C15 15.761 12.761 18 10 18 H6 C3.239 18 1 15.761 1 13 C1 9 4 6 6 4 C6.5 3.5 7.5 2.5 8 1 Z"
 									fill="#F59E0B"
@@ -341,7 +362,7 @@ export default function StreakDisplayCard({
 						</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<Badge className="bg-[var(--color-heatmap-1)]">
+						<Badge className="bg-experience">
 							<div className="inline-flex items-center font-bold text-base text-main-foreground">
 								<span ref={bonusCountUpRef} />% XP Bonus
 							</div>
@@ -366,6 +387,8 @@ export default function StreakDisplayCard({
 					className={`w-full rounded-md overflow-hidden border-2 border-black ${mode === "grid" ? "bg-heatmap-bg" : "bg-foreground"} relative`}
 					onMouseMove={onMove}
 					onMouseLeave={onLeave}
+					role="img"
+					aria-label="Activity heatmap with interactive tooltips"
 				>
 					<AnimatePresence mode="wait">
 						{mode === "grid" && (
@@ -380,13 +403,13 @@ export default function StreakDisplayCard({
 									title={title}
 									days={days}
 									values={effectiveValues}
-									cellSize={cellSize}
 									onHover={onHover}
 									intensityStyle={intensityStyle}
 									startDate={startDate}
 									liveVersion={liveVersion}
 									activityCounts={activityCounts}
 									vacationFlags={vacationFlags}
+									vacationConfig={vacationConfig}
 								/>
 							</motion.div>
 						)}

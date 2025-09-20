@@ -1,0 +1,47 @@
+# Cursor Rules for Stupid Neko
+
+## Error Handling
+- Always use the `tryCatch` utility from `lib/tryCatch.ts` instead of try-catch blocks
+- This provides better error handling with discriminated unions and consistent patterns
+- Example:
+  ```typescript
+  // ❌ Don't use try-catch
+  try {
+    const result = await someAsyncOperation();
+    // handle success
+  } catch (error) {
+    // handle error
+  }
+  
+  // ✅ Use tryCatch instead
+  const { data, error } = await tryCatch(someAsyncOperation());
+  if (error) {
+    // handle error
+    return;
+  }
+  // handle success with data
+  ```
+
+## TypeScript Guidelines
+- Prefer proper TypeScript types over `any`
+- Use `Doc<"tableName">` for Convex document types
+- Use `Id<"tableName">` for Convex ID types
+- Import types from `"./_generated/dataModel"` when needed
+
+## Convex Guidelines
+- Follow the parent-prefix naming rule for all Convex functions, tables, and fields
+- Use proper function registration (`query`, `mutation`, `action`, `internalQuery`, `internalMutation`, `internalAction`)
+- Always include argument and return validators for all Convex functions
+- Use `v.null()` when functions don't return anything
+
+## UI Guidelines
+- Use Tailwind's predefined sizing utilities instead of explicit CSS units
+- Use `ScrollArea` component from `@scroll-area.tsx` for scrollable behavior
+- Use lucide icons for checkmarks and other UI elements
+- Prefer neobrutalism.dev chart components for new charts
+
+## Code Organization
+- Keep functions focused and single-purpose
+- Use descriptive names that follow the parent-prefix pattern
+- Group related functionality together
+- Prefer composition over inheritance

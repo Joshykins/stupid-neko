@@ -8,7 +8,6 @@ import {
 	useMutation,
 	useQuery,
 } from "convex/react";
-import { Copy } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { api } from "../../../../../convex/_generated/api";
@@ -19,15 +18,6 @@ import {
 } from "../../components/ui/avatar";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 
@@ -35,20 +25,9 @@ export default function AccountPage() {
 	const { signOut } = useAuthActions();
 	const me = useQuery(api.userFunctions.me);
 	const updateMe = useMutation(api.userFunctions.updateMe);
-	const integrationKey = useQuery(
-		api.integrationKeyFunctions.getIntegrationKey,
-	);
-	const regenerateIntegrationKey = useMutation(
-		api.integrationKeyFunctions.regenerateIntegrationKey,
-	);
-	const clearIntegrationKey = useMutation(
-		api.integrationKeyFunctions.clearIntegrationKey,
-	);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
-	const [copied, setCopied] = useState(false);
-	const [showRegenConfirm, setShowRegenConfirm] = useState(false);
 
 	return (
 		<div className="py-10">
@@ -114,92 +93,6 @@ export default function AccountPage() {
 							successMessage={successMessage}
 						/>
 
-						<div className="my-6 h-px w-full bg-border" />
-
-						<div>
-							<h2 className=" font-heading text-xl">Browser Integration</h2>
-							<p className="mt-1 text-sm text-muted-foreground">
-								Use this key in the browser extension to connect your account.
-							</p>
-
-							<div className="mt-3 flex items-center gap-2">
-								<div className="relative w-full">
-									<Input
-										readOnly
-										value={integrationKey?.integrationId ?? "Not generated yet"}
-										className="pr-10"
-										onClick={(e) => {
-											const input = e.currentTarget as HTMLInputElement;
-											input.select();
-										}}
-									/>
-									<button
-										type="button"
-										className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-base p-1 text-main-foreground/80 hover:text-main-foreground hover:bg-border/30 cursor-pointer transition-colors duration-150 disabled:opacity-50"
-										onClick={async () => {
-											const key = integrationKey?.integrationId;
-											if (!key) return;
-											try {
-												await navigator.clipboard.writeText(key);
-												setCopied(true);
-												setTimeout(() => setCopied(false), 1500);
-											} catch {}
-										}}
-										disabled={!integrationKey?.integrationId}
-										aria-label="Copy integration key"
-										title="Copy"
-									>
-										<Copy className="size-4" />
-									</button>
-									{copied && (
-										<div className="absolute right-2 -top-7 rounded-base bg-secondary-background border-2 border-border px-2 py-1 text-xs text-main-foreground shadow-sm">
-											Copied
-										</div>
-									)}
-								</div>
-								<Dialog
-									open={showRegenConfirm}
-									onOpenChange={setShowRegenConfirm}
-								>
-									<DialogTrigger asChild>
-										<Button type="button">
-											{integrationKey?.integrationId
-												? "Regenerate"
-												: "Generate"}
-										</Button>
-									</DialogTrigger>
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Regenerate integration key?</DialogTitle>
-											<DialogDescription>
-												This will replace your current key. You’ll need to paste
-												the new key into your browser extension.
-											</DialogDescription>
-										</DialogHeader>
-										<DialogFooter>
-											<Button
-												type="button"
-												onClick={() => setShowRegenConfirm(false)}
-											>
-												Cancel
-											</Button>
-											<Button
-												type="button"
-												onClick={async () => {
-													try {
-														await regenerateIntegrationKey({});
-													} finally {
-														setShowRegenConfirm(false);
-													}
-												}}
-											>
-												Confirm
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
-							</div>
-						</div>
 					</Card>
 				</div>
 			</Authenticated>
@@ -217,12 +110,12 @@ function EditForm({
 }: {
 	initialName: string;
 	initialTimezone: string;
-	onSave: (values: { name: string; timezone: string }) => Promise<void>;
+	onSave: (values: { name: string; timezone: string; }) => Promise<void>;
 	saving: boolean;
 	errorMessage: string | null;
 	successMessage: string | null;
 }) {
-	const form = useForm<{ name: string; timezone: string }>({
+	const form = useForm<{ name: string; timezone: string; }>({
 		defaultValues: {
 			name: initialName,
 			timezone: initialTimezone,
@@ -230,7 +123,7 @@ function EditForm({
 		onSubmit: async ({
 			value,
 		}: {
-			value: { name: string; timezone: string };
+			value: { name: string; timezone: string; };
 		}) => {
 			await onSave(value);
 		},
@@ -270,7 +163,7 @@ function EditForm({
 								<p className="text-sm text-red-500">
 									{String(
 										(field.state.meta.errors?.[0] as any)?.message ??
-											field.state.meta.errors?.[0],
+										field.state.meta.errors?.[0],
 									)}
 								</p>
 							)}

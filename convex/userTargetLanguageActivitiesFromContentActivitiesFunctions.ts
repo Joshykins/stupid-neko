@@ -301,7 +301,7 @@ export const translateBatch = internalMutation({
 					if (existing) {
 						await ctx.db.patch(existing._id, {
 							state: "completed",
-							durationInMs: Math.max(0, Math.round(s.endMs - startMsEffective)),
+							durationInMs: Math.max(0, Math.round(s.endMs - s.startMs)),
 							languageCode,
 							title,
 							occurredAt: startMsEffective,

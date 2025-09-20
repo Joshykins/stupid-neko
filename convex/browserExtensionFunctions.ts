@@ -1,19 +1,45 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import type { Id, Doc } from "./_generated/dataModel";
+import {
+	mutation,
+	query,
+	type QueryCtx,
+	type MutationCtx,
+} from "./_generated/server";
 import { contentSourceValidator, languageCodeValidator } from "./schema";
 
 async function resolveUserId(
-	ctx: any,
+	ctx: QueryCtx,
 	integrationId: string,
 ): Promise<Id<"users">> {
-	const match = await ctx.runQuery(
+	const user = (await ctx.runQuery(
 		internal.integrationKeyFunctions.getUserByIntegrationKey,
 		{ integrationId },
-	);
-	if (!match?.userId) throw new Error("Unauthorized");
-	return match.userId as Id<"users">;
+	)) as Doc<"users"> | null;
+	if (!user) throw new Error("Unauthorized");
+	return user._id;
+}
+
+async function resolveUserIdAndMarkUsed(
+	ctx: MutationCtx,
+	integrationId: string,
+): Promise<Id<"users">> {
+	const user = (await ctx.runQuery(
+		internal.integrationKeyFunctions.getUserByIntegrationKey,
+		{ integrationId },
+	)) as any;
+	if (!user) throw new Error("Unauthorized");
+
+	// Only mark as used if not already set
+	if (!user.integrationKeyUsedByPlugin) {
+		await ctx.runMutation(
+			internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
+			{ integrationId },
+		);
+	}
+
+	return user._id;
 }
 
 export const meFromIntegration = query({
@@ -30,21 +56,44 @@ export const meFromIntegration = query({
 	),
 	handler: async (ctx, args) => {
 		const userId = await resolveUserId(ctx, args.integrationId);
-		const user = await ctx.db.get(userId as any);
+		const user = await ctx.db.get(userId);
 		if (!user) return null;
-		const currentTargetLanguageId = (user as any)?.currentTargetLanguageId as
-			| Id<"userTargetLanguages">
-			| undefined;
+		const currentTargetLanguageId = user.currentTargetLanguageId;
 		if (!currentTargetLanguageId)
 			throw new Error("Current target language not found");
 		const tl = await ctx.db.get(currentTargetLanguageId);
 		return {
-			name: (user as any).name ?? undefined,
-			email: (user as any).email ?? undefined,
-			image: (user as any).image ?? undefined,
-			timezone: (user as any).timezone ?? undefined,
-			languageCode: (tl as any)?.languageCode ?? undefined,
+			name: user.name ?? undefined,
+			email: user.email ?? undefined,
+			image: user.image ?? undefined,
+			timezone: user.timezone ?? undefined,
+			languageCode: tl?.languageCode ?? undefined,
 		};
+	},
+});
+
+export const markIntegrationKeyAsUsedFromExtension = mutation({
+	args: { integrationId: v.string() },
+	returns: v.object({ success: v.boolean() }),
+	handler: async (ctx, args) => {
+		const user = (await ctx.runQuery(
+			internal.integrationKeyFunctions.getUserByIntegrationKey,
+			{ integrationId: args.integrationId },
+		)) as Doc<"users"> | null;
+
+		if (!user) {
+			return { success: false };
+		}
+
+		// Only mark as used if not already set
+		if (!user.integrationKeyUsedByPlugin) {
+			await ctx.runMutation(
+				internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
+				{ integrationId: args.integrationId },
+			);
+		}
+
+		return { success: true };
 	},
 });
 
@@ -89,34 +138,18 @@ export const recordContentActivityFromIntegration = mutation({
 		isWaitingOnLabeling?: boolean;
 		reason?: string;
 		contentKey?: string;
-		contentLabel?: any;
+		contentLabel?: unknown;
 		currentTargetLanguage?: {
 			languageCode?: import("./schema").LanguageCode;
 		} | null;
 	}> => {
-		const { integrationId, ...rest } = args as any;
-		const userId = await resolveUserId(ctx, integrationId);
-		const result:
-			| {
-					ok: true;
-					saved: boolean;
-					contentActivityId?: Id<"contentActivities">;
-					contentLabelId?: Id<"contentLabels">;
-					isWaitingOnLabeling?: boolean;
-					reason?: string;
-					contentKey?: string;
-			  }
-			| {
-					ok: true;
-					saved: false;
-					reason?: string;
-					contentKey?: string;
-					contentLabelId?: Id<"contentLabels">;
-			  } = await ctx.runMutation(
+		const { integrationId, ...rest } = args;
+		const userId = await resolveUserIdAndMarkUsed(ctx, integrationId);
+		const result = await ctx.runMutation(
 			internal.contentActivityFunctions.recordContentActivity,
-			{ userId, ...rest } as any,
+			{ userId, ...rest },
 		);
-		let contentLabel: any = null;
+		let contentLabel = null;
 		try {
 			if (result?.contentKey) {
 				contentLabel = await ctx.runQuery(
@@ -125,13 +158,13 @@ export const recordContentActivityFromIntegration = mutation({
 				);
 			}
 		} catch {}
-		let currentTargetLanguage: any = null;
+		let currentTargetLanguage = null;
 		try {
 			currentTargetLanguage = await ctx.runQuery(
 				internal.userFunctions.getCurrentTargetLanguage,
 				{ userId },
 			);
 		} catch {}
-		return { ...(result as any), contentLabel, currentTargetLanguage } as any;
+		return { ...result, contentLabel, currentTargetLanguage };
 	},
 });

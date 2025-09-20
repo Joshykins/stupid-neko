@@ -3,16 +3,36 @@
 import { History, Star } from "lucide-react";
 import React from "react";
 import { Button } from "../../ui/button";
-import { Dialog } from "../../ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { FavoritesList } from "./FavoritesList";
 import { FavoritesPotentialManualRecordsList } from "./FavoritesPotentialManualRecordsList";
 
-export const AddFavoriteButton = () => {
+
+type AddFavoriteButtonProps = {
+	onFavoriteAutoFill?: (favorite: any) => void;
+};
+
+export const AddFavoriteButton = ({ onFavoriteAutoFill }: AddFavoriteButtonProps = {}) => {
 	const [mode, setMode] = React.useState<"favorites" | "history">("favorites");
+	const [isOpen, setIsOpen] = React.useState(false);
+
+	// Reset to favorites tab whenever popover opens
+	React.useEffect(() => {
+		if (isOpen) {
+			setMode("favorites");
+		}
+	}, [isOpen]);
+
+	// Handle favorite auto-fill and close popover
+	const handleFavoriteAutoFill = React.useCallback((favorite: any) => {
+		if (onFavoriteAutoFill) {
+			onFavoriteAutoFill(favorite);
+			setIsOpen(false); // Close the popover
+		}
+	}, [onFavoriteAutoFill]);
 
 	return (
-		<Popover>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
 				<Button
 					onClick={() => {
@@ -42,23 +62,22 @@ export const AddFavoriteButton = () => {
 							</div>
 							{/* Toggle button */}
 							<Button
+								className="bg-secondary-background text-background"
 								onClick={() =>
 									setMode(mode === "favorites" ? "history" : "favorites")
 								}
 							>
-								<History className="mr-1" />{" "}
 								{mode === "favorites" ? "Manual Records" : "Favorites"}
+								{" "}
+								<History className="ml-1" />
+
 							</Button>
 						</div>
 						{mode === "favorites" && (
-							<div>
-								<FavoritesList />
-							</div>
+							<FavoritesList onAutoFill={handleFavoriteAutoFill} />
 						)}
 						{mode === "history" && (
-							<div>
-								<FavoritesPotentialManualRecordsList />
-							</div>
+							<FavoritesPotentialManualRecordsList onFavoriteAdded={() => setMode("favorites")} />
 						)}
 					</div>
 				</div>

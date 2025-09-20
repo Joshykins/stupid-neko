@@ -52,7 +52,7 @@
 	--heatmap-1: #fde68a; /* amber-200 */
 	--heatmap-2: #f59e0b; /* amber-600 */
 	--heatmap-3: #ea580c; /* orange-600 */
-	--heatmap-4: #dc2626; /* red-600 */
+	--heatmap-4: #ea580c; /* orange-600 - warmer, less intense */
 
 	/* source brand colors */
 	--source-youtube: #ff0000;
@@ -117,7 +117,7 @@
 	--heatmap-1: #f59e0b; /* amber-600 */
 	--heatmap-2: #ea580c; /* orange-600 */
 	--heatmap-3: #dc2626; /* red-600 */
-	--heatmap-4: #b91c1c; /* red-700 */
+	--heatmap-4: #ea580c; /* orange-600 - warmer, less intense */
 
 	/* source brand colors (dark) */
 	--source-youtube: #ff0000;

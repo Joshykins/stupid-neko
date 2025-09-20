@@ -27,18 +27,16 @@ import { Textarea } from "../../ui/textarea";
 
 function FavoriteRow({
 	favorite,
-	onQuickAdd,
+	onAutoFill,
 	onUpdate,
 	onDelete,
 }: {
 	favorite: any;
-	onQuickAdd: () => void;
+	onAutoFill: (favorite: any) => void;
 	onUpdate: any;
 	onDelete: any;
 }) {
 	const [isOpen, setIsOpen] = React.useState(false);
-	const [confirmOpen, setConfirmOpen] = React.useState(false);
-	const [confirmRemoveOpen, setConfirmRemoveOpen] = React.useState(false);
 	const [title, setTitle] = React.useState((favorite as any).title ?? "");
 	const [minutes, setMinutes] = React.useState<number>(
 		Math.max(0, Math.round((favorite as any).defaultDurationInMinutes ?? 10)),
@@ -108,7 +106,7 @@ function FavoriteRow({
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
 					<Button
-						onClick={() => setConfirmOpen(true)}
+						onClick={() => onAutoFill(favorite)}
 						size="sm"
 						className="bg-accent bold flex items-center h-8 px-2 sm:h-9 sm:px-3 whitespace-nowrap"
 					>
@@ -271,38 +269,19 @@ function FavoriteRow({
 				</DialogContent>
 			</Dialog>
 
-			{/* Confirm add from favorite */}
-			<Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Add this record?</DialogTitle>
-					</DialogHeader>
-					<DialogFooter>
-						<Button variant="neutral" onClick={() => setConfirmOpen(false)}>
-							Cancel
-						</Button>
-						<Button
-							onClick={() => {
-								setConfirmOpen(false);
-								onQuickAdd();
-							}}
-						>
-							Add Record
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 		</li>
 	);
 }
 
-export const FavoritesList = () => {
+type FavoritesListProps = {
+	onAutoFill?: (favorite: any) => void;
+};
+
+export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
+	const [cursor, setCursor] = React.useState<string | null>(null);
 	const favorites = useQuery(
-		api.userTargetLanguageFavoriteActivityFunctions.listFavorites,
-		{},
-	);
-	const quickCreate = useMutation(
-		api.userTargetLanguageFavoriteActivityFunctions.quickCreateFromFavorite,
+		api.userTargetLanguageFavoriteActivityFunctions.listFavoritesPaginated,
+		{ paginationOpts: { numItems: 12, cursor } },
 	);
 	const updateFavorite = useMutation(
 		api.userTargetLanguageFavoriteActivityFunctions.updateFavorite,
@@ -310,56 +289,88 @@ export const FavoritesList = () => {
 	const deleteFavorite = useMutation(
 		api.userTargetLanguageFavoriteActivityFunctions.deleteFavorite,
 	);
+	const [cursorStack, setCursorStack] = React.useState<Array<string | null>>([]);
 
 	return (
-		<ScrollArea className="max-h-[60vh] h-full">
-			<div>
-				{!favorites && (
-					<div className="flex items-center justify-center h-[300px]">
-						<div className="text-center">
-							<Image
-								src="/cat-on-tree.png"
-								alt="loading"
-								className="mx-auto opacity-80"
-								width={140}
-								height={140}
-							/>
-							<div className="mt-2 text-sm text-background/80">
-								Fetching your favorites…
+		<div className="flex flex-col h-full">
+			<ScrollArea className="max-h-[60vh] flex-1">
+				<div>
+					{!favorites && (
+						<div className="flex items-center justify-center h-20">
+							<div className="text-center">
+								<Image
+									src="/cat-on-tree.png"
+									alt="loading"
+									className="mx-auto opacity-80"
+									width={140}
+									height={140}
+								/>
+								<div className="mt-2 text-sm text-background/80">
+									Fetching your favorites…
+								</div>
 							</div>
 						</div>
-					</div>
-				)}
-				{favorites && favorites.length === 0 && (
-					<div className="flex items-center justify-center h-[300px]">
-						<div className="text-center">
-							<Image
-								src="/cat-on-tree.png"
-								alt="empty"
-								className="mx-auto opacity-80"
-								width={140}
-								height={140}
-							/>
-							<div className="mt-2 text-sm text-background/80">
-								No favorites yet. Use previous manual records to add favorites.
+					)}
+					{favorites && favorites.page?.length === 0 && (
+						<div className="flex items-center justify-center h-20">
+							<div className="text-center">
+								<Image
+									src="/cat-on-tree.png"
+									alt="empty"
+									className="mx-auto opacity-80"
+									width={140}
+									height={140}
+								/>
+								<div className="mt-2 text-sm text-background/80">
+									No favorites yet. Use previous manual records to add favorites.
+								</div>
 							</div>
 						</div>
-					</div>
-				)}
-				{favorites && favorites.length > 0 && (
-					<ul className="space-y-2">
-						{favorites.map((f: any) => (
-							<FavoriteRow
-								key={(f as any)._id}
-								favorite={f}
-								onQuickAdd={() => quickCreate({ favoriteId: (f as any)._id })}
-								onUpdate={updateFavorite}
-								onDelete={deleteFavorite}
-							/>
-						))}
-					</ul>
-				)}
-			</div>
-		</ScrollArea>
+					)}
+					{favorites && favorites.page?.length > 0 && (
+						<ul className="space-y-2">
+							{favorites.page.map((f: any) => (
+								<FavoriteRow
+									key={(f as any)._id}
+									favorite={f}
+									onAutoFill={onAutoFill || (() => { })}
+									onUpdate={updateFavorite}
+									onDelete={deleteFavorite}
+								/>
+							))}
+						</ul>
+					)}
+				</div>
+			</ScrollArea>
+			{(favorites?.continueCursor || cursorStack.length > 0) && (
+				<div className="flex items-center justify-between pt-4">
+					<Button
+						variant="neutral"
+						onClick={() => {
+							setCursorStack((stack) => {
+								if (stack.length === 0) return stack;
+								const next = [...stack];
+								const prev = next.pop();
+								setCursor(prev ?? null);
+								return next;
+							});
+						}}
+						disabled={cursorStack.length === 0}
+					>
+						Back
+					</Button>
+					<Button
+						variant="neutral"
+						onClick={() => {
+							setCursorStack((stack) => [...stack, cursor]);
+							setCursor(favorites?.continueCursor ?? null);
+						}}
+						disabled={Boolean(favorites) && Boolean(favorites?.isDone)}
+					>
+						Load more
+					</Button>
+				</div>
+			)}
+		</div>
 	);
 };

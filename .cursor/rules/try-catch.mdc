@@ -1,0 +1,51 @@
+---
+alwaysApply: true
+description: Avoid using javascirpt's native try catch, use this helper function instead
+---
+
+# Cursor Rules for Stupid Neko
+
+## Error Handling
+- Always use the `tryCatch` utility from `lib/tryCatch.ts` instead of try-catch blocks
+- This provides better error handling with discriminated unions and consistent patterns
+- Example:
+  ```typescript
+  // ❌ Don't use try-catch
+  try {
+    const result = await someAsyncOperation();
+    // handle success
+  } catch (error) {
+    // handle error
+  }
+  
+  // ✅ Use tryCatch instead
+  const { data, error } = await tryCatch(someAsyncOperation());
+  if (error) {
+    // handle error
+    return;
+  }
+  // handle success with data
+  ```
+# Cursor Rules for Stupid Neko
+
+## Error Handling
+- Always use the `tryCatch` utility from `lib/tryCatch.ts` instead of try-catch blocks
+- This provides better error handling with discriminated unions and consistent patterns
+- Example:
+  ```typescript
+  // ❌ Don't use try-catch
+  try {
+    const result = await someAsyncOperation();
+    // handle success
+  } catch (error) {
+    // handle error
+  }
+  
+  // ✅ Use tryCatch instead
+  const { data, error } = await tryCatch(someAsyncOperation());
+  if (error) {
+    // handle error
+    return;
+  }
+  // handle success with data
+  ```

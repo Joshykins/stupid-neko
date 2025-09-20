@@ -16,10 +16,10 @@ export function HeatmapProgress({
 	...props
 }: HeatmapProgressProps) {
 	const gradient = `linear-gradient(90deg,
-        var(--color-heatmap-0) 0%,
-        var(--color-heatmap-1) 25%,
-        var(--color-heatmap-2) 50%,
-        var(--color-heatmap-3) 75%,
+        var(--color-heatmap-4) 0%,
+        var(--color-heatmap-3) 25%,
+        var(--color-heatmap-3) 50%,
+        var(--color-heatmap-4) 75%,
         var(--color-heatmap-4) 100%
     )`;
 
@@ -59,14 +59,14 @@ export function HeatmapProgress({
 						!is100Percent
 							? { backgroundColor: "var(--color-heatmap-bg)" }
 							: {
-									backgroundImage: `linear-gradient(90deg,
+								backgroundImage: `linear-gradient(90deg,
                         var(--color-heatmap-4) 0%,
                         var(--color-heatmap-3) 25%,
                         var(--color-heatmap-2) 50%,
                         var(--color-heatmap-3) 75%,
                         var(--color-heatmap-4) 100%
                     )`,
-								}
+							}
 					}
 				></div>
 			</div>

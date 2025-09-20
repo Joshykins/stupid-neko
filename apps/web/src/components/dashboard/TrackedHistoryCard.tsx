@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { ExternalLink, Rocket, Zap } from "lucide-react";
+import { ExternalLink, Rocket, Zap, History } from "lucide-react";
 import * as React from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { LanguageCode } from "../../../../../convex/schema";
@@ -19,62 +19,47 @@ import {
 	TooltipTrigger,
 } from "../ui/tooltip";
 import { FunctionReturnType } from "convex/server";
+import dayjs from "../../../../../lib/dayjs";
 
 //
 
 function formatTime(ts?: number, timeZone?: string): string {
 	if (!ts) return "";
-	const fmt = new Intl.DateTimeFormat(undefined, {
-		hour: "numeric",
-		minute: "2-digit",
-		timeZone,
-	});
-	return fmt.format(new Date(ts)).toLowerCase();
+	const tsDate = timeZone ? dayjs(ts).tz(timeZone) : dayjs(ts);
+	return tsDate.format('LT').toLowerCase(); // "11:24 AM" -> "11:24 am"
 }
 
-function getLocalYmdParts(ms: number, timeZone?: string): { y: number; m: number; d: number; } {
-	const parts = new Intl.DateTimeFormat("en-US", {
-		timeZone,
-		year: "numeric",
-		month: "numeric",
-		day: "numeric",
-	}).formatToParts(new Date(ms));
-	const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-	const y = parseInt(lookup.year, 10);
-	const m = parseInt(lookup.month, 10);
-	const d = parseInt(lookup.day, 10);
-	return { y, m, d };
-}
 
-function localMidnightUtcMsForYmd(y: number, m: number, d: number, timeZone?: string): number {
-	const atUtcMidnight = new Date(Date.UTC(y, m - 1, d));
-	const timeParts = new Intl.DateTimeFormat("en-US", {
-		timeZone,
-		hour: "2-digit",
-		minute: "2-digit",
-		hourCycle: "h23",
-	}).formatToParts(atUtcMidnight);
-	const lookup = Object.fromEntries(timeParts.map((p) => [p.type, p.value]));
-	const hour = parseInt(lookup.hour || "0", 10);
-	const minute = parseInt(lookup.minute || "0", 10);
-	const offsetMinutes = hour * 60 + minute;
-	return Date.UTC(y, m - 1, d) - offsetMinutes * 60 * 1000;
-}
-
-function dateFooterLabel(ts?: number, timeZone?: string): string {
+function dateFooterLabel(ts?: number, timeZone?: string, effectiveNow?: number): string {
 	if (!ts) return "";
-	const now = Date.now();
-	const { y, m, d } = getLocalYmdParts(now, timeZone);
-	const startOfToday = localMidnightUtcMsForYmd(y, m, d, timeZone);
-	if (ts >= startOfToday) {
-		return `${formatTime(ts, timeZone)}`;
+
+	// Use effectiveNow if provided (includes devDate), otherwise use current time
+	const nowTimestamp = effectiveNow ?? Date.now();
+	const now = timeZone ? dayjs(nowTimestamp).tz(timeZone) : dayjs(nowTimestamp);
+	const tsDate = timeZone ? dayjs(ts).tz(timeZone) : dayjs(ts);
+
+	// If it's today, show only the time
+	if (tsDate.isSame(now, 'day')) {
+		return formatTime(ts, timeZone);
 	}
-	const dateStr = new Intl.DateTimeFormat(undefined, {
-		timeZone,
-		month: "long",
-		day: "numeric",
-	}).format(new Date(ts));
-	return `${dateStr}, ${formatTime(ts, timeZone)}`;
+
+	// If it's yesterday, show "Yesterday"
+	if (tsDate.isSame(now.subtract(1, 'day'), 'day')) {
+		return "Yesterday";
+	}
+
+	// If it's within the last 7 days, show the day name
+	if (tsDate.isAfter(now.subtract(7, 'days'))) {
+		return tsDate.format('dddd'); // "Monday", "Tuesday", etc.
+	}
+
+	// If it's within the last 30 days, show relative time
+	if (tsDate.isAfter(now.subtract(30, 'days'))) {
+		return tsDate.from(now); // "3 days ago", "2 weeks ago"
+	}
+
+	// For older dates, show the month and day
+	return tsDate.format('MMM D'); // "Sep 20", "Dec 25"
 }
 
 function formatHoursMinutesLabel(totalSeconds?: number): string {
@@ -96,10 +81,11 @@ const PAGE_SIZE = 8;
 
 
 
-type RecentItems = FunctionReturnType<typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities>;
+type RecentData = FunctionReturnType<typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities>;
+type RecentItems = RecentData['items'];
 type RecentItem = RecentItems extends Array<infer T> ? T : never;
 
-const TrackedHistoryItem = ({ item, timeZone }: { item: RecentItem; timeZone?: string; }) => {
+const TrackedHistoryItem = ({ item, timeZone, effectiveNow }: { item: RecentItem; timeZone?: string; effectiveNow?: number; }) => {
 	const contentKey = item.contentKey;
 	const key =
 		item.isManuallyTracked || !contentKey
@@ -169,7 +155,7 @@ const TrackedHistoryItem = ({ item, timeZone }: { item: RecentItem; timeZone?: s
 
 	return (
 		<li key={item._id as string}>
-			<Tooltip>
+			<Tooltip delayDuration={500}>
 				<TooltipTrigger asChild>
 					<div
 						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
@@ -261,12 +247,12 @@ const TrackedHistoryItem = ({ item, timeZone }: { item: RecentItem; timeZone?: s
 								</span>
 							)}
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
-								{dateFooterLabel(occurredAt, timeZone)}
+								{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
 							</span>
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
 							</span>
-							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-[var(--color-heatmap-1)]">
+							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
 								<Rocket className="!size-3" /> {xp.toLocaleString()} XP
 							</span>
 						</div>
@@ -308,7 +294,7 @@ export default function TrackedHistoryCard() {
 	const items = React.useMemo(() => {
 		if (!data) return [] as RecentItems;
 		// Show the latest activities regardless of day, prioritizing in-progress items first
-		return (data as RecentItems).slice().sort((a, b) => {
+		return data.items.slice().sort((a, b) => {
 			const aActive = a.state === "in-progress";
 			const bActive = b.state === "in-progress";
 			if (aActive && !bActive) return -1;
@@ -318,6 +304,7 @@ export default function TrackedHistoryCard() {
 			);
 		}) as RecentItems;
 	}, [data]);
+
 
 	const { visibleItems, hasPrev, hasNext } = React.useMemo(() => {
 		const startIndex = (page - 1) * PAGE_SIZE;
@@ -334,7 +321,17 @@ export default function TrackedHistoryCard() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Recent Activity</CardTitle>
+				<div className="flex items-center gap-3">
+					<div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+						<History className="w-8 h-8 text-primary" />
+					</div>
+					<div>
+						<CardTitle className="text-lg">Recent Activity</CardTitle>
+						<p className="text-sm text-muted-foreground mt-1">
+							Your latest language learning progress
+						</p>
+					</div>
+				</div>
 			</CardHeader>
 			<CardContent className="p-0">
 				<ScrollArea className="h-[420px]">
@@ -375,7 +372,12 @@ export default function TrackedHistoryCard() {
 							<TooltipProvider delayDuration={0}>
 								<ul className="space-y-2">
 									{visibleItems.map((i) => (
-										<TrackedHistoryItem key={String(i._id)} item={i} timeZone={me?.timezone} />
+										<TrackedHistoryItem
+											key={String(i._id)}
+											item={i}
+											timeZone={me?.timezone}
+											effectiveNow={data?.effectiveNow}
+										/>
 									))}
 								</ul>
 							</TooltipProvider>

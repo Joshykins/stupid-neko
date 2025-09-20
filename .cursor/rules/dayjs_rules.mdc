@@ -1,0 +1,416 @@
+---
+alwaysApply: true
+---
+
+# Day.js Usage Rules
+
+## Always Use Day.js Instead of Native JavaScript Date
+
+### Rule
+Always use `dayjs` from `../dayjs` instead of native JavaScript `Date` objects for all date operations.
+
+### Why
+- Day.js provides a more consistent and reliable API for date manipulation
+- Better timezone handling and formatting capabilities
+- Immutable operations prevent accidental date mutations
+- Smaller bundle size compared to other date libraries
+- More intuitive API for common date operations
+
+### Import Pattern
+```typescript
+import dayjs from "../dayjs"; // For convex functions
+import dayjs from "../../../../../dayjs"; // For web components (adjust path as needed)
+```
+
+### Common Patterns
+
+#### Creating Dates
+```typescript
+// ✅ Good - Use dayjs
+const now = dayjs();
+const specificDate = dayjs(timestamp);
+const fromString = dayjs("2023-12-25");
+const withTimezone = dayjs().tz("America/New_York");
+const utcDate = dayjs().utc();
+
+// ❌ Bad - Don't use native Date
+const now = new Date();
+const specificDate = new Date(timestamp);
+```
+
+#### Date Manipulation
+```typescript
+// ✅ Good - Use dayjs methods
+const tomorrow = dayjs().add(1, 'day');
+const lastWeek = dayjs().subtract(1, 'week');
+const startOfDay = dayjs().startOf('day');
+const endOfMonth = dayjs().endOf('month');
+const startOfWeek = dayjs().startOf('isoWeek');
+
+// ❌ Bad - Don't use native Date methods
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+```
+
+#### Advanced Formatting
+```typescript
+// ✅ Good - Use dayjs advanced formatting
+const formatted = dayjs().format('YYYY-MM-DD');
+const longFormat = dayjs().format('LL'); // "September 20, 2025"
+const timeFormat = dayjs().format('LT'); // "11:24 AM"
+const dateTimeFormat = dayjs().format('LLL'); // "September 20, 2025 11:24 AM"
+const fullFormat = dayjs().format('LLLL'); // "Saturday, September 20, 2025 11:24 AM"
+const isoString = dayjs().toISOString();
+const relativeTime = dayjs().fromNow(); // "a few seconds ago"
+const relativeTo = dayjs().from(dayjs().subtract(1, 'hour')); // "an hour ago"
+
+// ❌ Bad - Don't use native Date formatting
+const formatted = new Date().toLocaleDateString();
+```
+
+#### Timezone Operations
+```typescript
+// ✅ Good - Use dayjs timezone methods
+const utcTime = dayjs().utc();
+const localTime = dayjs().local();
+const timezoneTime = dayjs().tz("America/New_York");
+const convertTimezone = dayjs().tz("America/New_York").tz("Europe/London");
+
+// ❌ Bad - Don't use native Date timezone methods
+const utcTime = new Date().toISOString();
+```
+
+#### Duration Operations
+```typescript
+// ✅ Good - Use dayjs duration
+const duration = dayjs.duration(2, 'hours');
+const humanDuration = dayjs.duration(3661000).humanize(); // "1 hour"
+const addDuration = dayjs().add(dayjs.duration(1, 'hour'));
+```
+
+#### Date Comparisons
+```typescript
+// ✅ Good - Use dayjs comparison methods
+const isAfter = dayjs().isAfter(dayjs().subtract(1, 'day'));
+const isSameOrAfter = dayjs().isSameOrAfter(dayjs().subtract(1, 'day'));
+const isBetween = dayjs().isBetween(startDate, endDate);
+const isSame = dayjs().isSame(dayjs(), 'day');
+
+// ❌ Bad - Don't use native Date comparisons
+const isAfter = new Date() > new Date(Date.now() - 86400000);
+```
+
+#### Converting to Native Date (when needed for APIs)
+```typescript
+// ✅ Good - Convert to native Date only when required by external APIs
+const nativeDate = dayjs().toDate();
+const timestamp = dayjs().valueOf(); // or .unix() for seconds
+const isoString = dayjs().toISOString();
+```
+
+### Available Plugins
+
+The dayjs configuration includes these useful plugins:
+
+#### Core Plugins
+- **advancedFormat**: Adds `LL`, `LLL`, `LLLL`, `LT`, `LTS` formatting tokens
+- **relativeTime**: Adds `fromNow()`, `from()`, `toNow()`, `to()` methods
+- **timezone**: Adds timezone support with `tz()` method
+- **utc**: Adds UTC support with `utc()` and `local()` methods
+- **duration**: Adds duration support with `dayjs.duration()`
+- **customParseFormat**: Adds custom parsing with `dayjs(string, format)`
+
+#### Comparison Plugins
+- **isSameOrAfter**: Adds `isSameOrAfter()` method
+- **isSameOrBefore**: Adds `isSameOrBefore()` method
+- **isBetween**: Adds `isBetween()` method
+
+#### Week Plugins
+- **weekOfYear**: Adds `week()` method
+- **isoWeek**: Adds ISO week support with `isoWeek()`, `startOf('isoWeek')`, etc.
+
+#### Localization
+- **localizedFormat**: Adds localized formatting support
+
+### Common Use Cases
+
+#### User-Friendly Date Display
+```typescript
+// Show relative time for recent activities
+const relativeTime = dayjs(activityTime).fromNow(); // "2 hours ago"
+
+// Show full date for older activities
+const fullDate = dayjs(activityTime).format('LLL'); // "September 20, 2025 11:24 AM"
+```
+
+#### Timezone Handling
+```typescript
+// Convert to user's timezone
+const userTime = dayjs(timestamp).tz(userTimezone);
+
+// Compare dates across timezones
+const isSameDay = dayjs(date1).tz('UTC').isSame(dayjs(date2).tz('UTC'), 'day');
+```
+
+#### Duration Calculations
+```typescript
+// Calculate and display duration
+const duration = dayjs.duration(endTime - startTime);
+const humanDuration = duration.humanize(); // "2 hours 30 minutes"
+```
+
+#### Date Ranges and Comparisons
+```typescript
+// Check if date is within range
+const isInRange = dayjs(date).isBetween(startDate, endDate);
+
+// Check if date is today
+const isToday = dayjs(date).isSame(dayjs(), 'day');
+```
+
+### Exceptions
+- Only use native `Date` when required by external APIs that specifically need a `Date` object
+- Use `Date.now()` for simple timestamp generation (dayjs doesn't provide a direct equivalent)
+- Use `Intl.DateTimeFormat` with dayjs-converted dates for complex formatting
+
+### Examples in Codebase
+
+#### Convex Functions
+```typescript
+import dayjs from "../dayjs";
+
+export const someFunction = query({
+  handler: async (ctx) => {
+    const now = dayjs();
+    const startOfToday = dayjs().startOf('day');
+    const timestamp = dayjs().valueOf();
+    // ...
+  }
+});
+```
+
+#### React Components
+```typescript
+import dayjs from "../../../../../dayjs";
+
+function MyComponent() {
+  const now = dayjs();
+  const formatted = dayjs(timestamp).format('MMM DD, YYYY');
+  // ...
+}
+```
+
+### Migration Checklist
+When updating existing code:
+- [ ] Replace `new Date()` with `dayjs()`
+- [ ] Replace `new Date(timestamp)` with `dayjs(timestamp)`
+- [ ] Replace date manipulation methods with dayjs equivalents
+- [ ] Update formatting calls to use dayjs format strings
+- [ ] Add dayjs import at the top of the file
+- [ ] Test timezone handling if applicable
+# Day.js Usage Rules
+
+## Always Use Day.js Instead of Native JavaScript Date
+
+### Rule
+Always use `dayjs` from `../dayjs` instead of native JavaScript `Date` objects for all date operations.
+
+### Why
+- Day.js provides a more consistent and reliable API for date manipulation
+- Better timezone handling and formatting capabilities
+- Immutable operations prevent accidental date mutations
+- Smaller bundle size compared to other date libraries
+- More intuitive API for common date operations
+
+### Import Pattern
+```typescript
+import dayjs from "../dayjs"; // For convex functions
+import dayjs from "../../../../../dayjs"; // For web components (adjust path as needed)
+```
+
+### Common Patterns
+
+#### Creating Dates
+```typescript
+// ✅ Good - Use dayjs
+const now = dayjs();
+const specificDate = dayjs(timestamp);
+const fromString = dayjs("2023-12-25");
+const withTimezone = dayjs().tz("America/New_York");
+const utcDate = dayjs().utc();
+
+// ❌ Bad - Don't use native Date
+const now = new Date();
+const specificDate = new Date(timestamp);
+```
+
+#### Date Manipulation
+```typescript
+// ✅ Good - Use dayjs methods
+const tomorrow = dayjs().add(1, 'day');
+const lastWeek = dayjs().subtract(1, 'week');
+const startOfDay = dayjs().startOf('day');
+const endOfMonth = dayjs().endOf('month');
+const startOfWeek = dayjs().startOf('isoWeek');
+
+// ❌ Bad - Don't use native Date methods
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+```
+
+#### Advanced Formatting
+```typescript
+// ✅ Good - Use dayjs advanced formatting
+const formatted = dayjs().format('YYYY-MM-DD');
+const longFormat = dayjs().format('LL'); // "September 20, 2025"
+const timeFormat = dayjs().format('LT'); // "11:24 AM"
+const dateTimeFormat = dayjs().format('LLL'); // "September 20, 2025 11:24 AM"
+const fullFormat = dayjs().format('LLLL'); // "Saturday, September 20, 2025 11:24 AM"
+const isoString = dayjs().toISOString();
+const relativeTime = dayjs().fromNow(); // "a few seconds ago"
+const relativeTo = dayjs().from(dayjs().subtract(1, 'hour')); // "an hour ago"
+
+// ❌ Bad - Don't use native Date formatting
+const formatted = new Date().toLocaleDateString();
+```
+
+#### Timezone Operations
+```typescript
+// ✅ Good - Use dayjs timezone methods
+const utcTime = dayjs().utc();
+const localTime = dayjs().local();
+const timezoneTime = dayjs().tz("America/New_York");
+const convertTimezone = dayjs().tz("America/New_York").tz("Europe/London");
+
+// ❌ Bad - Don't use native Date timezone methods
+const utcTime = new Date().toISOString();
+```
+
+#### Duration Operations
+```typescript
+// ✅ Good - Use dayjs duration
+const duration = dayjs.duration(2, 'hours');
+const humanDuration = dayjs.duration(3661000).humanize(); // "1 hour"
+const addDuration = dayjs().add(dayjs.duration(1, 'hour'));
+```
+
+#### Date Comparisons
+```typescript
+// ✅ Good - Use dayjs comparison methods
+const isAfter = dayjs().isAfter(dayjs().subtract(1, 'day'));
+const isSameOrAfter = dayjs().isSameOrAfter(dayjs().subtract(1, 'day'));
+const isBetween = dayjs().isBetween(startDate, endDate);
+const isSame = dayjs().isSame(dayjs(), 'day');
+
+// ❌ Bad - Don't use native Date comparisons
+const isAfter = new Date() > new Date(Date.now() - 86400000);
+```
+
+#### Converting to Native Date (when needed for APIs)
+```typescript
+// ✅ Good - Convert to native Date only when required by external APIs
+const nativeDate = dayjs().toDate();
+const timestamp = dayjs().valueOf(); // or .unix() for seconds
+const isoString = dayjs().toISOString();
+```
+
+### Available Plugins
+
+The dayjs configuration includes these useful plugins:
+
+#### Core Plugins
+- **advancedFormat**: Adds `LL`, `LLL`, `LLLL`, `LT`, `LTS` formatting tokens
+- **relativeTime**: Adds `fromNow()`, `from()`, `toNow()`, `to()` methods
+- **timezone**: Adds timezone support with `tz()` method
+- **utc**: Adds UTC support with `utc()` and `local()` methods
+- **duration**: Adds duration support with `dayjs.duration()`
+- **customParseFormat**: Adds custom parsing with `dayjs(string, format)`
+
+#### Comparison Plugins
+- **isSameOrAfter**: Adds `isSameOrAfter()` method
+- **isSameOrBefore**: Adds `isSameOrBefore()` method
+- **isBetween**: Adds `isBetween()` method
+
+#### Week Plugins
+- **weekOfYear**: Adds `week()` method
+- **isoWeek**: Adds ISO week support with `isoWeek()`, `startOf('isoWeek')`, etc.
+
+#### Localization
+- **localizedFormat**: Adds localized formatting support
+
+### Common Use Cases
+
+#### User-Friendly Date Display
+```typescript
+// Show relative time for recent activities
+const relativeTime = dayjs(activityTime).fromNow(); // "2 hours ago"
+
+// Show full date for older activities
+const fullDate = dayjs(activityTime).format('LLL'); // "September 20, 2025 11:24 AM"
+```
+
+#### Timezone Handling
+```typescript
+// Convert to user's timezone
+const userTime = dayjs(timestamp).tz(userTimezone);
+
+// Compare dates across timezones
+const isSameDay = dayjs(date1).tz('UTC').isSame(dayjs(date2).tz('UTC'), 'day');
+```
+
+#### Duration Calculations
+```typescript
+// Calculate and display duration
+const duration = dayjs.duration(endTime - startTime);
+const humanDuration = duration.humanize(); // "2 hours 30 minutes"
+```
+
+#### Date Ranges and Comparisons
+```typescript
+// Check if date is within range
+const isInRange = dayjs(date).isBetween(startDate, endDate);
+
+// Check if date is today
+const isToday = dayjs(date).isSame(dayjs(), 'day');
+```
+
+### Exceptions
+- Only use native `Date` when required by external APIs that specifically need a `Date` object
+- Use `Date.now()` for simple timestamp generation (dayjs doesn't provide a direct equivalent)
+- Use `Intl.DateTimeFormat` with dayjs-converted dates for complex formatting
+
+### Examples in Codebase
+
+#### Convex Functions
+```typescript
+import dayjs from "../dayjs";
+
+export const someFunction = query({
+  handler: async (ctx) => {
+    const now = dayjs();
+    const startOfToday = dayjs().startOf('day');
+    const timestamp = dayjs().valueOf();
+    // ...
+  }
+});
+```
+
+#### React Components
+```typescript
+import dayjs from "../../../../../dayjs";
+
+function MyComponent() {
+  const now = dayjs();
+  const formatted = dayjs(timestamp).format('MMM DD, YYYY');
+  // ...
+}
+```
+
+### Migration Checklist
+When updating existing code:
+- [ ] Replace `new Date()` with `dayjs()`
+- [ ] Replace `new Date(timestamp)` with `dayjs(timestamp)`
+- [ ] Replace date manipulation methods with dayjs equivalents
+- [ ] Update formatting calls to use dayjs format strings
+- [ ] Add dayjs import at the top of the file
+- [ ] Test timezone handling if applicable

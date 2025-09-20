@@ -51,17 +51,20 @@
 
 	/* heatmap intensity (light) */
 	--heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
-	--heatmap-0: #f4e6d4; /* cream */
-	--heatmap-1: #fde68a; /* amber-200 */
-	--heatmap-2: #f59e0b; /* amber-600 */
-	--heatmap-3: #ea580c; /* orange-600 */
-	--heatmap-4: #dc2626; /* red-600 */
+	--heatmap-0: oklch(0.2441 0.0096 34.94); /* same as bg for 0 intensity */
+	--heatmap-1: oklch(0.4 0.05 40); /* dark ember (red-brown) */
+	--heatmap-2: oklch(0.55 0.13 50); /* warm orange-red */
+	--heatmap-3: oklch(0.64 0.18 45); /* strong fire orange */
+	--heatmap-4: oklch(0.72 0.2 60); /* bright flame (red-orange with a hint of yellow) */
+
+	/* Experience Color */
+	--experience: oklch(0.914 0.108 86.94); /* yellow */
 
 	/* source brand colors */
 	--source-youtube: #ff0000;
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
-	--source-misc: #9ca3af;
+	--source-misc: #b37bbe;
 	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
 	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
@@ -116,11 +119,14 @@
 
 	/* heatmap intensity (dark) */
 	--heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
-	--heatmap-0: #3b3b3b; /* muted dark for 0 */
-	--heatmap-1: #f59e0b; /* amber-600 */
-	--heatmap-2: #ea580c; /* orange-600 */
-	--heatmap-3: #dc2626; /* red-600 */
-	--heatmap-4: #b91c1c; /* red-700 */
+	--heatmap-0: oklch(0.2441 0.0096 34.94); /* same as bg for 0 intensity */
+	--heatmap-1: oklch(0.4 0.05 40); /* dark ember (red-brown) */
+	--heatmap-2: oklch(0.55 0.13 50); /* warm orange-red */
+	--heatmap-3: oklch(0.64 0.18 45); /* strong fire orange */
+	--heatmap-4: oklch(0.72 0.2 60); /* bright flame (red-orange with a hint of yellow) */
+
+	/* Experience Color */
+	--experience: oklch(0.914 0.108 86.94); /* yellow */
 
 	/* streak vacation color (dark) */
 	--vacation: oklch(0.8304 0.0752 179.8); /* emerald-600 */
@@ -129,7 +135,7 @@
 	--source-youtube: #ff0000;
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
-	--source-misc: #9ca3af;
+	--source-misc: #b37bbe;
 	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
 	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
@@ -205,6 +211,9 @@
 	--color-heatmap-2: var(--heatmap-2);
 	--color-heatmap-3: var(--heatmap-3);
 	--color-heatmap-4: var(--heatmap-4);
+
+	/* experience color mapped color */
+	--color-experience: var(--experience);
 
 	/* streak vacation mapped color */
 	--color-vacation: var(--vacation);

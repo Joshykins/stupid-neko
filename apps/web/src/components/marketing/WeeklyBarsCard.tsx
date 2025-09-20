@@ -2,6 +2,7 @@
 import { useQuery } from "convex/react";
 import * as React from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { BarChart3 } from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -104,9 +105,19 @@ export function WeeklyBarsCard() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="font-display text-xl font-black">
-					Weekly source distribution
-				</CardTitle>
+				<div className="flex items-center gap-3 pb-2">
+					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+						<BarChart3 className="h-8 w-8 text-primary stroke-2" />
+					</div>
+					<div>
+						<CardTitle className="font-display text-xl font-black">
+							Weekly Activity Breakdown
+						</CardTitle>
+						<p className="text-sm text-muted-foreground mt-1">
+							Time spent across different learning sources
+						</p>
+					</div>
+				</div>
 			</CardHeader>
 			<CardContent>
 				<ChartContainer config={chartConfig}>

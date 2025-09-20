@@ -25,7 +25,7 @@ export const DashboardTopBar = () => {
 				</Button>
 				{/* buttons for different views, history(30d,7d,all), timeline, and flashcards */}
 
-				<div className="flex items-center gap-1 pl-2 py-0 divide-x divide-x-border">
+				{/* <div className="flex items-center gap-1 pl-2 py-0 divide-x divide-x-border">
 					<Button variant={"neutral"} className="overflow-hidden">
 						7d
 					</Button>
@@ -40,7 +40,7 @@ export const DashboardTopBar = () => {
 				<Button variant={"neutral"} className="overflow-hidden">
 					<BookOpen />
 					Flashcards
-				</Button>
+				</Button> */}
 			</div>
 		</div>
 	);

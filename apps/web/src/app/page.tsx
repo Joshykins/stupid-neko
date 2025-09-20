@@ -33,7 +33,7 @@ export default async function Home() {
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
 					{/* <DonutChartCard /> */}
-					<StreakDisplayCard title="Daily Streak" cellSize={14} />
+					<StreakDisplayCard title="Daily Streak" />
 					<StreakVacationCard isLiveVersion={false} />
 					<WeeklyBarsCard />
 				</div>

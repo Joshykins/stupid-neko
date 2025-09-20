@@ -111,7 +111,7 @@ export default function UserXPChart({
 			<CardHeader className="flex items-start justify-between pb-4">
 				<CardTitle className="font-display text-xl font-black flex flex-col gap-2">
 					Experience Trend
-					<Badge className="bg-[var(--color-heatmap-1)]">
+					<Badge className="bg-experience">
 						<Rocket /> <span ref={xpCountUpRef} /> Total XP
 					</Badge>
 				</CardTitle>

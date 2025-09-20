@@ -221,38 +221,45 @@ export const listManualTrackedLanguageActivities = query({
 
 export const listRecentLanguageActivities = query({
 	args: { limit: v.optional(v.number()) },
-	returns: v.array(
-		v.object({
-			_id: v.id("userTargetLanguageActivities"),
-			_creationTime: v.number(),
-			userId: v.id("users"),
-			userTargetLanguageId: v.id("userTargetLanguages"),
-			// source removed from schema
-			// categories removed from persisted schema
-			isManuallyTracked: v.optional(v.boolean()),
-			languageCode: v.optional(languageCodeValidator),
-			title: v.optional(v.string()),
-			description: v.optional(v.string()),
-			durationInMs: v.optional(v.number()),
-			occurredAt: v.optional(v.number()),
-			state: v.union(v.literal("in-progress"), v.literal("completed")),
-			contentKey: v.optional(v.string()),
-			externalUrl: v.optional(v.string()),
-			label: v.optional(
-				v.object({
-					title: v.optional(v.string()),
-					authorName: v.optional(v.string()),
-					thumbnailUrl: v.optional(v.string()),
-					fullDurationInSeconds: v.optional(v.number()),
-					contentUrl: v.optional(v.string()),
-				}),
-			),
-			awardedExperience: v.number(),
-		}),
-	),
+	returns: v.object({
+		items: v.array(
+			v.object({
+				_id: v.id("userTargetLanguageActivities"),
+				_creationTime: v.number(),
+				userId: v.id("users"),
+				userTargetLanguageId: v.id("userTargetLanguages"),
+				// source removed from schema
+				// categories removed from persisted schema
+				isManuallyTracked: v.optional(v.boolean()),
+				languageCode: v.optional(languageCodeValidator),
+				title: v.optional(v.string()),
+				description: v.optional(v.string()),
+				durationInMs: v.optional(v.number()),
+				occurredAt: v.optional(v.number()),
+				state: v.union(v.literal("in-progress"), v.literal("completed")),
+				contentKey: v.optional(v.string()),
+				externalUrl: v.optional(v.string()),
+				label: v.optional(
+					v.object({
+						title: v.optional(v.string()),
+						authorName: v.optional(v.string()),
+						thumbnailUrl: v.optional(v.string()),
+						fullDurationInSeconds: v.optional(v.number()),
+						contentUrl: v.optional(v.string()),
+					}),
+				),
+				awardedExperience: v.number(),
+			}),
+		),
+		effectiveNow: v.number(),
+	}),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) return [];
+		if (!userId) return { items: [], effectiveNow: Date.now() };
+
+		// Get the effective time (includes devDate if set)
+		const effectiveNow = await getEffectiveNow(ctx);
+
 		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
 		const items = await ctx.db
 			.query("userTargetLanguageActivities")
@@ -297,7 +304,7 @@ export const listRecentLanguageActivities = query({
 				awardedExperience: Math.max(0, awardedExperience),
 			});
 		}
-		return results;
+		return { items: results, effectiveNow };
 	},
 });
 

@@ -1,3 +1,88 @@
+---
+description: The workspace is pnpm only.
+alwaysApply: false
+---
+
+## Package manager rules: pnpm only
+
+- **Use pnpm exclusively** for all package management tasks in this repo.
+- **Do not** use npm, yarn, or npx. Prefer `pnpm` and `pnpm dlx`.
+- This repository is a pnpm workspace (`workspaces` in the root `package.json`).
+
+### Core commands
+
+- **Install (root)**: 
+```bash
+pnpm install --frozen-lockfile
+```
+
+- **Add dependency (root workspace)**:
+```bash
+pnpm add -w <package>
+```
+
+- **Add dependency to a specific package** (by package name):
+```bash
+pnpm --filter <workspace-package-name> add <package>
+```
+
+- **Add as devDependency**:
+```bash
+pnpm add -D <package>
+```
+
+- **Remove dependency**:
+```bash
+pnpm remove <package>
+```
+
+- **Run a root script**:
+```bash
+pnpm run <script>
+```
+
+- **Run a script in a specific package** (maps from `npm -w <pkg> run <script>`):
+```bash
+pnpm --filter <workspace-package-name> run <script>
+```
+
+- **Run a script across all workspaces**:
+```bash
+pnpm -r run <script>
+```
+
+- **One-off executables** (maps from `npx`):
+```bash
+pnpm dlx <package>[@version] <args>
+```
+
+### Notes for this repo
+
+- Where the root `package.json` uses `npm -w web run ...`, prefer:
+```bash
+pnpm --filter web run <script>
+```
+
+- Prefer non-interactive behavior in automation/CI; pass flags to avoid prompts when applicable.
+- Do not generate or rely on `package-lock.json` or `yarn.lock`; use `pnpm-lock.yaml` only.
+
+### Examples
+
+- Install and start dev at root:
+```bash
+pnpm install --frozen-lockfile && pnpm run dev
+```
+
+- Add `lodash` to the `web` package only:
+```bash
+pnpm --filter web add lodash
+```
+
+- Build all workspace packages:
+```bash
+pnpm -r run build
+```
+
 ## Package manager rules: pnpm only
 
 - **Use pnpm exclusively** for all package management tasks in this repo.

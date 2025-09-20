@@ -1,8 +1,8 @@
 ---
 description: Enforce parent-prefix naming for tables, functions, indexes, relations, and identifiers
 globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
-alwaysApply: true
 ---
+
 
 ## Parent-prefix naming rule
 

@@ -4,6 +4,7 @@ console.log("background script loaded");
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import { tryCatch } from "../../../../../lib/tryCatch";
 
 const BUILD_CONVEX_SITE_URL = import.meta.env.VITE_CONVEX_SITE_URL;
 const BUILD_CONVEX_URL = (import.meta as any)?.env?.VITE_CONVEX_URL as
@@ -139,15 +140,31 @@ async function getIntegrationId(): Promise<string | null> {
 async function fetchMe(): Promise<AuthState> {
 	const integrationId = await getIntegrationId();
 	if (!integrationId || !convex) return { isAuthed: false, me: null };
-	try {
-		const me = await convex.query(api.browserExtensionFunctions.meFromIntegration, {
+
+	const { data: me, error: meError } = await tryCatch(
+		convex.query(api.browserExtensionFunctions.meFromIntegration, {
 			integrationId,
-		});
-		if (!me) return { isAuthed: false, me: null };
-		return { isAuthed: true, me: me as any };
-	} catch {
-		return { isAuthed: false, me: null };
+		}),
+	);
+
+	if (meError || !me) return { isAuthed: false, me: null };
+
+	// Mark the integration key as used when successfully authenticated
+	const { error: markError } = await tryCatch(
+		convex.mutation(
+			api.browserExtensionFunctions.markIntegrationKeyAsUsedFromExtension,
+			{
+				integrationId,
+			},
+		),
+	);
+
+	// Ignore markError - this is best effort
+	if (markError) {
+		console.warn("Failed to mark integration key as used:", markError);
 	}
+
+	return { isAuthed: true, me: me as any };
 }
 
 function deriveYouTubeId(input: string | undefined): string | undefined {
@@ -192,18 +209,20 @@ async function postContentActivityFromPlayback(
 	if (!convex) return null;
 	const integrationId = await getIntegrationId();
 	if (!integrationId) return null;
-	try {
-		const activityType = evt.event === "progress" ? "heartbeat" : evt.event;
-		let contentKey: string | undefined;
-		if (evt.source === "youtube") {
-			const id = evt.videoId || deriveYouTubeId(evt.url);
-			if (id) contentKey = `youtube:${id}`;
-		}
-		if (!contentKey) {
-			console.warn("[bg] missing contentKey, skipping post", evt);
-			return { ok: false, saved: false } as ContentActivityResult;
-		}
-		const json = await convex.mutation(
+
+	const activityType = evt.event === "progress" ? "heartbeat" : evt.event;
+	let contentKey: string | undefined;
+	if (evt.source === "youtube") {
+		const id = evt.videoId || deriveYouTubeId(evt.url);
+		if (id) contentKey = `youtube:${id}`;
+	}
+	if (!contentKey) {
+		console.warn("[bg] missing contentKey, skipping post", evt);
+		return { ok: false, saved: false } as ContentActivityResult;
+	}
+
+	const { data: json, error } = await tryCatch(
+		convex.mutation(
 			api.browserExtensionFunctions.recordContentActivityFromIntegration,
 			{
 				integrationId,
@@ -213,47 +232,55 @@ async function postContentActivityFromPlayback(
 				url: evt.url,
 				occurredAt: evt.ts,
 			} as any,
+		),
+	);
+
+	if (error) {
+		console.warn("[bg] failed posting content activity", error);
+		const { error: notifyError } = await tryCatch(
+			chrome.tabs.sendMessage(tabId!, {
+				type: "CONTENT_ACTIVITY_RECORDED",
+				payload: { error: true },
+			}),
 		);
-		console.log("[bg] posted content activity (convex)", json);
-		// Cache label by content key when provided
-		try {
-			const key = (json as any)?.contentKey || contentKey;
-			if (key && (json as any)?.contentLabel) {
-				contentLabelsByKey[key] = (json as any).contentLabel;
-			}
-		} catch {}
-		// Notify the originating tab for a user-friendly toast only when saved
-		try {
-			if (typeof tabId === "number" && (json as any)?.saved) {
-				chrome.tabs.sendMessage(tabId, {
-					type: "CONTENT_ACTIVITY_RECORDED",
-					payload: {
-						source: evt.source,
-						url: evt.url,
-						title: evt.title,
-						videoId: evt.videoId,
-						contentKey: (json as any).contentKey || contentKey,
-						occurredAt: evt.ts,
-						saved: true,
-						contentLabel: (json as any).contentLabel,
-						currentTargetLanguage: (json as any).currentTargetLanguage,
-					},
-				});
-			}
-		} catch {}
-		return json as any;
-	} catch (e) {
-		console.warn("[bg] failed posting content activity", e);
-		try {
-			if (typeof tabId === "number") {
-				chrome.tabs.sendMessage(tabId, {
-					type: "CONTENT_ACTIVITY_RECORDED",
-					payload: { error: true },
-				});
-			}
-		} catch {}
+		if (notifyError) {
+			console.warn("[bg] failed to notify tab of error", notifyError);
+		}
 		return null;
 	}
+
+	console.log("[bg] posted content activity (convex)", json);
+
+	// Cache label by content key when provided
+	const key = (json as any)?.contentKey || contentKey;
+	if (key && (json as any)?.contentLabel) {
+		contentLabelsByKey[key] = (json as any).contentLabel;
+	}
+
+	// Notify the originating tab for a user-friendly toast only when saved
+	if (typeof tabId === "number" && (json as any)?.saved) {
+		const { error: notifyError } = await tryCatch(
+			chrome.tabs.sendMessage(tabId, {
+				type: "CONTENT_ACTIVITY_RECORDED",
+				payload: {
+					source: evt.source,
+					url: evt.url,
+					title: evt.title,
+					videoId: evt.videoId,
+					contentKey: (json as any).contentKey || contentKey,
+					occurredAt: evt.ts,
+					saved: true,
+					contentLabel: (json as any).contentLabel,
+					currentTargetLanguage: (json as any).currentTargetLanguage,
+				},
+			}),
+		);
+		if (notifyError) {
+			console.warn("[bg] failed to notify tab of success", notifyError);
+		}
+	}
+
+	return json as any;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
@@ -268,12 +295,19 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
 				lastAuthState = { value: auth, fetchedAt: Date.now() };
 				try {
 					_sendResponse?.({ ok: true, auth });
-				} catch {}
+				} catch (error) {
+					console.warn("[bg] failed to send REFRESH_AUTH response", error);
+				}
 			})
 			.catch(() => {
 				try {
 					_sendResponse?.({ ok: false });
-				} catch {}
+				} catch (error) {
+					console.warn(
+						"[bg] failed to send REFRESH_AUTH error response",
+						error,
+					);
+				}
 			});
 		return true; // async response
 	}
@@ -287,7 +321,9 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
 		if (fresh) {
 			try {
 				_sendResponse?.(lastAuthState.value);
-			} catch {}
+			} catch (error) {
+				console.warn("[bg] failed to send cached auth state", error);
+			}
 			return true;
 		}
 		fetchMe()
@@ -295,24 +331,34 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
 				lastAuthState = { value: auth, fetchedAt: Date.now() };
 				try {
 					_sendResponse?.(auth);
-				} catch {}
+				} catch (error) {
+					console.warn("[bg] failed to send fresh auth state", error);
+				}
 			})
 			.catch(() => {
 				try {
 					_sendResponse?.({ isAuthed: false, me: null } as AuthState);
-				} catch {}
+				} catch (error) {
+					console.warn("[bg] failed to send auth error state", error);
+				}
 			});
 		return true; // async response
 	}
 	if (message && message.type === "GET_CONTENT_LABEL") {
+		const key = message?.contentKey as string | undefined;
+		const label = key ? contentLabelsByKey[key] : undefined;
 		try {
-			const key = message?.contentKey as string | undefined;
-			const label = key ? contentLabelsByKey[key] : undefined;
 			_sendResponse?.({ contentLabel: label || null });
-		} catch {
+		} catch (error) {
+			console.warn("[bg] failed to send content label", error);
 			try {
 				_sendResponse?.({ contentLabel: null });
-			} catch {}
+			} catch (fallbackError) {
+				console.warn(
+					"[bg] failed to send fallback content label",
+					fallbackError,
+				);
+			}
 		}
 		return true;
 	}

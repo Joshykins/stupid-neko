@@ -1,18 +1,14 @@
 "use client";
 
-import dayjs from "@dayjs";
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import {
 	Award,
 	BookOpenText,
-	CalendarDays,
-	Flame,
-	MessageCircle,
-	Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { LanguageCode } from "../../../../../convex/schema";
+import dayjs from "../../../../../lib/dayjs";
 import { COMMON_LANGUAGES } from "../../lib/languages";
 import LanguageFlagSVG from "../LanguageFlagSVG";
 import LevelExperienceInfo from "../LevelExperienceInfo";
@@ -20,7 +16,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
-import XpAreaChart from "../userXPChart";
 
 type MockUser = {
 	name: string;
@@ -59,7 +54,8 @@ const mockUser: MockUser = {
 		"+50 XP to Speaking Lv. 6",
 	],
 	language: "japanese",
-	totalMsLearning: 560 * 60 * 1000,
+	// 560 hours
+	totalMsLearning: 560 * 60 * 60 * 1000,
 	// Add missing properties
 	currentLevel: 62,
 	experienceTowardsNextLevel: 700,
@@ -175,7 +171,7 @@ export const UsersSummaryCard = ({
 						<div className="text-2xl font-bold text-main-foreground">
 							{userProgress
 								? Math.round(((displayData.totalMsLearning) / 1000 / 60 / 60))
-								: mockUser.totalMsLearning / 1000 / 60 / 60}{" "}
+								: Math.round(mockUser.totalMsLearning / 1000 / 60 / 60)}{" "}
 							hrs
 						</div>
 					</div>

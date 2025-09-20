@@ -6,6 +6,7 @@ import ConvexClientProvider from "../../../../components/ConvexClientProvider";
 import { Background } from "../components/Background/Background";
 import TopNav from "../components/TopNav";
 import { TestingComponent } from "../components/testing/TestingComponent";
+import { Toaster } from "../components/ui/sonner";
 
 const plusJakarta = Plus_Jakarta_Sans({
 	variable: "--font-geist-sans",
@@ -83,6 +84,7 @@ export default async function RootLayout({
 							<TopNav />
 							{children}
 						</div>
+						<Toaster />
 					</ConvexClientProvider>
 				</ConvexAuthNextjsServerProvider>
 			</body>

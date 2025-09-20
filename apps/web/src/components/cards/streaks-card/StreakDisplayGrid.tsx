@@ -9,13 +9,13 @@ type Props = {
 	title: string;
 	days: number;
 	values?: Array<number>;
-	cellSize: number;
 	onHover: (absoluteIndex: number, value: number) => void;
 	intensityStyle: (n: number) => React.CSSProperties;
 	startDate: Date;
 	liveVersion?: boolean;
 	activityCounts?: Array<number> | undefined;
 	vacationFlags?: Array<boolean> | undefined;
+	vacationConfig: { backgroundColor: string; opacity: number; };
 };
 
 function createSeededRng(seedInput: number): () => number {
@@ -41,13 +41,13 @@ export default function StreakDisplayGrid({
 	title,
 	days,
 	values,
-	cellSize,
 	onHover,
 	intensityStyle,
-	startDate,
+	startDate: _startDate,
 	liveVersion = false,
-	activityCounts,
+	activityCounts: _activityCounts,
 	vacationFlags,
+	vacationConfig,
 }: Props) {
 	const streakData = useQuery(
 		api.userStreakFunctions.getStreakDataForHeatmap,
@@ -76,7 +76,7 @@ export default function StreakDisplayGrid({
 	}, []);
 
 	const innerWidth = Math.max(0, containerWidth - 4);
-	const approxCellWithBorder = cellSize + 1;
+	const approxCellWithBorder = 15;
 	const maxVisibleWeeks =
 		innerWidth > 0
 			? Math.max(1, Math.floor(innerWidth / approxCellWithBorder))
@@ -97,21 +97,19 @@ export default function StreakDisplayGrid({
 		columns.push(slice);
 	}
 
-	const columnWidth = innerWidth > 0 ? innerWidth / visibleWeeks : cellSize;
-	const cs = Math.max(10, Math.floor(columnWidth) - 1);
+	const cs = Math.max(10, Math.floor((innerWidth - (visibleWeeks - 1) * 2) / visibleWeeks));
 
 	return (
 		<div
 			ref={containerRef}
-			className="w-full rounded-md overflow-hidden border-2 border-black bg-heatmap-bg relative"
+			className="w-full relative "
 		>
 			{containerWidth > 0 && (
 				<div
-					className="grid gap-0 select-none w-full"
-					style={{ gridTemplateColumns: `repeat(${visibleWeeks}, 1fr)` }}
+					className="flex gap-0.5 select-none w-full justify-center py-1"
 				>
 					{columns.map((week, wi) => (
-						<div key={wi} className="grid grid-rows-7 gap-0">
+						<div key={`week-${startIndex + wi * 7}`} className="flex flex-col gap-0.5">
 							{week.map((v, di) => {
 								const relativeIndex = wi * 7 + di;
 								const absoluteIndex = startIndex + relativeIndex;
@@ -122,25 +120,32 @@ export default function StreakDisplayGrid({
 								const delay = 0.1 + rng() * 0.7;
 								const isVacation = liveVersion
 									? Boolean(
-											streakData?.vacationFlags &&
-												streakData.vacationFlags[absoluteIndex],
-										)
-									: Boolean(vacationFlags && vacationFlags[absoluteIndex]);
+										streakData?.vacationFlags?.[absoluteIndex],
+									)
+									: Boolean(vacationFlags?.[absoluteIndex]);
+								const intensityStyleResult = intensityStyle(v);
 								const style: React.CSSProperties = isVacation
 									? {
-											width: "100%",
-											height: cs,
-											backgroundColor: "var(--color-vacation, #10B981)",
-										}
-									: { width: "100%", height: cs, ...intensityStyle(v) };
+										width: cs,
+										height: cs,
+										...vacationConfig,
+									}
+									: {
+										width: cs,
+										height: cs,
+										...intensityStyleResult,
+									};
 								return (
 									<motion.div
-										key={`${wi}-${di}`}
-										className="border border-black"
+										key={`${title}-${totalDays}-${wi}-${di}-${absoluteIndex}`}
+										className="border border-black rounded-xs"
 										style={style}
 										onMouseEnter={() => onHover(absoluteIndex, v)}
 										initial={{ opacity: 0, scale: 0.96 }}
-										animate={{ opacity: 1, scale: 1 }}
+										animate={{
+											opacity: isVacation ? vacationConfig.opacity : (intensityStyleResult.opacity ?? 1),
+											scale: 1
+										}}
 										transition={{ duration: 0.6, delay }}
 									/>
 								);

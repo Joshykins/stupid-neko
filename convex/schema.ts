@@ -67,6 +67,7 @@ export default defineSchema({
 
 		// Extension integration key
 		integrationKey: v.optional(v.string()),
+		integrationKeyUsedByPlugin: v.optional(v.boolean()),
 
 		// Streak
 		lastStreakCreditAt: v.optional(v.number()),

@@ -1,3 +1,63 @@
+---
+description: when dealing with queries/mutations how to get types on the frontend.
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+---
+Title: Convex Type Extraction Helpers (Return and Args)
+
+Summary: Prefer using Convex-generated helpers to derive types from queries/mutations/actions so UI stays in sync with backend.
+
+Guidelines
+
+- Import `FunctionReturnType` from `convex/server` to derive the return type of a Convex function reference.
+- Avoid hand-written duplicate types for function returns. Let Convex be the source of truth.
+- For args, prefer explicit inline types at call sites. If you truly need an arg type, you can define a helper infer type (see below), but keep usage minimal.
+
+Examples
+
+1) Return type from a query
+
+```ts
+import { api } from "../../convex/_generated/api";
+import { FunctionReturnType } from "convex/server";
+
+type RecentItems = FunctionReturnType<
+  typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities
+>;
+type RecentItem = RecentItems extends Array<infer T> ? T : never;
+```
+
+2) Using with React `useQuery`
+
+```ts
+const data = useQuery(
+  api.userTargetLanguageActivityFunctions.listRecentLanguageActivities,
+  { limit: 20 },
+);
+// `data` is RecentItems | undefined at runtime
+```
+
+3) Optional: Extracting args type (advanced)
+
+Convex doesn’t export an official `FunctionArgs` helper. If you need arg types:
+
+```ts
+type InferArgs<F> = F extends (args: infer A) => any
+  ? A
+  : F extends { default: (args: infer A) => any }
+    ? A
+    : never;
+
+type ListRecentArgs = InferArgs<
+  typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities
+>;
+```
+
+Best Practices
+
+- Keep types close to usage; avoid global ambient types.
+- When backend shapes change, `FunctionReturnType` updates types automatically.
+- Use discriminated unions and validators in Convex functions for stronger typing.
+
 Title: Convex Type Extraction Helpers (Return and Args)
 
 Summary: Prefer using Convex-generated helpers to derive types from queries/mutations/actions so UI stays in sync with backend.

@@ -27,21 +27,35 @@ export const regenerateIntegrationKey = mutation({
 		const user = await ctx.db.get(userId);
 		if (!user) throw new Error("User not found");
 		const integrationId = generateIntegrationKey();
-		await ctx.db.patch(userId, { integrationKey: integrationId } as any);
+		await ctx.db.patch(userId, {
+			integrationKey: integrationId,
+			integrationKeyUsedByPlugin: false,
+		});
 		return { integrationId };
 	},
 });
 
 export const getIntegrationKey = query({
 	args: {},
-	returns: v.union(v.object({ integrationId: v.string() }), v.null()),
+	returns: v.union(
+		v.object({
+			integrationId: v.string(),
+			integrationKeyUsedByPlugin: v.optional(v.boolean()),
+		}),
+		v.null(),
+	),
 	handler: async (ctx) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 		const user = await ctx.db.get(userId);
 		if (!user) throw new Error("User not found");
-		const integrationId = (user as any).integrationKey as string | undefined;
-		return integrationId ? { integrationId } : null;
+		const integrationId = user.integrationKey;
+		return integrationId
+			? {
+					integrationId,
+					integrationKeyUsedByPlugin: user.integrationKeyUsedByPlugin,
+				}
+			: null;
 	},
 });
 
@@ -51,38 +65,40 @@ export const clearIntegrationKey = mutation({
 	handler: async (ctx) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
-		await ctx.db.patch(userId, { integrationKey: undefined } as any);
+		await ctx.db.patch(userId, {
+			integrationKey: undefined,
+			integrationKeyUsedByPlugin: undefined,
+		});
 		return null;
 	},
 });
 
 export const getUserByIntegrationKey = internalQuery({
 	args: { integrationId: v.string() },
-	returns: v.union(v.object({ userId: v.id("users") }), v.null()),
+	returns: v.union(v.any(), v.null()),
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_integration_key", (q: any) =>
+			.withIndex("by_integration_key", (q) =>
 				q.eq("integrationKey", args.integrationId),
 			)
 			.unique();
-		if (!user) return null;
-		return { userId: (user as any)._id } as any;
+		return user;
 	},
 });
 
-export const touchIntegrationKey = internalMutation({
+export const markIntegrationKeyAsUsed = internalMutation({
 	args: { integrationId: v.string() },
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_integration_key", (q: any) =>
+			.withIndex("by_integration_key", (q) =>
 				q.eq("integrationKey", args.integrationId),
 			)
 			.unique();
 		if (!user) return null;
-		// No-op for now
+		await ctx.db.patch(user._id, { integrationKeyUsedByPlugin: true });
 		return null;
 	},
 });

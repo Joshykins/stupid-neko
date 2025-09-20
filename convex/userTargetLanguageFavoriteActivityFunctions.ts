@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { LanguageCode } from "./schema";
 import { mutation, query } from "./_generated/server";
 import { getEffectiveNow } from "./utils";
+import { paginationOptsValidator } from "convex/server";
 
 export const createFavorite = mutation({
 	args: {
@@ -116,6 +117,90 @@ export const listFavorites = query({
 	},
 });
 
+export const listFavoritesPaginated = query({
+	args: { paginationOpts: paginationOptsValidator },
+	returns: v.object({
+		page: v.array(
+			v.object({
+				_id: v.id("userTargetLanguageFavoriteActivities"),
+				_creationTime: v.number(),
+				userId: v.id("users"),
+				userTargetLanguageId: v.id("userTargetLanguages"),
+				title: v.string(),
+				description: v.optional(v.string()),
+				externalUrl: v.optional(v.string()),
+				defaultDurationInMinutes: v.optional(v.number()),
+				createdFromLanguageActivityId: v.optional(
+					v.id("userTargetLanguageActivities"),
+				),
+				usageCount: v.optional(v.number()),
+				lastUsedAt: v.optional(v.number()),
+			}),
+		),
+		isDone: v.boolean(),
+		continueCursor: v.union(v.string(), v.null()),
+	}),
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) {
+			return { page: [], isDone: true, continueCursor: null };
+		}
+		const user = await ctx.db.get(userId);
+		const utlId = user?.currentTargetLanguageId as
+			| Id<"userTargetLanguages">
+			| undefined;
+		if (!utlId) {
+			return { page: [], isDone: true, continueCursor: null };
+		}
+
+		const result = await ctx.db
+			.query("userTargetLanguageFavoriteActivities")
+			.withIndex("by_user_target_language", (q) =>
+				q.eq("userTargetLanguageId", utlId),
+			)
+			.order("desc")
+			.paginate(args.paginationOpts);
+
+		// map ms -> minutes for client compatibility and strip non-validated fields
+		const mapped = result.page.map((f) => ({
+			_id: f._id,
+			_creationTime: f._creationTime,
+			userId: f.userId,
+			userTargetLanguageId: f.userTargetLanguageId,
+			title: f.title,
+			description: f.description,
+			externalUrl: f.externalUrl,
+			createdFromLanguageActivityId: f.createdFromLanguageActivityId,
+			usageCount: f.usageCount,
+			lastUsedAt: f.lastUsedAt,
+			defaultDurationInMinutes:
+				typeof f.defaultDurationInMs === "number"
+					? Math.max(0, Math.round(f.defaultDurationInMs / 1000 / 60))
+					: undefined,
+		}));
+
+		return {
+			page: mapped as unknown as Array<{
+				_id: Id<"userTargetLanguageFavoriteActivities">;
+				_creationTime: number;
+				userId: Id<"users">;
+				userTargetLanguageId: Id<"userTargetLanguages">;
+				title: string;
+				description?: string | undefined;
+				externalUrl?: string | undefined;
+				defaultDurationInMinutes?: number | undefined;
+				createdFromLanguageActivityId?:
+					| Id<"userTargetLanguageActivities">
+					| undefined;
+				usageCount?: number | undefined;
+				lastUsedAt?: number | undefined;
+			}>,
+			isDone: result.isDone,
+			continueCursor: result.continueCursor,
+		};
+	},
+});
+
 export const listManualActivitiesWithFavoriteMatch = query({
 	args: {
 		limit: v.optional(v.number()),
@@ -160,6 +245,22 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		const page: Array<ManualActivityRow> = [];
 		const batchSize = Math.max(pageLimit, 25);
 
+		// Get all existing favorites for this user and target language to check matches
+		const user = await ctx.db.get(userId);
+		const utlId = user?.currentTargetLanguageId as
+			| Id<"userTargetLanguages">
+			| undefined;
+		let existingFavorites: Array<Doc<"userTargetLanguageFavoriteActivities">> =
+			[];
+		if (utlId) {
+			existingFavorites = await ctx.db
+				.query("userTargetLanguageFavoriteActivities")
+				.withIndex("by_user_target_language", (q) =>
+					q.eq("userTargetLanguageId", utlId),
+				)
+				.collect();
+		}
+
 		while (page.length < pageLimit) {
 			const q = ctx.db
 				.query("userTargetLanguageActivities")
@@ -177,7 +278,14 @@ export const listManualActivitiesWithFavoriteMatch = query({
 				const occurredAt = it.occurredAt ?? it._creationTime;
 				cursor = occurredAt;
 				if (!it.isManuallyTracked) continue;
-				const matchedFavoriteId = undefined;
+
+				// Check if this activity matches an existing favorite by title
+				const title = (it.title ?? "").trim();
+				const match = existingFavorites.find(
+					(f) => (f.title ?? "").trim().toLowerCase() === title.toLowerCase(),
+				);
+				const matchedFavoriteId = match?._id;
+
 				page.push({
 					_id: it._id,
 					title: it.title ?? undefined,
@@ -263,67 +371,6 @@ export const addFavoriteFromActivity = mutation({
 			// Optional: Do not delete the favorite document automatically to avoid surprising removals across other activities.
 			return { favoriteId: undefined, isFavorite: false };
 		}
-	},
-});
-
-export const quickCreateFromFavorite = mutation({
-	args: {
-		favoriteId: v.id("userTargetLanguageFavoriteActivities"),
-		durationInMinutes: v.optional(v.number()),
-		occurredAt: v.optional(v.number()),
-	},
-	returns: v.object({ activityId: v.id("userTargetLanguageActivities") }),
-	handler: async (
-		ctx,
-		args,
-	): Promise<{ activityId: Id<"userTargetLanguageActivities"> }> => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
-		const fav = await ctx.db.get(args.favoriteId);
-		if (!fav) throw new Error("Favorite not found");
-		if (fav.userId !== userId) throw new Error("Forbidden");
-
-		const utlId = fav.userTargetLanguageId as Id<"userTargetLanguages">;
-		const now = await getEffectiveNow(ctx);
-		const occurredAt = args.occurredAt ?? now;
-
-		const durationInMinutes = Math.max(
-			0,
-			Math.round(
-				typeof args.durationInMinutes === "number"
-					? args.durationInMinutes
-					: typeof fav.defaultDurationInMs === "number"
-						? (fav.defaultDurationInMs as number) / 1000 / 60
-						: 10,
-			),
-		);
-
-		const utl = await ctx.db.get(utlId);
-		if (!utl?.languageCode) throw new Error("Target language missing code");
-		const languageCode = utl.languageCode as LanguageCode;
-
-		const created = await ctx.runMutation(
-			internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-			{
-				userTargetLanguageId: utlId,
-				title: fav.title ?? "",
-				description: fav.description ?? undefined,
-				durationInMinutes,
-				occurredAt,
-				isManuallyTracked: true,
-				languageCode,
-			},
-		);
-
-		// Update usage metrics
-		await ctx.db.patch(args.favoriteId, {
-			usageCount: Math.max(0, (fav.usageCount ?? 0) + 1),
-			lastUsedAt: occurredAt,
-		});
-		const activityId = (
-			created as { activityId: Id<"userTargetLanguageActivities"> }
-		).activityId;
-		return { activityId };
 	},
 });
 

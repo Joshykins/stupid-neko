@@ -8,7 +8,7 @@ type Props = {
 	title: string;
 	days: number;
 	values?: Array<number>;
-	onHover: (absoluteIndex: number, value: number) => void;
+	onHover: (absoluteIndex: number) => void;
 	intensityStyle: (n: number) => React.CSSProperties;
 	totalDays: number;
 	liveVersion?: boolean;
@@ -69,8 +69,7 @@ export default function StreakDisplayWeek({
 		const absoluteIndex = weekStart + i;
 		const intensity = renderValues[absoluteIndex] ?? 0;
 		const minutes = liveVersion
-			? streakData &&
-				streakData.activityCounts &&
+			? streakData?.activityCounts &&
 				streakData.activityCounts.length === effectiveTotalDays
 				? (streakData.activityCounts[absoluteIndex] ?? 0)
 				: intensity > 0
@@ -83,9 +82,9 @@ export default function StreakDisplayWeek({
 					: 0;
 		const isVacation = liveVersion
 			? Boolean(
-					streakData?.vacationFlags && streakData.vacationFlags[absoluteIndex],
-				)
-			: Boolean(vacationFlags && vacationFlags[absoluteIndex]);
+				streakData?.vacationFlags?.[absoluteIndex],
+			)
+			: Boolean(vacationFlags?.[absoluteIndex]);
 		items.push({ absoluteIndex, intensity, minutes, isVacation });
 	}
 
@@ -116,9 +115,9 @@ export default function StreakDisplayWeek({
 					const gradientOverlay: React.CSSProperties =
 						hasActivity && !isVacation
 							? {
-									backgroundImage:
-										"linear-gradient(180deg, rgba(255,255,255,0.35), rgba(0,0,0,0.06))",
-								}
+								backgroundImage:
+									"linear-gradient(180deg, rgba(255,255,255,0.35), rgba(0,0,0,0.06))",
+							}
 							: {};
 
 					const dayDate = new Date(startDate);
@@ -129,7 +128,7 @@ export default function StreakDisplayWeek({
 
 					return (
 						<div
-							key={i}
+							key={`week-${it.absoluteIndex}`}
 							className="flex flex-col items-center justify-start gap-1"
 						>
 							<div
@@ -160,7 +159,7 @@ export default function StreakDisplayWeek({
 										...baseStyle,
 										...gradientOverlay,
 									}}
-									onMouseEnter={() => onHover(it.absoluteIndex, it.intensity)}
+									onMouseEnter={() => onHover(it.absoluteIndex)}
 									initial={{ opacity: 0, scale: 0.9 }}
 									animate={{ opacity: 1, scale: 1 }}
 									transition={{ duration: 0.6, delay }}

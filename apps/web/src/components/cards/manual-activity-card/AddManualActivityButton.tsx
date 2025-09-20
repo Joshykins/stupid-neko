@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { PlusCircle, Star } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -26,13 +26,31 @@ type FormValues = {
 	externalUrl?: string;
 };
 
-export function AddManualActivityButton() {
+type FavoriteData = {
+	title: string;
+	description?: string;
+	externalUrl?: string;
+	defaultDurationInMinutes: number;
+};
+
+type AddManualActivityButtonProps = {
+	autoFillData?: FavoriteData | null;
+	shouldOpenDialog?: boolean;
+	onDialogClose?: () => void;
+};
+
+export function AddManualActivityButton({
+	autoFillData,
+	shouldOpenDialog,
+	onDialogClose
+}: AddManualActivityButtonProps = {}) {
 	const addManual = useMutation(
 		api.userTargetLanguageActivityFunctions.addManualLanguageActivity,
 	);
 
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
 	const [confirmTrackOpen, setConfirmTrackOpen] = React.useState(false);
+	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
 	const [useCustomMinutes, setUseCustomMinutes] =
 		React.useState<boolean>(false);
@@ -48,6 +66,39 @@ export function AddManualActivityButton() {
 		},
 	});
 
+	// Auto-fill form when autoFillData is provided
+	React.useEffect(() => {
+		if (autoFillData) {
+			form.reset({
+				title: autoFillData.title,
+				durationInMinutes: autoFillData.defaultDurationInMinutes,
+				description: autoFillData.description || "",
+				externalUrl: autoFillData.externalUrl || "",
+			});
+
+			// Set custom time fields
+			const totalMinutes = autoFillData.defaultDurationInMinutes;
+			setCustomHours(Math.floor(totalMinutes / 60));
+			setCustomMinutes(totalMinutes % 60);
+			setUseCustomMinutes(false);
+		}
+	}, [autoFillData, form]);
+
+	// Auto-open dialog when shouldOpenDialog is true
+	React.useEffect(() => {
+		if (shouldOpenDialog) {
+			setIsDialogOpen(true);
+		}
+	}, [shouldOpenDialog]);
+
+	// Handle dialog close
+	const handleDialogClose = (open: boolean) => {
+		setIsDialogOpen(open);
+		if (!open && onDialogClose) {
+			onDialogClose();
+		}
+	};
+
 	function formatMinutesLabel(totalMinutes: number): string {
 		const minutes = Math.max(0, Math.round(totalMinutes || 0));
 		const hours = Math.floor(minutes / 60);
@@ -58,7 +109,7 @@ export function AddManualActivityButton() {
 	}
 
 	return (
-		<Dialog>
+		<Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
 			<DialogTrigger asChild>
 				<Button
 					size="cta"

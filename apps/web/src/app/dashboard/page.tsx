@@ -26,7 +26,6 @@ export default async function DashboardPage() {
 				<div className="lg:col-span-1 space-y-4">
 					<StreakDisplayCard
 						title="Daily Streak"
-						cellSize={14}
 						liveVersion={true}
 					/>
 

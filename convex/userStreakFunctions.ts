@@ -477,10 +477,34 @@ export const getStreakDataForHeatmap = query({
 			const totalMinutes = minutesWindow.reduce((sum, n) => sum + n, 0);
 			const avgMinutes = days > 0 ? totalMinutes / days : 0;
 
-			// Dynamic thresholds based on average
-			const t1 = avgMinutes * 0.35; // start of gradient
-			const t2 = avgMinutes * 0.4; // mid gradient
-			const t3 = avgMinutes * 0.45; // brightest threshold (max color)
+			// Get non-zero minutes for better threshold calculation
+			const nonZeroMinutes = minutesWindow.filter((m) => m > 0);
+			const medianMinutes =
+				nonZeroMinutes.length > 0
+					? nonZeroMinutes.sort((a, b) => a - b)[
+							Math.floor(nonZeroMinutes.length / 2)
+						]
+					: 0;
+
+			// Use median for more robust thresholds, fallback to average
+			const baseMinutes = medianMinutes > 0 ? medianMinutes : avgMinutes;
+
+			// Dynamic thresholds based on median/average - more aggressive to show red
+			const t1 = Math.max(5, baseMinutes * 0.2); // start of gradient (min 5 minutes)
+			const t2 = Math.max(15, baseMinutes * 0.4); // mid gradient (min 15 minutes)
+			const t3 = Math.max(30, baseMinutes * 0.6); // high intensity (min 30 minutes)
+			const t4 = Math.max(60, baseMinutes * 0.8); // very high intensity (min 60 minutes)
+
+			// Debug logging
+			console.log("Heatmap thresholds:", {
+				t1,
+				t2,
+				t3,
+				t4,
+				baseMinutes,
+				medianMinutes,
+				avgMinutes,
+			});
 
 			// Second pass: compute intensities and expose activity counts
 			const activityCounts: number[] = [];
@@ -492,17 +516,26 @@ export const getStreakDataForHeatmap = query({
 				// Convert minutes learned to heatmap intensity (0-4)
 				let intensity = 0;
 				if (activities > 0) {
-					if (avgMinutes <= 0) {
-						// Fallback absolute thresholds if average is 0
-						if (activities < 10) intensity = 1;
-						else if (activities < 20) intensity = 2;
-						else if (activities < 40) intensity = 3;
-						else intensity = 4;
+					if (baseMinutes <= 0 || nonZeroMinutes.length === 0) {
+						// Fallback absolute thresholds if no meaningful data
+						if (activities < 5) intensity = 1;
+						else if (activities < 15) intensity = 2;
+						else if (activities < 30) intensity = 3;
+						else if (activities < 60) intensity = 4;
+						else intensity = 4; // Very high activity gets max intensity (4)
 					} else {
 						if (activities < t1) intensity = 1;
 						else if (activities < t2) intensity = 2;
 						else if (activities < t3) intensity = 3;
-						else intensity = 4; // 45%+ of average minutes => max color
+						else if (activities < t4) intensity = 4;
+						else intensity = 4; // Above 80% of median/average => max color (4)
+					}
+
+					// Debug logging for high activity days
+					if (activities > 200) {
+						console.log(
+							`High activity day: ${activities} minutes -> intensity ${intensity}`,
+						);
 					}
 				}
 				values.push(intensity);
