@@ -1,67 +1,80 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { BookA, ExternalLink, Rocket, Zap, ZapOff } from "lucide-react";
+import { ExternalLink, Rocket, Zap } from "lucide-react";
 import * as React from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { LanguageCode } from "../../../../../convex/schema";
+import Image from "next/image";
 import { LanguageFlagSVG } from "../LanguageFlagSVG";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 // Use Convex-generated return types; avoid local type definitions
 // Avoid Radix ScrollArea here to prevent inner display: table wrapper pushing content
 import { ScrollArea } from "../ui/scroll-area";
+import { Button } from "../ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "../ui/tooltip";
+import { FunctionReturnType } from "convex/server";
 
-function capitalize(word: string | undefined): string {
-	if (!word) return "";
-	return word.charAt(0).toUpperCase() + word.slice(1);
+//
+
+function formatTime(ts?: number, timeZone?: string): string {
+	if (!ts) return "";
+	const fmt = new Intl.DateTimeFormat(undefined, {
+		hour: "numeric",
+		minute: "2-digit",
+		timeZone,
+	});
+	return fmt.format(new Date(ts)).toLowerCase();
 }
 
-function humanDate(ts?: number): string {
-	if (!ts) return "";
-	const d = new Date(ts);
-	const now = new Date();
-	const startOfToday = new Date(
-		now.getFullYear(),
-		now.getMonth(),
-		now.getDate(),
-	).getTime();
-	const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
-	if (ts >= startOfToday) return "Today";
-	if (ts >= startOfYesterday) return "Yesterday";
-	return d.toLocaleDateString();
+function getLocalYmdParts(ms: number, timeZone?: string): { y: number; m: number; d: number; } {
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		year: "numeric",
+		month: "numeric",
+		day: "numeric",
+	}).formatToParts(new Date(ms));
+	const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+	const y = parseInt(lookup.year, 10);
+	const m = parseInt(lookup.month, 10);
+	const d = parseInt(lookup.day, 10);
+	return { y, m, d };
 }
 
-function formatTime(ts?: number): string {
-	if (!ts) return "";
-	const d = new Date(ts);
-	return d
-		.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-		.toLowerCase();
+function localMidnightUtcMsForYmd(y: number, m: number, d: number, timeZone?: string): number {
+	const atUtcMidnight = new Date(Date.UTC(y, m - 1, d));
+	const timeParts = new Intl.DateTimeFormat("en-US", {
+		timeZone,
+		hour: "2-digit",
+		minute: "2-digit",
+		hourCycle: "h23",
+	}).formatToParts(atUtcMidnight);
+	const lookup = Object.fromEntries(timeParts.map((p) => [p.type, p.value]));
+	const hour = parseInt(lookup.hour || "0", 10);
+	const minute = parseInt(lookup.minute || "0", 10);
+	const offsetMinutes = hour * 60 + minute;
+	return Date.UTC(y, m - 1, d) - offsetMinutes * 60 * 1000;
 }
 
-function dateFooterLabel(ts?: number): string {
+function dateFooterLabel(ts?: number, timeZone?: string): string {
 	if (!ts) return "";
-	const d = new Date(ts);
-	const now = new Date();
-	const startOfToday = new Date(
-		now.getFullYear(),
-		now.getMonth(),
-		now.getDate(),
-	).getTime();
+	const now = Date.now();
+	const { y, m, d } = getLocalYmdParts(now, timeZone);
+	const startOfToday = localMidnightUtcMsForYmd(y, m, d, timeZone);
 	if (ts >= startOfToday) {
-		return `${formatTime(ts)}`;
+		return `${formatTime(ts, timeZone)}`;
 	}
-	const dateStr = d.toLocaleDateString(undefined, {
+	const dateStr = new Intl.DateTimeFormat(undefined, {
+		timeZone,
 		month: "long",
 		day: "numeric",
-	});
-	return `${dateStr}, ${formatTime(ts)}`;
+	}).format(new Date(ts));
+	return `${dateStr}, ${formatTime(ts, timeZone)}`;
 }
 
 function formatHoursMinutesLabel(totalSeconds?: number): string {
@@ -78,23 +91,32 @@ function formatHoursMinutesLabel(totalSeconds?: number): string {
 
 // Language flag SVG is provided by LanguageFlagSVG component
 
-type RecentItems = NonNullable<
-	ReturnType<
-		typeof useQuery<
-			typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities
-		>
-	>
->;
+// Configurable page size for the recent activity list
+const PAGE_SIZE = 8;
+
+
+
+type RecentItems = FunctionReturnType<typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities>;
 type RecentItem = RecentItems extends Array<infer T> ? T : never;
 
-const TrackedHistoryItem = ({ item }: { item: RecentItem }) => {
-	const key = item.sourceKey ?? "manual";
+const TrackedHistoryItem = ({ item, timeZone }: { item: RecentItem; timeZone?: string; }) => {
+	const contentKey = item.contentKey;
+	const key =
+		item.isManuallyTracked || !contentKey
+			? "manual"
+			: contentKey.startsWith("youtube:")
+				? "youtube"
+				: contentKey.startsWith("spotify:")
+					? "spotify"
+					: contentKey.startsWith("anki:")
+						? "anki"
+						: "manual";
 
 	const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
 
 	const SOURCE_STYLES: Record<
 		string,
-		{ dot: string; border: string; badge: string }
+		{ dot: string; border: string; badge: string; }
 	> = React.useMemo(
 		() => ({
 			youtube: {
@@ -133,21 +155,25 @@ const TrackedHistoryItem = ({ item }: { item: RecentItem }) => {
 	const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
 
 	// Derive presentation fields
+	const legacyDurationSeconds =
+		(item as { durationInSeconds?: number; }).durationInSeconds;
 	const durationMs =
-		(item as any).durationMs ??
-		(item as any).durationInMs ??
-		(item.durationInSeconds ?? 0) * 1000;
+		(item as { durationMs?: number; }).durationMs ??
+		(item as { durationInMs?: number; }).durationInMs ??
+		(typeof legacyDurationSeconds === "number"
+			? legacyDurationSeconds * 1000
+			: undefined) ?? 0;
 	const durationSeconds = Math.max(0, Math.round(durationMs / 1000));
 	const occurredAt = item.occurredAt ?? item._creationTime;
 	const title = item.title ?? item.label?.title ?? "(untitled)";
 
 	return (
-		<li key={item._id as unknown as string}>
+		<li key={item._id as string}>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<div
 						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
-						aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
+					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
 							{key === "manual" ? (
@@ -156,9 +182,9 @@ const TrackedHistoryItem = ({ item }: { item: RecentItem }) => {
 									className="fill-black stroke-black inline-block"
 								/>
 							) : SOURCE_ICON[key] ? (
-								<img
+								<Image
 									src={SOURCE_ICON[key]}
-									alt={item.source ?? key}
+									alt={key}
 									width={24}
 									height={24}
 									className="inline-block"
@@ -227,15 +253,15 @@ const TrackedHistoryItem = ({ item }: { item: RecentItem }) => {
 									</span>
 								</span>
 							)}
-							{item.source && (
+							{key !== "manual" && (
 								<span
 									className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${styles.badge}`}
 								>
-									<span className="opacity-90">{item.source}</span>
+									<span className="opacity-90">{key}</span>
 								</span>
 							)}
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
-								{dateFooterLabel(occurredAt)}
+								{dateFooterLabel(occurredAt, timeZone)}
 							</span>
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
@@ -272,23 +298,17 @@ const TrackedHistoryItem = ({ item }: { item: RecentItem }) => {
 };
 
 export default function TrackedHistoryCard() {
+	const [page, setPage] = React.useState(1);
+	const me = useQuery(api.userFunctions.me, {});
 	const data = useQuery(
 		api.userTargetLanguageActivityFunctions.listRecentLanguageActivities,
-		{ limit: 20 },
+		{ limit: page * PAGE_SIZE + 1 },
 	);
 
 	const items = React.useMemo(() => {
 		if (!data) return [] as RecentItems;
-		const now = new Date();
-		const startOfToday = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-		).getTime();
-		const todays = data.filter(
-			(doc) => (doc.occurredAt ?? doc._creationTime) >= startOfToday,
-		);
-		return todays.sort((a, b) => {
+		// Show the latest activities regardless of day, prioritizing in-progress items first
+		return (data as RecentItems).slice().sort((a, b) => {
 			const aActive = a.state === "in-progress";
 			const bActive = b.state === "in-progress";
 			if (aActive && !bActive) return -1;
@@ -299,6 +319,18 @@ export default function TrackedHistoryCard() {
 		}) as RecentItems;
 	}, [data]);
 
+	const { visibleItems, hasPrev, hasNext } = React.useMemo(() => {
+		const startIndex = (page - 1) * PAGE_SIZE;
+		const endIndex = startIndex + PAGE_SIZE;
+		const slice = items.slice(startIndex, endIndex) as RecentItems;
+		const moreAvailable = items.length > endIndex;
+		return {
+			visibleItems: slice,
+			hasPrev: page > 1,
+			hasNext: moreAvailable,
+		};
+	}, [items, page]);
+
 	return (
 		<Card>
 			<CardHeader>
@@ -308,24 +340,70 @@ export default function TrackedHistoryCard() {
 				<ScrollArea className="h-[420px]">
 					<div className="p-4">
 						{!data && (
-							<div className="text-sm text-muted-foreground">Loading…</div>
+							<div className="flex items-center justify-center h-[300px]">
+								<div className="text-center">
+									<Image
+										src="/cat-on-tree.png"
+										alt="loading"
+										className="mx-auto opacity-80"
+										width={140}
+										height={140}
+									/>
+									<div className="mt-2 text-sm text-muted-foreground">
+										Fetching your activity…
+									</div>
+								</div>
+							</div>
 						)}
 						{data && items.length === 0 && (
-							<div className="text-sm text-muted-foreground">
-								No tracked items yet.
+							<div className="flex items-center justify-center h-[300px]">
+								<div className="text-center">
+									<Image
+										src="/cat-on-tree.png"
+										alt="empty"
+										className="mx-auto opacity-80"
+										width={140}
+										height={140}
+									/>
+									<div className="mt-2 text-sm text-muted-foreground">
+										No tracked items yet.
+									</div>
+								</div>
 							</div>
 						)}
 						{items.length > 0 && (
 							<TooltipProvider delayDuration={0}>
 								<ul className="space-y-2">
-									{items.map((i) => (
-										<TrackedHistoryItem key={String(i._id)} item={i} />
+									{visibleItems.map((i) => (
+										<TrackedHistoryItem key={String(i._id)} item={i} timeZone={me?.timezone} />
 									))}
 								</ul>
 							</TooltipProvider>
 						)}
 					</div>
 				</ScrollArea>
+				{items.length > 0 && (
+					<div className="p-3 border-t border-border flex items-center justify-between gap-2">
+						<Button
+							variant="neutral"
+							size="sm"
+							disabled={!hasPrev}
+							onClick={() => setPage((p) => Math.max(1, p - 1))}
+						>
+							Previous
+						</Button>
+						<div className="text-xs text-muted-foreground">
+							Page {page}
+						</div>
+						<Button
+							size="sm"
+							disabled={!hasNext}
+							onClick={() => setPage((p) => p + 1)}
+						>
+							Load more
+						</Button>
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);

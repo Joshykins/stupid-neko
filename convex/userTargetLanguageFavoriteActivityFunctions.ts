@@ -1,9 +1,9 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
-import { languageCodeValidator } from "./schema";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { LanguageCode } from "./schema";
+import { mutation, query } from "./_generated/server";
 import { getEffectiveNow } from "./utils";
 
 export const createFavorite = mutation({
@@ -20,7 +20,7 @@ export const createFavorite = mutation({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error("Unauthorized");
 		const user = await ctx.db.get(userId);
-		const utlId = (user as any)?.currentTargetLanguageId as
+		const utlId = user?.currentTargetLanguageId as
 			| Id<"userTargetLanguages">
 			| undefined;
 		if (!utlId) throw new Error("No active target language selected");
@@ -33,14 +33,15 @@ export const createFavorite = mutation({
 				title: args.title,
 				description: args.description ?? undefined,
 				externalUrl: args.externalUrl ?? undefined,
-				defaultDurationInMinutes: Math.max(
+				// store canonical ms
+				defaultDurationInMs: Math.max(
 					0,
-					Math.round(args.defaultDurationInMinutes ?? 10),
+					Math.round((args.defaultDurationInMinutes ?? 10) * 60 * 1000),
 				),
 				createdFromLanguageActivityId: undefined,
 				usageCount: 0,
 				lastUsedAt: undefined,
-			} as any,
+			},
 		);
 		return { favoriteId };
 	},
@@ -69,18 +70,49 @@ export const listFavorites = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
 		const user = await ctx.db.get(userId);
-		const utlId = (user as any)?.currentTargetLanguageId as
+		const utlId = user?.currentTargetLanguageId as
 			| Id<"userTargetLanguages">
 			| undefined;
 		if (!utlId) return [];
 		const favorites = await ctx.db
 			.query("userTargetLanguageFavoriteActivities")
-			.withIndex("by_user_target_language", (q: any) =>
+			.withIndex("by_user_target_language", (q) =>
 				q.eq("userTargetLanguageId", utlId),
 			)
 			.order("desc")
 			.collect();
-		return favorites as any;
+		// map ms -> minutes for client compatibility and strip non-validated fields
+		const mapped = favorites.map((f) => ({
+			_id: f._id,
+			_creationTime: f._creationTime,
+			userId: f.userId,
+			userTargetLanguageId: f.userTargetLanguageId,
+			title: f.title,
+			description: f.description,
+			externalUrl: f.externalUrl,
+			createdFromLanguageActivityId: f.createdFromLanguageActivityId,
+			usageCount: f.usageCount,
+			lastUsedAt: f.lastUsedAt,
+			defaultDurationInMinutes:
+				typeof f.defaultDurationInMs === "number"
+					? Math.max(0, Math.round(f.defaultDurationInMs / 1000 / 60))
+					: undefined,
+		}));
+		return mapped as unknown as Array<{
+			_id: Id<"userTargetLanguageFavoriteActivities">;
+			_creationTime: number;
+			userId: Id<"users">;
+			userTargetLanguageId: Id<"userTargetLanguages">;
+			title: string;
+			description?: string | undefined;
+			externalUrl?: string | undefined;
+			defaultDurationInMinutes?: number | undefined;
+			createdFromLanguageActivityId?:
+				| Id<"userTargetLanguageActivities">
+				| undefined;
+			usageCount?: number | undefined;
+			lastUsedAt?: number | undefined;
+		}>;
 	},
 });
 
@@ -114,38 +146,50 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		if (!userId) return { page: [], isDone: true, continueCursor: undefined };
 		const pageLimit = Math.max(1, Math.min(50, args.limit ?? 20));
 		let cursor = args.cursorOccurredAt as number | undefined;
-		const page: Array<any> = [];
+		type ManualActivityRow = {
+			_id: Id<"userTargetLanguageActivities">;
+			title?: string;
+			description?: string;
+			externalUrl?: string;
+			durationInSeconds?: number;
+			occurredAt?: number;
+			userTargetLanguageId: Id<"userTargetLanguages">;
+			isManuallyTracked?: boolean;
+			matchedFavoriteId?: Id<"userTargetLanguageFavoriteActivities">;
+		};
+		const page: Array<ManualActivityRow> = [];
 		const batchSize = Math.max(pageLimit, 25);
 
 		while (page.length < pageLimit) {
 			const q = ctx.db
 				.query("userTargetLanguageActivities")
-				.withIndex("by_user_and_occurred", (q: any) => {
-					let qq = q.eq("userId", userId);
-					if (typeof cursor === "number") {
-						qq = qq.lt("occurredAt", cursor);
-					}
-					return qq;
-				})
+				.withIndex("by_user_and_occurred", (q) =>
+					typeof cursor === "number"
+						? q.eq("userId", userId).lt("occurredAt", cursor)
+						: q.eq("userId", userId),
+				)
 				.order("desc");
 			const batch = await q.take(batchSize);
 			if (batch.length === 0) {
 				break;
 			}
 			for (const it of batch) {
-				const occurredAt = (it as any).occurredAt ?? (it as any)._creationTime;
+				const occurredAt = it.occurredAt ?? it._creationTime;
 				cursor = occurredAt;
-				if (!(it as any).isManuallyTracked) continue;
+				if (!it.isManuallyTracked) continue;
 				const matchedFavoriteId = undefined;
 				page.push({
-					_id: (it as any)._id,
-					title: (it as any).title,
-					description: (it as any).description,
-					externalUrl: (it as any).externalUrl,
-					durationInSeconds: (it as any).durationInSeconds,
+					_id: it._id,
+					title: it.title ?? undefined,
+					description: it.description ?? undefined,
+					externalUrl: it.externalUrl ?? undefined,
+					durationInSeconds: Math.max(
+						0,
+						Math.round(((it.durationInMs ?? 0) as number) / 1000),
+					),
 					occurredAt,
-					userTargetLanguageId: (it as any).userTargetLanguageId,
-					isManuallyTracked: (it as any).isManuallyTracked,
+					userTargetLanguageId: it.userTargetLanguageId,
+					isManuallyTracked: it.isManuallyTracked,
 					matchedFavoriteId,
 				});
 				if (page.length >= pageLimit) break;
@@ -156,8 +200,8 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		}
 		const isDone = page.length < pageLimit;
 		const continueCursor =
-			page.length > 0 ? (page[page.length - 1] as any).occurredAt : undefined;
-		return { page, isDone, continueCursor } as any;
+			page.length > 0 ? page[page.length - 1].occurredAt : undefined;
+		return { page, isDone, continueCursor };
 	},
 });
 
@@ -175,24 +219,23 @@ export const addFavoriteFromActivity = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const act = await ctx.db.get(args.activityId);
 		if (!act) throw new Error("Activity not found");
-		if ((act as any).userId !== userId) throw new Error("Forbidden");
-		if (!(act as any).isManuallyTracked)
+		if (act.userId !== userId) throw new Error("Forbidden");
+		if (!act.isManuallyTracked)
 			throw new Error("Only manual activities can be favorited");
 
-		const utlId = (act as any)
-			.userTargetLanguageId as Id<"userTargetLanguages">;
-		const title = ((act as any).title ?? "").trim();
+		const utlId = act.userTargetLanguageId as Id<"userTargetLanguages">;
+		const title = (act.title ?? "").trim();
 		if (!title) throw new Error("Activity missing title");
 
 		// Look for existing favorite by title
 		const existing = await ctx.db
 			.query("userTargetLanguageFavoriteActivities")
-			.withIndex("by_user_target_language", (q: any) =>
+			.withIndex("by_user_target_language", (q) =>
 				q.eq("userTargetLanguageId", utlId),
 			)
 			.collect();
 		const match = existing.find(
-			(f: any) => (f.title ?? "").trim().toLowerCase() === title.toLowerCase(),
+			(f) => (f.title ?? "").trim().toLowerCase() === title.toLowerCase(),
 		);
 
 		if (args.isFavorite) {
@@ -203,17 +246,18 @@ export const addFavoriteFromActivity = mutation({
 				(await ctx.db.insert("userTargetLanguageFavoriteActivities", {
 					userId,
 					userTargetLanguageId: utlId,
-					title: (act as any).title ?? "",
-					description: (act as any).description ?? undefined,
-					externalUrl: (act as any).externalUrl ?? undefined,
-					defaultDurationInMinutes: Math.max(
+					title: act.title ?? "",
+					description: act.description ?? undefined,
+					externalUrl: act.externalUrl ?? undefined,
+					// store canonical ms
+					defaultDurationInMs: Math.max(
 						0,
-						Math.round(((act as any).durationInSeconds ?? 0) / 60),
+						Math.round((act.durationInMs ?? 0) as number),
 					),
-					createdFromLanguageActivityId: (act as any)._id,
+					createdFromLanguageActivityId: act._id,
 					usageCount: 0,
 					lastUsedAt: undefined,
-				} as any));
+				}));
 			return { favoriteId, isFavorite: true };
 		} else {
 			// Optional: Do not delete the favorite document automatically to avoid surprising removals across other activities.
@@ -237,43 +281,45 @@ export const quickCreateFromFavorite = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const fav = await ctx.db.get(args.favoriteId);
 		if (!fav) throw new Error("Favorite not found");
-		if ((fav as any).userId !== userId) throw new Error("Forbidden");
+		if (fav.userId !== userId) throw new Error("Forbidden");
 
-		const utlId = (fav as any)
-			.userTargetLanguageId as Id<"userTargetLanguages">;
+		const utlId = fav.userTargetLanguageId as Id<"userTargetLanguages">;
 		const now = await getEffectiveNow(ctx);
 		const occurredAt = args.occurredAt ?? now;
 
 		const durationInMinutes = Math.max(
 			0,
 			Math.round(
-				args.durationInMinutes ?? (fav as any).defaultDurationInMinutes ?? 10,
+				typeof args.durationInMinutes === "number"
+					? args.durationInMinutes
+					: typeof fav.defaultDurationInMs === "number"
+						? (fav.defaultDurationInMs as number) / 1000 / 60
+						: 10,
 			),
 		);
 
-		const user = await ctx.db.get(userId);
 		const utl = await ctx.db.get(utlId);
-		const languageCode = (utl as any)?.languageCode;
+		if (!utl?.languageCode) throw new Error("Target language missing code");
+		const languageCode = utl.languageCode as LanguageCode;
 
 		const created = await ctx.runMutation(
 			internal.userTargetLanguageActivityFunctions.addLanguageActivity,
 			{
 				userTargetLanguageId: utlId,
-				title: (fav as any).title ?? "",
-				description: (fav as any).description ?? undefined,
+				title: fav.title ?? "",
+				description: fav.description ?? undefined,
 				durationInMinutes,
 				occurredAt,
 				isManuallyTracked: true,
 				languageCode,
-				favoriteLanguageActivityId: (fav as any)._id,
-			} as any,
+			},
 		);
 
 		// Update usage metrics
 		await ctx.db.patch(args.favoriteId, {
-			usageCount: Math.max(0, ((fav as any).usageCount ?? 0) + 1),
+			usageCount: Math.max(0, (fav.usageCount ?? 0) + 1),
 			lastUsedAt: occurredAt,
-		} as any);
+		});
 		const activityId = (
 			created as { activityId: Id<"userTargetLanguageActivities"> }
 		).activityId;
@@ -295,21 +341,26 @@ export const updateFavorite = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const fav = await ctx.db.get(args.favoriteId);
 		if (!fav) throw new Error("Favorite not found");
-		if ((fav as any).userId !== userId) throw new Error("Forbidden");
+		if (fav.userId !== userId) throw new Error("Forbidden");
 
-		const patch: Record<string, any> = {};
+		const patch: Partial<
+			Pick<
+				Doc<"userTargetLanguageFavoriteActivities">,
+				"title" | "description" | "externalUrl" | "defaultDurationInMs"
+			>
+		> = {};
 		if (typeof args.title !== "undefined") patch.title = args.title;
 		if (typeof args.description !== "undefined")
 			patch.description = args.description;
 		if (typeof args.externalUrl !== "undefined")
 			patch.externalUrl = args.externalUrl;
 		if (typeof args.defaultDurationInMinutes !== "undefined")
-			patch.defaultDurationInMinutes = Math.max(
+			patch.defaultDurationInMs = Math.max(
 				0,
-				Math.round(args.defaultDurationInMinutes),
+				Math.round(args.defaultDurationInMinutes * 60 * 1000),
 			);
 
-		await ctx.db.patch(args.favoriteId, patch as any);
+		await ctx.db.patch(args.favoriteId, patch);
 		return { updated: true };
 	},
 });
@@ -322,7 +373,7 @@ export const deleteFavorite = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const fav = await ctx.db.get(args.favoriteId);
 		if (!fav) return { deleted: false };
-		if ((fav as any).userId !== userId) throw new Error("Forbidden");
+		if (fav.userId !== userId) throw new Error("Forbidden");
 		await ctx.db.delete(args.favoriteId);
 		return { deleted: true };
 	},

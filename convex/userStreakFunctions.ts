@@ -444,9 +444,17 @@ export const getStreakDataForHeatmap = query({
 			// 2) set of dayStartMs covered by a streak vacation
 			const vacationDays = new Set<number>();
 			for (const row of daysRows) {
+				// Prefer trackedMs (milliseconds) and convert to minutes; fallback to legacy trackedMinutes if present
+				const trackedMs = Math.max(
+					0,
+					Math.floor(((row as any).trackedMs ?? 0) as number),
+				);
 				const minutes = Math.max(
 					0,
-					Math.floor((row as any).trackedMinutes ?? 0),
+					Math.floor(
+						(((row as any).trackedMinutes as number | undefined) ??
+							trackedMs / 60000) as number,
+					),
 				);
 				const day = (row as any).dayStartMs as number;
 				dayToMinutes.set(day, minutes);

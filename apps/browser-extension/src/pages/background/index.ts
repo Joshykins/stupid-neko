@@ -140,7 +140,7 @@ async function fetchMe(): Promise<AuthState> {
 	const integrationId = await getIntegrationId();
 	if (!integrationId || !convex) return { isAuthed: false, me: null };
 	try {
-		const me = await convex.query(api.extensionFunctions.meFromIntegration, {
+		const me = await convex.query(api.browserExtensionFunctions.meFromIntegration, {
 			integrationId,
 		});
 		if (!me) return { isAuthed: false, me: null };
@@ -204,7 +204,7 @@ async function postContentActivityFromPlayback(
 			return { ok: false, saved: false } as ContentActivityResult;
 		}
 		const json = await convex.mutation(
-			api.extensionFunctions.recordContentActivityFromIntegration,
+			api.browserExtensionFunctions.recordContentActivityFromIntegration,
 			{
 				integrationId,
 				source: evt.source,

@@ -29,22 +29,17 @@ export const getXpTimeseries = query({
 		const days = args.range === "7d" ? 7 : args.range === "30d" ? 30 : 365; // cap all-time at 1 year for perf
 		const now = await getEffectiveNow(ctx);
 		const startInclusive = dayStartMsOf(now - (days - 1) * DAY_MS);
-		console.log("xpTimeseries window", {
-			now,
-			startInclusive,
-			days,
-			range: args.range,
-		});
+
 
 		const userId = await getAuthUserId(ctx);
 		if (!userId) {
-			const emptyPoints: Array<{ dayStartMs: number; xp: number }> = [];
+			const emptyPoints: Array<{ dayStartMs: number; xp: number; }> = [];
 			return { points: emptyPoints, totalXp: 0, days, now, startInclusive };
 		}
 
 		const user = await ctx.db.get(userId);
 		if (!user) {
-			const emptyPoints: Array<{ dayStartMs: number; xp: number }> = [];
+			const emptyPoints: Array<{ dayStartMs: number; xp: number; }> = [];
 			return { points: emptyPoints, totalXp: 0, days, now, startInclusive };
 		}
 
@@ -81,7 +76,7 @@ export const getXpTimeseries = query({
 		}
 
 		// Ensure we return a contiguous series (0s for missing days)
-		const points: Array<{ dayStartMs: number; xp: number }> = [];
+		const points: Array<{ dayStartMs: number; xp: number; }> = [];
 		for (let i = 0; i < days; i++) {
 			const d = startInclusive + i * DAY_MS;
 			points.push({

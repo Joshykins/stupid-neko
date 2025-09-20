@@ -16,7 +16,6 @@ type Session = {
 };
 
 const GAP_MS = 2 * 60 * 1000; // 2 minutes gap splits sessions
-const MIN_SESSION_MS = 60 * 1000; // minimum 1 minute to count
 
 export const translateBatch = internalMutation({
 	args: {
@@ -171,43 +170,40 @@ export const translateBatch = internalMutation({
 										dangerousTestingEnabled() && typeof devDate === "number"
 											? devDate
 											: current.startMs;
-									if (durationMs >= MIN_SESSION_MS) {
-										const title: string = label?.title ?? current.contentKey;
-										const languageCode: LanguageCode | undefined =
-											label?.contentLanguageCode;
-										const contentMediaType: MediaType | undefined =
-											label?.contentMediaType;
-										// Upsert in-progress record by (userId, state, contentKey)
-										const existing = await ctx.db
-											.query("userTargetLanguageActivities")
-											.withIndex("by_user_state_and_content_key", (q: any) =>
-												q
-													.eq("userId", current.userId)
-													.eq("state", "in-progress")
-													.eq("contentKey", current.contentKey),
-											)
-											.unique();
+									const title: string = label?.title ?? current.contentKey;
+									const languageCode: LanguageCode | undefined =
+										label?.contentLanguageCode;
 
-										if (existing) {
-											await ctx.db.patch(existing._id, {
-												durationInMs: Math.max(0, Math.round(durationMs)),
-												languageCode,
-												title,
-												occurredAt: startMsEffective,
-											});
-										} else {
-											await ctx.db.insert("userTargetLanguageActivities", {
-												userId: current.userId,
-												userTargetLanguageId,
-												languageCode,
-												contentKey: current.contentKey,
-												state: "in-progress",
-												title,
-												isManuallyTracked: false,
-												durationInMs: Math.max(0, Math.round(durationMs)),
-												occurredAt: startMsEffective,
-											});
-										}
+									// Upsert in-progress record by (userId, state, contentKey)
+									const existing = await ctx.db
+										.query("userTargetLanguageActivities")
+										.withIndex("by_user_state_and_content_key", (q: any) =>
+											q
+												.eq("userId", current.userId)
+												.eq("state", "in-progress")
+												.eq("contentKey", current.contentKey),
+										)
+										.unique();
+
+									if (existing) {
+										await ctx.db.patch(existing._id, {
+											durationInMs: Math.max(0, Math.round(durationMs)),
+											languageCode,
+											title,
+											occurredAt: startMsEffective,
+										});
+									} else {
+										await ctx.db.insert("userTargetLanguageActivities", {
+											userId: current.userId,
+											userTargetLanguageId,
+											languageCode,
+											contentKey: current.contentKey,
+											state: "in-progress",
+											title,
+											isManuallyTracked: false,
+											durationInMs: Math.max(0, Math.round(durationMs)),
+											occurredAt: startMsEffective,
+										});
 									}
 									// Note: we do NOT mark events as translated yet for in-progress
 								}
@@ -220,17 +216,6 @@ export const translateBatch = internalMutation({
 			// Create language activities for closed sessions
 			for (const s of sessions) {
 				const durationMs = Math.max(0, s.endMs - s.startMs);
-				if (durationMs < MIN_SESSION_MS) {
-					// Mark the underlying events as translated but skip creating an activity
-					for (const evId of s.eventIds) {
-						await ctx.db.patch(evId, {
-							translated: true,
-							processedAt: Date.now(),
-						});
-						processed += 1;
-					}
-					continue;
-				}
 
 				// Load user and their current target language
 				const user = await ctx.db.get(s.userId);

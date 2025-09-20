@@ -1,0 +1,13 @@
+## Rule: Avoid `any`
+
+- Do not use `any` in TypeScript source.
+- Prefer precise types from Convex `Doc`/`Id` and schema-derived types.
+- If a value is uncertain, use `unknown` and narrow it, or add specific unions/optionals.
+- When interacting with Convex:
+  - Use `Id<'table'>` for ids and `Doc<'table'>` for documents.
+  - Avoid casting results; rely on schema types and optional chaining.
+- When building query filters:
+  - Use typed index builders; don't type index callbacks as `any`.
+- When mapping to client DTOs, build explicit objects with exact fields instead of broad casts.
+
+Rationale: Eliminates unsafe casts, preserves type guarantees, and prevents runtime bugs.

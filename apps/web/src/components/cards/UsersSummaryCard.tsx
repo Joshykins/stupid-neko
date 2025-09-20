@@ -174,9 +174,8 @@ export const UsersSummaryCard = ({
 						<div className="font-semibold text-xs">Tracked Hours</div>
 						<div className="text-2xl font-bold text-main-foreground">
 							{userProgress
-								? Math.round(((displayData.totalMsLearning || 0) / 60) * 10) /
-								10
-								: mockUser.totalMsLearning}{" "}
+								? Math.round(((displayData.totalMsLearning) / 1000 / 60 / 60))
+								: mockUser.totalMsLearning / 1000 / 60 / 60}{" "}
 							hrs
 						</div>
 					</div>

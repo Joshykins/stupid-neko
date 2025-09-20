@@ -5,7 +5,7 @@ import { Clock, ExternalLink, MoreHorizontal, PlusCircle } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button } from "../../ui/button";
+import { Button, buttonVariants } from "../../ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -49,6 +49,24 @@ function FavoriteRow({
 	const [url, setUrl] = React.useState<string>(
 		(favorite as any).externalUrl ?? "",
 	);
+	const [useCustomMinutes, setUseCustomMinutes] = React.useState<boolean>(false);
+	const [customHours, setCustomHours] = React.useState<number>(
+		Math.floor(Math.max(0, minutes) / 60),
+	);
+	const [customMinutes, setCustomMinutes] = React.useState<number>(
+		Math.max(0, Math.round(minutes) % 60),
+	);
+
+	React.useEffect(() => {
+		if (isOpen) {
+			// Reset custom fields to reflect current minutes when opening dialog
+			const h = Math.floor(Math.max(0, minutes) / 60);
+			const m = Math.max(0, Math.round(minutes) % 60);
+			setCustomHours(h);
+			setCustomMinutes(m);
+			setUseCustomMinutes(false);
+		}
+	}, [isOpen, minutes]);
 
 	return (
 		<li className="p-2 rounded-base border-2 border-border bg-secondary-background">
@@ -133,25 +151,103 @@ function FavoriteRow({
 					</div>
 					<div className="grid gap-2 mt-2">
 						<Label>Default minutes</Label>
-						<Input
-							type="number"
-							value={minutes}
-							onChange={(e) =>
-								setMinutes(Math.max(0, Number(e.target.value) || 0))
-							}
-						/>
+						<div className="flex flex-wrap gap-2">
+							{[5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map((m) => (
+								<button
+									key={m}
+									type="button"
+									onClick={() => {
+										setMinutes(m);
+										setUseCustomMinutes(false);
+									}}
+									className={buttonVariants({
+										variant:
+											minutes === m && !useCustomMinutes
+												? "default"
+												: "neutral",
+										size: "sm",
+										className: "px-3",
+									})}
+								>
+									{m >= 60
+										? m % 60 === 0
+											? `${m / 60}hr`
+											: `${(m / 60).toFixed(1)}hr`
+										: `${m}m`}
+								</button>
+							))}
+							<button
+								type="button"
+								onClick={() => {
+									setUseCustomMinutes(true);
+									const total = customHours * 60 + customMinutes;
+									setMinutes(total);
+								}}
+								className={buttonVariants({
+									variant: useCustomMinutes ? "default" : "neutral",
+									size: "sm",
+									className: "px-3",
+								})}
+							>
+								Custom
+							</button>
+						</div>
+						{useCustomMinutes && (
+							<div className="pt-1">
+								<div className="inline-flex items-stretch rounded-base border-2 border-border overflow-hidden bg-white">
+									<Input
+										type="number"
+										min={0}
+										step={1}
+										value={customHours}
+										onChange={(e) => {
+											const h = Math.max(
+												0,
+												Math.min(999, Number(e.target.value) || 0),
+											);
+											setCustomHours(h);
+											const total = h * 60 + customMinutes;
+											setMinutes(total);
+										}}
+										className="px-2 py-2 text-sm text-main-foreground w-[72px] text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none shadow-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
+									/>
+									<div className="px-0.5 py-2 text-xl text-main-foreground bg-transparent">:</div>
+									<Input
+										type="number"
+										min={0}
+										max={59}
+										step={1}
+										value={customMinutes}
+										onChange={(e) => {
+											const m = Math.max(
+												0,
+												Math.min(59, Number(e.target.value) || 0),
+											);
+											setCustomMinutes(m);
+											const total = customHours * 60 + m;
+											setMinutes(total);
+										}}
+										className="px-2 py-2 text-sm text-main-foreground w-[72px] text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none shadow-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
+									/>
+								</div>
+							</div>
+						)}
 					</div>
 					<div className="grid gap-2 mt-2">
 						<Label>URL (optional)</Label>
 						<Input
-							placeholder="https://"
+							placeholder="https://example.com/your-link"
 							value={url}
 							onChange={(e) => setUrl(e.target.value)}
 						/>
 					</div>
 					<div className="grid gap-2 mt-2">
 						<Label>Description</Label>
-						<Textarea value={desc} onChange={(e) => setDesc(e.target.value)} />
+						<Textarea
+							value={desc}
+							onChange={(e) => setDesc(e.target.value)}
+							className="bg-white placeholder:text-main-foreground/70 text-main-foreground"
+						/>
 					</div>
 					<DialogFooter>
 						<Button variant="neutral" onClick={() => setIsOpen(false)}>
@@ -163,6 +259,7 @@ function FavoriteRow({
 									favoriteId: (favorite as any)._id,
 									title,
 									description: desc,
+									externalUrl: url || undefined,
 									defaultDurationInMinutes: minutes,
 								});
 								setIsOpen(false);

@@ -23,7 +23,7 @@ export const FavoritesPotentialManualRecordsList = () => {
 	>([]);
 
 	return (
-		<ScrollArea className="h-[420px]">
+		<ScrollArea className="max-h-[60vh] h-full">
 			<div className="p-4">
 				{!recentManuals && (
 					<div className="flex items-center justify-center h-[300px]">
@@ -35,13 +35,13 @@ export const FavoritesPotentialManualRecordsList = () => {
 								width={140}
 								height={140}
 							/>
-							<div className="mt-2 text-sm text-muted-foreground">
+							<div className="mt-2 text-sm text-background/80">
 								Loading your recent manual records…
 							</div>
 						</div>
 					</div>
 				)}
-				{recentManuals && (recentManuals as any).page?.length === 0 && (
+				{recentManuals && recentManuals.page?.length === 0 && (
 					<div className="flex items-center justify-center h-[300px]">
 						<div className="text-center">
 							<Image
@@ -51,17 +51,17 @@ export const FavoritesPotentialManualRecordsList = () => {
 								width={140}
 								height={140}
 							/>
-							<div className="mt-2 text-sm text-muted-foreground">
+							<div className="mt-2 text-sm text-background/80">
 								No manual records yet. Start by tracking your first activity!
 							</div>
 						</div>
 					</div>
 				)}
-				{recentManuals && (recentManuals as any).page?.length > 0 && (
+				{recentManuals && recentManuals.page?.length > 0 && (
 					<ul className="space-y-2">
-						{(recentManuals as any).page.map((r: any) => (
+						{recentManuals.page.map((r) => (
 							<li
-								key={(r as any)._id}
+								key={r._id}
 								className="flex items-center justify-between gap-3 p-2 rounded-base border-2 border-border bg-secondary-background"
 							>
 								<div className="min-w-0 flex-1">
@@ -71,30 +71,30 @@ export const FavoritesPotentialManualRecordsList = () => {
 												href={r.externalUrl}
 												target="_blank"
 												rel="noreferrer"
-												className="font-bold truncate underline decoration-main hover:text-main-foreground/80"
+												className="font-bold truncate underline decoration-main hover:text-background/80"
 											>
-												{(r as any).title ?? "(untitled)"}
+												{r.title ?? "(untitled)"}
 											</a>
 											<a
 												href={r.externalUrl}
 												target="_blank"
 												rel="noreferrer"
 												aria-label="Open link"
-												className="text-main-foreground/80 hover:text-main-foreground flex-shrink-0"
+												className="text-background/80 hover:text-background flex-shrink-0"
 											>
 												<ExternalLink className="!size-4" />
 											</a>
 										</span>
 									) : (
-										<div className="font-bold truncate">
-											{(r as any).title ?? "(untitled)"}
+										<div className="font-bold truncate text-background">
+											{r.title ?? "(untitled)"}
 										</div>
 									)}
-									<div className="text-xs text-muted-foreground flex items-center gap-2">
+									<div className="text-xs text-background/70 flex items-center gap-2">
 										<span>
 											{Math.max(
 												0,
-												Math.round(((r as any).durationInMs ?? 0) / 60000),
+												Math.round((r.durationInMs ?? 0) / 60000),
 											)}
 											m
 										</span>

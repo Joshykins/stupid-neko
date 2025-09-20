@@ -9,9 +9,9 @@
  */
 
 import type {
-	ApiFromModules,
-	FilterApi,
-	FunctionReference,
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as browserExtensionFunctions from "../browserExtensionFunctions.js";
@@ -45,34 +45,34 @@ import type * as utils from "../utils.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-	auth: typeof auth;
-	browserExtensionFunctions: typeof browserExtensionFunctions;
-	contentActivityFunctions: typeof contentActivityFunctions;
-	contentLabelActions: typeof contentLabelActions;
-	contentLabelFunctions: typeof contentLabelFunctions;
-	contentLabelYouTubeActions: typeof contentLabelYouTubeActions;
-	crons: typeof crons;
-	devOnlyFunctions: typeof devOnlyFunctions;
-	http: typeof http;
-	integrationKeyFunctions: typeof integrationKeyFunctions;
-	onboardingFunctions: typeof onboardingFunctions;
-	preReleaseCodeFunctions: typeof preReleaseCodeFunctions;
-	spotifyActions: typeof spotifyActions;
-	spotifyFunctions: typeof spotifyFunctions;
-	userFunctions: typeof userFunctions;
-	userStreakFunctions: typeof userStreakFunctions;
-	userTargetLanguageActivitiesFromContentActivitiesFunctions: typeof userTargetLanguageActivitiesFromContentActivitiesFunctions;
-	userTargetLanguageActivityFunctions: typeof userTargetLanguageActivityFunctions;
-	userTargetLanguageExperienceFunctions: typeof userTargetLanguageExperienceFunctions;
-	userTargetLanguageFavoriteActivityFunctions: typeof userTargetLanguageFavoriteActivityFunctions;
-	userXPChartFunctions: typeof userXPChartFunctions;
-	utils: typeof utils;
+  auth: typeof auth;
+  browserExtensionFunctions: typeof browserExtensionFunctions;
+  contentActivityFunctions: typeof contentActivityFunctions;
+  contentLabelActions: typeof contentLabelActions;
+  contentLabelFunctions: typeof contentLabelFunctions;
+  contentLabelYouTubeActions: typeof contentLabelYouTubeActions;
+  crons: typeof crons;
+  devOnlyFunctions: typeof devOnlyFunctions;
+  http: typeof http;
+  integrationKeyFunctions: typeof integrationKeyFunctions;
+  onboardingFunctions: typeof onboardingFunctions;
+  preReleaseCodeFunctions: typeof preReleaseCodeFunctions;
+  spotifyActions: typeof spotifyActions;
+  spotifyFunctions: typeof spotifyFunctions;
+  userFunctions: typeof userFunctions;
+  userStreakFunctions: typeof userStreakFunctions;
+  userTargetLanguageActivitiesFromContentActivitiesFunctions: typeof userTargetLanguageActivitiesFromContentActivitiesFunctions;
+  userTargetLanguageActivityFunctions: typeof userTargetLanguageActivityFunctions;
+  userTargetLanguageExperienceFunctions: typeof userTargetLanguageExperienceFunctions;
+  userTargetLanguageFavoriteActivityFunctions: typeof userTargetLanguageFavoriteActivityFunctions;
+  userXPChartFunctions: typeof userXPChartFunctions;
+  utils: typeof utils;
 }>;
 export declare const api: FilterApi<
-	typeof fullApi,
-	FunctionReference<any, "public">
+  typeof fullApi,
+  FunctionReference<any, "public">
 >;
 export declare const internal: FilterApi<
-	typeof fullApi,
-	FunctionReference<any, "internal">
+  typeof fullApi,
+  FunctionReference<any, "internal">
 >;
