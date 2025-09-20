@@ -1,13 +1,18 @@
-import React from "react";
-import { View, Text, Button, FlatList } from "react-native";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation, useQuery, Authenticated, Unauthenticated } from "convex/react";
+import {
+	Authenticated,
+	Unauthenticated,
+	useMutation,
+	useQuery,
+} from "convex/react";
+import React from "react";
+import { Button, FlatList, Text, View } from "react-native";
 import { api } from "../../../convex/_generated/api";
 
 function HomeSignedIn() {
 	const { signOut } = useAuthActions();
-	const result = useQuery(api.meFunctions.me);
-	const updateTimezone = useMutation(api.meFunctions.updateTimezone);
+	const result = useQuery(api.userFunctions.me);
+	const updateTimezone = useMutation(api.userFunctions.updateTimezone);
 	// const addNumber = useMutation(api.myFunctions.addNumber);
 
 	// Auto-detect and update timezone every time the user accesses the app
@@ -17,7 +22,7 @@ function HomeSignedIn() {
 			let currentTimezone = "UTC"; // Default fallback
 
 			// Check if Intl.DateTimeFormat is available (works on newer React Native versions)
-			if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+			if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
 				try {
 					currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 				} catch (e) {
@@ -62,7 +67,12 @@ function HomeSignedIn() {
 				)}
 				ListEmptyComponent={<Text>Loading…</Text>}
 			/> */}
-			<Button title="Sign out" onPress={() => { void signOut(); }} />
+			<Button
+				title="Sign out"
+				onPress={() => {
+					void signOut();
+				}}
+			/>
 		</View>
 	);
 }

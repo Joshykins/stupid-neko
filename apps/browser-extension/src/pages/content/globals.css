@@ -2,231 +2,225 @@
 @import "tw-animate-css";
 /* Fonts are self-hosted from the extension bundle via content/index.tsx injector */
 
-
 :host {
-  /* Match Next.js font CSS variables from the web app */
-  --font-geist-sans: 'Plus Jakarta Sans';
-  --font-display: 'Baloo 2';
-  --font-geist-mono: 'Geist Mono';
-  --bg-mountain-sky: oklch(0.70 0.06 255);
-  /* Deep evening blue with a hint of purple, gives energy not gloom */
-  
-  --background-mountain-tier-1: oklch(0.52 0.05 250);
-  /* Rich navy with a bit more chroma for life */
-  
-  --background-mountain-tier-2: oklch(0.40 0.045 245);
-  /* Dark slate-blue, slightly more saturated than before */
-  
-  --background-mountain-tier-3: oklch(0.28 0.03 245);
-  /* Almost black-blue, but still has a cool undertone */
-  
-  
-  
-  /* Deep slate navy, less saturated for depth */
-  --background-clouds: oklch(0.8862 0.0367 217.76);
-  --background-snow: oklch(89.14% 0.0384 73.71);
-  --sakura-petals-inner: oklch(0.7465 0.0984 38.27);
-  --sakura-petals-outer: oklch(0.8732 0.061 48);
+	/* Match Next.js font CSS variables from the web app */
+	--font-geist-sans: "Plus Jakarta Sans";
+	--font-display: "Baloo 2";
+	--font-geist-mono: "Geist Mono";
+	--bg-mountain-sky: oklch(0.7 0.06 255);
+	/* Deep evening blue with a hint of purple, gives energy not gloom */
 
-  /* layout */
-  --background: oklch(0.3274 0.0363 242.96);         /* deep navy */
-  --secondary-background: oklch(93.34% 0.0447 72.67);/* warm cream (cards) */
-  --foreground: oklch(89.14% 0.0384 73.71);          /* cream text on navy */
-  --main-foreground: oklch(34.09% 0.0517 243.85);    /* navy text on cards */
-  --main: oklch(73% 0.122 66.8);                /* salmon accent (buttons) */
-  --accent: oklch(0.6889 0.1279 35.78);         /* high-contrast badge accent */
-  --border: oklch(34.09% 0.0517 243.85);             /* navy border */
-  --ring: oklch(73% 0.122 66.8);                /* salmon focus ring */
-  --overlay: oklch(0% 0 0 / 0.8);
-  --shadow: 4px 4px 0px 0px var(--border);
+	--background-mountain-tier-1: oklch(0.52 0.05 250);
+	/* Rich navy with a bit more chroma for life */
 
-  /* prominent level progress color (lighter than main) */
-  --level-progress: color-mix(in oklch, var(--main) 75%, rgb(055,155,255));
+	--background-mountain-tier-2: oklch(0.4 0.045 245);
+	/* Dark slate-blue, slightly more saturated than before */
 
-  /* charts (muted blues + salmon/teal) */
-  --chart-1: #E9A786; /* salmon */
-  --chart-2: #748DA5; /* muted blue */
-  --chart-3: #B68973; /* deeper salmon */
-  --chart-4: #6F9B96; /* dusty teal */
-  --chart-5: #9CB1C3; /* light steel blue */
-  --chart-active-dot: #1F3B51; /* navy */
+	--background-mountain-tier-3: oklch(0.28 0.03 245);
+	/* Almost black-blue, but still has a cool undertone */
 
-  /* dev-only color (highly distinct) */
-  --dev-only: oklch(0.6176 0.276 280.59); 
+	/* Deep slate navy, less saturated for depth */
+	--background-clouds: oklch(0.8862 0.0367 217.76);
+	--background-snow: oklch(89.14% 0.0384 73.71);
+	--sakura-petals-inner: oklch(0.7465 0.0984 38.27);
+	--sakura-petals-outer: oklch(0.8732 0.061 48);
 
-  /* heatmap intensity (light) */
-  --heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
-  --heatmap-0: #F4E6D4; /* cream */
-  --heatmap-1: #FDE68A; /* amber-200 */
-  --heatmap-2: #F59E0B; /* amber-600 */
-  --heatmap-3: #EA580C; /* orange-600 */
-  --heatmap-4: #DC2626; /* red-600 */
+	/* layout */
+	--background: oklch(0.3274 0.0363 242.96); /* deep navy */
+	--secondary-background: oklch(93.34% 0.0447 72.67); /* warm cream (cards) */
+	--foreground: oklch(89.14% 0.0384 73.71); /* cream text on navy */
+	--main-foreground: oklch(34.09% 0.0517 243.85); /* navy text on cards */
+	--main: oklch(73% 0.122 66.8); /* salmon accent (buttons) */
+	--accent: oklch(0.6889 0.1279 35.78); /* high-contrast badge accent */
+	--border: oklch(34.09% 0.0517 243.85); /* navy border */
+	--ring: oklch(73% 0.122 66.8); /* salmon focus ring */
+	--overlay: oklch(0% 0 0 / 0.8);
+	--shadow: 4px 4px 0px 0px var(--border);
 
-  /* source brand colors */
-  --source-youtube: #FF0000;
-  --source-spotify: #1DB954;
-  --source-anki: #2F80ED;
-  --source-misc: #9CA3AF;
-  --source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
-  --source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
-  --source-anki-soft:    color-mix(in oklch, var(--source-anki)    80%, #ffffff);
-  --source-misc-soft:    color-mix(in oklch, var(--source-misc)    80%, #ffffff);
+	/* prominent level progress color (lighter than main) */
+	--level-progress: color-mix(in oklch, var(--main) 75%, rgb(055, 155, 255));
 
-  /* flashcards breakdown (dedicated palette distinct from chart colors) */
-  --flashcards-new: #F5B971;       /* amber */
-  --flashcards-learning: #A78BFA;  /* soft purple */
-  --flashcards-review: #34D399;    /* emerald */
-  --flashcards-suspended: #94A3B8; /* slate */
+	/* charts (muted blues + salmon/teal) */
+	--chart-1: #e9a786; /* salmon */
+	--chart-2: #748da5; /* muted blue */
+	--chart-3: #b68973; /* deeper salmon */
+	--chart-4: #6f9b96; /* dusty teal */
+	--chart-5: #9cb1c3; /* light steel blue */
+	--chart-active-dot: #1f3b51; /* navy */
 
-  /* category progress colors */
-  --category-reading: oklch(0.72 0.11 150);  /* softer green (emerald moss) */
-  --category-listening: oklch(0.70 0.10 250); /* muted denim blue */
-  --category-speaking: oklch(0.72 0.12 65);   /* warm amber/salmon */
-  --category-writing: oklch(0.72 0.09 310);   /* lavender violet */
+	/* dev-only color (highly distinct) */
+	--dev-only: oklch(0.6176 0.276 280.59);
+
+	/* heatmap intensity (light) */
+	--heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
+	--heatmap-0: #f4e6d4; /* cream */
+	--heatmap-1: #fde68a; /* amber-200 */
+	--heatmap-2: #f59e0b; /* amber-600 */
+	--heatmap-3: #ea580c; /* orange-600 */
+	--heatmap-4: #dc2626; /* red-600 */
+
+	/* source brand colors */
+	--source-youtube: #ff0000;
+	--source-spotify: #1db954;
+	--source-anki: #2f80ed;
+	--source-misc: #9ca3af;
+	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
+	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
+	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
+	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
+
+	/* flashcards breakdown (dedicated palette distinct from chart colors) */
+	--flashcards-new: #f5b971; /* amber */
+	--flashcards-learning: #a78bfa; /* soft purple */
+	--flashcards-review: #34d399; /* emerald */
+	--flashcards-suspended: #94a3b8; /* slate */
+
+	/* category progress colors */
+	--category-reading: oklch(0.72 0.11 150); /* softer green (emerald moss) */
+	--category-listening: oklch(0.7 0.1 250); /* muted denim blue */
+	--category-speaking: oklch(0.72 0.12 65); /* warm amber/salmon */
+	--category-writing: oklch(0.72 0.09 310); /* lavender violet */
 }
 
 :host(.dark) {
-  --bg-mountain-sky: oklch(0.7412 0.0762 242.96);
-  --background-mountain-tier-1: oklch(0.5646 0.0762 242.96);
-  --background-mountain-tier-2: oklch(0.4137 0.091 242.96);
-  --background-mountain-tier-3: oklch(0.3274 0.0363 242.96);
-  --background-clouds: oklch(0.8862 0.0367 217.76);
-  --background-snow: oklch(89.14% 0.0384 73.71);
-  --sakura-petals-inner: oklch(0.7465 0.0984 38.27);
-  --sakura-petals-outer: oklch(0.8732 0.061 48);
-  
-  /* darker backdrop variant */
-  --background: oklch(34.09% 0.0517 243.85);         /* deeper navy */
-  --secondary-background: oklch(39.97% 0.0530 242.72);/* slightly lighter navy panels */
-  --foreground: oklch(93.34% 0.0447 72.67);          /* cream text */
-  --main-foreground: oklch(93.34% 0.0447 72.67);      /* cream text on dark cards */
-  --main: oklch(78.34% 0.0905 47.53);                /* salmon accent */
-  --border: oklch(31.00% 0.0520 242.00);             /* near-black navy */
-  --ring: oklch(78.34% 0.0905 47.53);                /* salmon focus ring */
-  --accent: oklch(0.6889 0.1279 35.78);               /* badge accent */
-  --shadow: 2px 2px 0px 0px var(--border);
+	--bg-mountain-sky: oklch(0.7412 0.0762 242.96);
+	--background-mountain-tier-1: oklch(0.5646 0.0762 242.96);
+	--background-mountain-tier-2: oklch(0.4137 0.091 242.96);
+	--background-mountain-tier-3: oklch(0.3274 0.0363 242.96);
+	--background-clouds: oklch(0.8862 0.0367 217.76);
+	--background-snow: oklch(89.14% 0.0384 73.71);
+	--sakura-petals-inner: oklch(0.7465 0.0984 38.27);
+	--sakura-petals-outer: oklch(0.8732 0.061 48);
 
-  /* prominent level progress color for dark */
-  --level-progress: color-mix(in oklch, var(--main) 85%, #ffffff);
+	/* darker backdrop variant */
+	--background: oklch(34.09% 0.0517 243.85); /* deeper navy */
+	--secondary-background: oklch(39.97% 0.053 242.72); /* slightly lighter navy panels */
+	--foreground: oklch(93.34% 0.0447 72.67); /* cream text */
+	--main-foreground: oklch(93.34% 0.0447 72.67); /* cream text on dark cards */
+	--main: oklch(78.34% 0.0905 47.53); /* salmon accent */
+	--border: oklch(31.00% 0.052 242); /* near-black navy */
+	--ring: oklch(78.34% 0.0905 47.53); /* salmon focus ring */
+	--accent: oklch(0.6889 0.1279 35.78); /* badge accent */
+	--shadow: 2px 2px 0px 0px var(--border);
 
-  --chart-1: #E7A17F;
-  --chart-2: #748DA5;
-  --chart-3: #C08C77;
-  --chart-4: #6F9B96;
-  --chart-5: #9CB1C3;
-  --chart-active-dot: #FCE5C9; /* cream */
+	/* prominent level progress color for dark */
+	--level-progress: color-mix(in oklch, var(--main) 85%, #ffffff);
 
-  /* dev-only color (dark) */
-  --dev-only: oklch(0.6176 0.276 280.59); /* neon lime-green */
+	--chart-1: #e7a17f;
+	--chart-2: #748da5;
+	--chart-3: #c08c77;
+	--chart-4: #6f9b96;
+	--chart-5: #9cb1c3;
+	--chart-active-dot: #fce5c9; /* cream */
 
-  /* heatmap intensity (dark) */
-  --heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
-  --heatmap-0: #3B3B3B; /* muted dark for 0 */
-  --heatmap-1: #F59E0B; /* amber-600 */
-  --heatmap-2: #EA580C; /* orange-600 */
-  --heatmap-3: #DC2626; /* red-600 */
-  --heatmap-4: #B91C1C; /* red-700 */
+	/* dev-only color (dark) */
+	--dev-only: oklch(0.6176 0.276 280.59); /* neon lime-green */
 
-  /* source brand colors (dark) */
-  --source-youtube: #FF0000;
-  --source-spotify: #1DB954;
-  --source-anki: #2F80ED;
-  --source-misc: #9CA3AF;
-  --source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
-  --source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
-  --source-anki-soft:    color-mix(in oklch, var(--source-anki)    80%, #ffffff);
-  --source-misc-soft:    color-mix(in oklch, var(--source-misc)    80%, #ffffff);
+	/* heatmap intensity (dark) */
+	--heatmap-bg: oklch(0.2441 0.0096 34.94); /* ashy */
+	--heatmap-0: #3b3b3b; /* muted dark for 0 */
+	--heatmap-1: #f59e0b; /* amber-600 */
+	--heatmap-2: #ea580c; /* orange-600 */
+	--heatmap-3: #dc2626; /* red-600 */
+	--heatmap-4: #b91c1c; /* red-700 */
 
+	/* source brand colors (dark) */
+	--source-youtube: #ff0000;
+	--source-spotify: #1db954;
+	--source-anki: #2f80ed;
+	--source-misc: #9ca3af;
+	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
+	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
+	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
+	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
-  /* flashcards breakdown (dark variants) */
-  --flashcards-new: #F1B25F;       /* amber */
-  --flashcards-learning: #8B74E8;  /* soft purple */
-  --flashcards-review: #2FB57F;    /* emerald */
-  --flashcards-suspended: #7B8AA1; /* slate */
+	/* flashcards breakdown (dark variants) */
+	--flashcards-new: #f1b25f; /* amber */
+	--flashcards-learning: #8b74e8; /* soft purple */
+	--flashcards-review: #2fb57f; /* emerald */
+	--flashcards-suspended: #7b8aa1; /* slate */
 
-  /* category progress colors (dark variants) */
-  --category-reading: oklch(0.62 0.10 150);   /* deep moss green */
-  --category-listening: oklch(0.60 0.09 250); /* slate blue */
-  --category-speaking: oklch(0.62 0.11 65);   /* burnt amber */
-  --category-writing: oklch(0.62 0.08 310);   /* muted plum */
+	/* category progress colors (dark variants) */
+	--category-reading: oklch(0.62 0.1 150); /* deep moss green */
+	--category-listening: oklch(0.6 0.09 250); /* slate blue */
+	--category-speaking: oklch(0.62 0.11 65); /* burnt amber */
+	--category-writing: oklch(0.62 0.08 310); /* muted plum */
 }
 
 @theme inline {
+	/* bg colors */
+	--color-mountain-sky: var(--bg-mountain-sky);
+	--color-mountain-tier-1: var(--background-mountain-tier-1);
+	--color-mountain-tier-2: var(--background-mountain-tier-2);
+	--color-mountain-tier-3: var(--background-mountain-tier-3);
+	--color-clouds: var(--background-clouds);
+	--color-snow: var(--background-snow);
+	--color-sakura-petals-inner: var(--sakura-petals-inner);
+	--color-sakura-petals-outer: var(--sakura-petals-outer);
+	/*  */
+	--color-main: var(--main);
+	--color-level: var(--level-progress);
+	--color-accent: var(--accent);
+	--color-background: var(--background);
+	--color-secondary-background: var(--secondary-background);
+	--color-foreground: var(--foreground);
+	--color-main-foreground: var(--main-foreground);
+	--color-border: var(--border);
+	--color-overlay: var(--overlay);
+	--color-ring: var(--ring);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-dev-only: var(--dev-only);
 
-/* bg colors */
-  --color-mountain-sky: var(--bg-mountain-sky);
-  --color-mountain-tier-1: var(--background-mountain-tier-1);
-  --color-mountain-tier-2: var(--background-mountain-tier-2);
-  --color-mountain-tier-3: var(--background-mountain-tier-3);
-  --color-clouds: var(--background-clouds);
-  --color-snow: var(--background-snow);
-  --color-sakura-petals-inner: var(--sakura-petals-inner);
-  --color-sakura-petals-outer: var(--sakura-petals-outer);
-  /*  */
-  --color-main: var(--main);
-  --color-level: var(--level-progress);
-  --color-accent: var(--accent);
-  --color-background: var(--background);
-  --color-secondary-background: var(--secondary-background);
-  --color-foreground: var(--foreground);
-  --color-main-foreground: var(--main-foreground);
-  --color-border: var(--border);
-  --color-overlay: var(--overlay);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-dev-only: var(--dev-only);
+	/* source brand color mappings */
+	--color-source-youtube: var(--source-youtube);
+	--color-source-spotify: var(--source-spotify);
+	--color-source-anki: var(--source-anki);
+	--color-source-misc: var(--source-misc);
+	--color-source-youtube-soft: var(--source-youtube-soft);
+	--color-source-spotify-soft: var(--source-spotify-soft);
+	--color-source-anki-soft: var(--source-anki-soft);
+	--color-source-misc-soft: var(--source-misc-soft);
 
-  /* source brand color mappings */
-  --color-source-youtube: var(--source-youtube);
-  --color-source-spotify: var(--source-spotify);
-  --color-source-anki: var(--source-anki);
-  --color-source-misc: var(--source-misc);
-  --color-source-youtube-soft: var(--source-youtube-soft);
-  --color-source-spotify-soft: var(--source-spotify-soft);
-  --color-source-anki-soft: var(--source-anki-soft);
-  --color-source-misc-soft: var(--source-misc-soft);
+	/* flashcards breakdown mapped colors */
+	--color-flashcards-new: var(--flashcards-new);
+	--color-flashcards-learning: var(--flashcards-learning);
+	--color-flashcards-review: var(--flashcards-review);
+	--color-flashcards-suspended: var(--flashcards-suspended);
 
-  /* flashcards breakdown mapped colors */
-  --color-flashcards-new: var(--flashcards-new);
-  --color-flashcards-learning: var(--flashcards-learning);
-  --color-flashcards-review: var(--flashcards-review);
-  --color-flashcards-suspended: var(--flashcards-suspended);
+	/* category color mappings */
+	--color-reading: var(--category-reading);
+	--color-listening: var(--category-listening);
+	--color-speaking: var(--category-speaking);
+	--color-writing: var(--category-writing);
 
-  /* category color mappings */
-  --color-reading: var(--category-reading);
-  --color-listening: var(--category-listening);
-  --color-speaking: var(--category-speaking);
-  --color-writing: var(--category-writing);
+	/* heatmap mapped colors */
+	--color-heatmap-bg: var(--heatmap-bg);
+	--color-heatmap-0: var(--heatmap-0);
+	--color-heatmap-1: var(--heatmap-1);
+	--color-heatmap-2: var(--heatmap-2);
+	--color-heatmap-3: var(--heatmap-3);
+	--color-heatmap-4: var(--heatmap-4);
 
-  /* heatmap mapped colors */
-  --color-heatmap-bg: var(--heatmap-bg);
-  --color-heatmap-0: var(--heatmap-0);
-  --color-heatmap-1: var(--heatmap-1);
-  --color-heatmap-2: var(--heatmap-2);
-  --color-heatmap-3: var(--heatmap-3);
-  --color-heatmap-4: var(--heatmap-4);
+	--spacing-boxShadowX: 2px;
+	--spacing-boxShadowY: 2px;
+	--spacing-reverseBoxShadowX: -2px;
+	--spacing-reverseBoxShadowY: -2px;
+	--radius-base: 15px;
+	--shadow-shadow: var(--shadow);
+	--font-weight-base: 700;
+	--font-weight-heading: 900;
 
-  --spacing-boxShadowX: 2px;
-  --spacing-boxShadowY: 2px;
-  --spacing-reverseBoxShadowX: -2px;
-  --spacing-reverseBoxShadowY: -2px;
-  --radius-base: 15px;
-  --shadow-shadow: var(--shadow);
-  --font-weight-base: 700;
-  --font-weight-heading: 900;
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display);
+	--font-sans: var(--font-geist-sans);
+	--font-mono: var(--font-geist-mono);
+	--font-display: var(--font-display);
 }
 
 /* Force our font inside the shadow host only */
-:host, :host * {
-  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+:host,
+:host * {
+	font-family: var(--font-geist-sans), system-ui, sans-serif !important;
 }
-
-

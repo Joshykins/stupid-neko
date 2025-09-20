@@ -7,11 +7,19 @@ import chalk from "chalk";
 const DEFAULT_INFISICAL_PROJECT_ID = "8357f813-7b71-4d47-a6a1-534ad8a49fe2";
 
 type Stage = "dev" | "production";
-type ChalkColor = "cyan" | "blue" | "green" | "magenta" | "yellow" | "red" | "gray";
+type ChalkColor =
+	| "cyan"
+	| "blue"
+	| "green"
+	| "magenta"
+	| "yellow"
+	| "red"
+	| "gray";
 
 type StringMap = Record<string, string>;
 
-let DEBUG = !!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== "0";
+const DEBUG =
+	!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== "0";
 
 function log(scope: string, message: string, color: ChalkColor = "cyan"): void {
 	const tag = (chalk as any)[color](`[${scope}]`);
@@ -43,12 +51,18 @@ function detectConvexDeployment(stage: Stage): string | null {
 
 function getInfisicalToken(stage: Stage): string | null {
 	// Allow per-stage tokens, falling back to a generic token
-	const perStage = readEnv(stage === "production" ? "INFISICAL_TOKEN_PROD" : "INFISICAL_TOKEN_DEV");
+	const perStage = readEnv(
+		stage === "production" ? "INFISICAL_TOKEN_PROD" : "INFISICAL_TOKEN_DEV",
+	);
 	return perStage || readEnv("INFISICAL_TOKEN");
 }
 
-function exportSecretsMap(stage: Stage, tag?: "next" | "vite" | "expo"): StringMap {
-	const projectId = readEnv("INFISICAL_PROJECT_ID") || DEFAULT_INFISICAL_PROJECT_ID;
+function exportSecretsMap(
+	stage: Stage,
+	tag?: "next" | "vite" | "expo",
+): StringMap {
+	const projectId =
+		readEnv("INFISICAL_PROJECT_ID") || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
 	// Build args; prefer explicit project and token to avoid cross-account confusion
 	const args = [
@@ -69,19 +83,28 @@ function exportSecretsMap(stage: Stage, tag?: "next" | "vite" | "expo"): StringM
 			"infisical",
 			chalk.gray(
 				`using service token from ${
-					stage === "production" ? "INFISICAL_TOKEN_PROD" : "INFISICAL_TOKEN_DEV"
+					stage === "production"
+						? "INFISICAL_TOKEN_PROD"
+						: "INFISICAL_TOKEN_DEV"
 				} / INFISICAL_TOKEN`,
 			),
 		);
 	} else {
-		log("infisical", chalk.gray("using logged-in Infisical session (no --token)"));
+		log(
+			"infisical",
+			chalk.gray("using logged-in Infisical session (no --token)"),
+		);
 	}
 	// Mask token in displayed command
 	const displayArgs = [...args];
 	const tokenIdx = displayArgs.findIndex((a) => a === "--token");
-	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length) displayArgs[tokenIdx + 1] = "***";
+	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length)
+		displayArgs[tokenIdx + 1] = "***";
 	log("infisical", chalk.gray(`infisical ${displayArgs.join(" ")}`));
-	const res = spawnSync("infisical", args, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+	const res = spawnSync("infisical", args, {
+		stdio: ["ignore", "pipe", "pipe"],
+		encoding: "utf8",
+	});
 	if (res.status !== 0) {
 		const stderr = (res.stderr || "").trim();
 		if (!token) {
@@ -123,7 +146,8 @@ function exportSecretsMap(stage: Stage, tag?: "next" | "vite" | "expo"): StringM
 }
 
 function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
-	const projectId = readEnv("INFISICAL_PROJECT_ID") || DEFAULT_INFISICAL_PROJECT_ID;
+	const projectId =
+		readEnv("INFISICAL_PROJECT_ID") || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
 	const args = [
 		"export",
@@ -139,15 +163,20 @@ function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
 	if (token) args.push("--token", token);
 	const displayArgs = [...args];
 	const tokenIdx = displayArgs.findIndex((a) => a === "--token");
-	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length) displayArgs[tokenIdx + 1] = "***";
+	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length)
+		displayArgs[tokenIdx + 1] = "***";
 	log("infisical", chalk.gray(`infisical ${displayArgs.join(" ")}`));
-	const res = spawnSync("infisical", args, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+	const res = spawnSync("infisical", args, {
+		stdio: ["ignore", "pipe", "pipe"],
+		encoding: "utf8",
+	});
 	if (res.status !== 0) return {};
 	try {
 		const parsed = JSON.parse(String(res.stdout || "").trim());
 		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
 			const map: StringMap = {};
-			for (const [k, v] of Object.entries(parsed as Record<string, any>)) map[String(k)] = String(v ?? "");
+			for (const [k, v] of Object.entries(parsed as Record<string, any>))
+				map[String(k)] = String(v ?? "");
 			return map;
 		}
 		if (Array.isArray(parsed)) {
@@ -173,7 +202,11 @@ function parseSlugList(value: string | null, defaults: string[]): string[] {
 	return list.length > 0 ? list : defaults;
 }
 
-function exportSecretsMapTryTags(stage: Stage, slugs: string[], label: string): { map: StringMap; matched: Array<{ slug: string; count: number }> } {
+function exportSecretsMapTryTags(
+	stage: Stage,
+	slugs: string[],
+	label: string,
+): { map: StringMap; matched: Array<{ slug: string; count: number }> } {
 	const matched: Array<{ slug: string; count: number }> = [];
 	const aggregate: StringMap = {};
 	for (const slug of slugs) {
@@ -195,7 +228,11 @@ function exportSecretsMapTryTags(stage: Stage, slugs: string[], label: string): 
 	return { map: aggregate, matched };
 }
 
-function exportSecretsMapTryPaths(stage: Stage, paths: string[], label: string): { map: StringMap; matched: Array<{ path: string; count: number }> } {
+function exportSecretsMapTryPaths(
+	stage: Stage,
+	paths: string[],
+	label: string,
+): { map: StringMap; matched: Array<{ path: string; count: number }> } {
 	const matched: Array<{ path: string; count: number }> = [];
 	const aggregate: StringMap = {};
 	for (const p of paths) {
@@ -294,23 +331,31 @@ function setEnvInConvex(envVars: StringMap, stage: Stage): void {
 
 	// Do not sync framework public envs or Convex built-ins
 	const isPublicPrefixed = (name: string): boolean =>
-		name.startsWith("NEXT_PUBLIC_") || name.startsWith("VITE_") || name.startsWith("EXPO_PUBLIC_");
+		name.startsWith("NEXT_PUBLIC_") ||
+		name.startsWith("VITE_") ||
+		name.startsWith("EXPO_PUBLIC_");
 	const convexBuiltin = new Set<string>([
 		"CONVEX_SITE_URL",
 		"CONVEX_DEPLOYMENT",
 		"CONVEX_URL",
 	]);
-	const entries = Object.entries(envVars).filter(([name]) => !isPublicPrefixed(name) && !convexBuiltin.has(name));
+	const entries = Object.entries(envVars).filter(
+		([name]) => !isPublicPrefixed(name) && !convexBuiltin.has(name),
+	);
 	let ok = 0;
 	let failCount = 0;
 	for (const [name, value] of entries) {
 		// Use spawn to avoid shell-escaping issues
 		// Insert "--" before the value so hyphens in values (e.g., PEM keys) are not parsed as options
-		const res = spawnSync("npx", ["-y", "convex", "env", "set", name, "--", value], {
-			stdio: ["ignore", "pipe", "pipe"],
-			encoding: "utf8",
-			env,
-		});
+		const res = spawnSync(
+			"npx",
+			["-y", "convex", "env", "set", name, "--", value],
+			{
+				stdio: ["ignore", "pipe", "pipe"],
+				encoding: "utf8",
+				env,
+			},
+		);
 		if (res.status === 0) {
 			ok++;
 		} else {
@@ -326,7 +371,10 @@ function setEnvInConvex(envVars: StringMap, stage: Stage): void {
 }
 
 async function main(): Promise<void> {
-	const argv = process.argv.slice(2).map((s) => String(s).trim()).filter(Boolean);
+	const argv = process.argv
+		.slice(2)
+		.map((s) => String(s).trim())
+		.filter(Boolean);
 	let stage: Stage | null = null;
 	let debugFlag = false;
 	for (const arg of argv) {
@@ -334,16 +382,26 @@ async function main(): Promise<void> {
 		if (arg === "--debug") debugFlag = true;
 	}
 	if (!stage) {
-		fail("pull-env", `Usage: tsx scripts/pull-env.ts <dev|production> [--debug]`);
+		fail(
+			"pull-env",
+			`Usage: tsx scripts/pull-env.ts <dev|production> [--debug]`,
+		);
 	}
 	if (debugFlag) (globalThis as any).PULL_ENV_DEBUG = "1";
 	if (!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== "0") {
 		log("pull-env", "Debug mode enabled", "yellow");
 	}
 
-	log("pull-env", `Fetching secrets for ${chalk.bold(stage!)} from Infisical...`, "blue");
+	log(
+		"pull-env",
+		`Fetching secrets for ${chalk.bold(stage!)} from Infisical...`,
+		"blue",
+	);
 	const envVars = buildEnvMap(stage!);
-	log("pull-env", `Collected ${chalk.bold(String(Object.keys(envVars).length))} .env entries`);
+	log(
+		"pull-env",
+		`Collected ${chalk.bold(String(Object.keys(envVars).length))} .env entries`,
+	);
 
 	writeDotenvFiles(envVars);
 
@@ -357,5 +415,3 @@ main().catch((err) => {
 	console.error(chalk.red("[pull-env] Uncaught error"), err);
 	process.exit(1);
 });
-
-

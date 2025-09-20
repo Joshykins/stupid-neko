@@ -1,22 +1,22 @@
-import { headers } from "next/headers";
 import { isAuthenticatedNextjs } from "@convex-dev/auth/nextjs/server";
+import { headers } from "next/headers";
 
-export const AuthenticatedServer = async ({ children }: { children: React.ReactNode; }) => {
-    const isAuthenticated = await isAuthenticatedNextjs();
+export const AuthenticatedServer = async ({
+	children,
+}: {
+	children: React.ReactNode;
+}) => {
+	const isAuthenticated = await isAuthenticatedNextjs();
 
-    return (
-        <>
-            {isAuthenticated ? children : null}
-        </>
-    );
+	return <>{isAuthenticated ? children : null}</>;
 };
 
-export const UnauthenticatedServer = async ({ children }: { children: React.ReactNode; }) => {
-    const isAuthenticated = await isAuthenticatedNextjs();
+export const UnauthenticatedServer = async ({
+	children,
+}: {
+	children: React.ReactNode;
+}) => {
+	const isAuthenticated = await isAuthenticatedNextjs();
 
-    return (
-        <>
-            {!isAuthenticated ? children : null}
-        </>
-    );
+	return <>{!isAuthenticated ? children : null}</>;
 };

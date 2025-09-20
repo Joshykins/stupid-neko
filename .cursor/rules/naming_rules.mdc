@@ -1,0 +1,56 @@
+---
+description: Enforce parent-prefix naming for tables, functions, indexes, relations, and identifiers
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+alwaysApply: true
+---
+
+## Parent-prefix naming rule
+
+Always prefix a child concept with the exact parent concept name. This applies to Convex schema tables, function names, file names, indexes, relation fields, and helper types.
+
+- Use lowerCamelCase for multi-word names
+- Keep the parent segment unchanged then append child segments in PascalCase
+- Prefer clarity over brevity; avoid ambiguous base names without a parent
+
+### Scope
+- Tables in `convex/schema.ts`
+- Convex functions (queries, mutations, actions)
+- File names under `convex/`
+- Index names and foreign key field names
+- Helper types, constants, and relation helpers
+
+### Tables
+- Name child tables with the parent prefix: `userTargetLanguages`, `userTargetLanguageActivities`, `userStreakDays`, `userStreakVacationLedgers`, `userTargetLanguageExperienceLedgers`.
+- If a table is globally scoped (not under a parent), do not invent a parent. Example: `contentActivities`, `contentLabel`.
+
+### Foreign keys (relations)
+- Use `{ParentName}Id` for foreign keys.
+  - Examples: `userId`, `userTargetLanguageId`, `languageActivityId`.
+
+### Indexes
+- Use `by_...` and include all indexed fields in order, prefixed with the parent when present.
+  - Examples: `by_user`, `by_user_and_language`, `by_user_and_day`, `by_user_and_occurred`, `by_user_target_language_and_title`.
+
+### Convex function names
+- Use `verb + ParentChild + OptionalQualifier`.
+  - Create: `createUserTargetLanguage`, `createUserTargetLanguageActivity`
+  - List: `listUserTargetLanguageActivities`, `listUserStreakDaysByUser`
+  - Update: `patchUserTargetLanguage`, `credituserStreakVacationLedgers`
+  - Internal helpers mirror the same, e.g. `internal.userTargetLanguage.generateLevels` → `generateUserTargetLanguageLevels`.
+
+### File/module names (Convex)
+- File names should be {SchemaTableName(ex userTargetLanguageExperience)/sector(ex me}+module type{Functions/Actions}. An example is meFunctions or userTargetLAnguageExperienceFunctions.
+
+
+### Helper types/constants
+- Prefix with the parent: `UserTargetLanguageInput`, `UserStreakDaySummary`.
+
+### Do / Don’t
+- Do: `userTargetLanguageActivities`, `userTargetLanguageExperienceLedgers`, `by_user_and_day`, `userTargetLanguageId`.
+- Don’t: `targetLanguageActivities` (parent missing), `experienceLedger` (ambiguous), `by_day` (missing parent), `ownerId` (use concrete parent like `userId`).
+
+### Quick checklist
+- Is there a clear parent? Prefix the child with it.
+- Are all foreign keys named `{Parent}Id`?
+- Do index names include all fields in order and reference the parent?
+- Do function/file/type names start with the parent segment for child concepts?

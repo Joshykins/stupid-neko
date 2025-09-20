@@ -1,16 +1,22 @@
 "use client";
-import * as React from "react";
-import Link from "next/link";
 
 import Image from "next/image";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
+import Link from "next/link";
+import type * as React from "react";
+import LanguageFlagSVG from "./LanguageFlagSVG";
 import AppStoreCard from "./marketing/AppStoreCard";
 import { UnreleasedBanner } from "./marketing/UnreleasedBanner";
-import LanguageFlagSVG from "./LanguageFlagSVG";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
-function SakuraBranch({ className, style }: { className?: string; style?: React.CSSProperties; }) {
+function SakuraBranch({
+	className,
+	style,
+}: {
+	className?: string;
+	style?: React.CSSProperties;
+}) {
 	return (
 		<svg
 			className={className}
@@ -20,7 +26,12 @@ function SakuraBranch({ className, style }: { className?: string; style?: React.
 			xmlns="http://www.w3.org/2000/svg"
 			aria-hidden
 		>
-			<g stroke="#000" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+			<g
+				stroke="#000"
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				<path d="M10 120 C80 90, 120 80, 230 30" fill="none" />
 				<path d="M70 110 C90 95, 110 85, 140 70" fill="none" />
 				<path d="M120 95 C140 85, 155 70, 175 60" fill="none" />
@@ -58,14 +69,23 @@ function MountainCat() {
 		>
 			{/* Mountain base */}
 			<g stroke="#000" strokeWidth={3} strokeLinejoin="round">
-				<path d="M20 360 L220 160 L300 240 L360 180 L520 360 Z" fill="#2C4152" />
+				<path
+					d="M20 360 L220 160 L300 240 L360 180 L520 360 Z"
+					fill="#2C4152"
+				/>
 				{/* Snow caps */}
 				<path d="M220 160 L260 200 L240 200 Z" fill="#FFFFFF" />
 				<path d="M360 180 L330 210 L350 210 Z" fill="#FFFFFF" />
 			</g>
 
 			{/* Cat */}
-			<g transform="translate(430,140)" stroke="#000" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+			<g
+				transform="translate(430,140)"
+				stroke="#000"
+				strokeWidth={3}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
 				{/* Tail */}
 				<path d="M140 120 q30 -10 40 10 q10 20 -10 30" fill="#FFE8C9" />
 				{/* Body */}
@@ -117,14 +137,20 @@ export function Hero() {
 								</div>
 
 								<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
-									Do you want to <span className="underline decoration-4 decoration-main ">Auto-<i>nya</i>-tically</span> track your Progress?
-
+									Do you want to{" "}
+									<span className="underline decoration-4 decoration-main ">
+										Auto-<i>nya</i>-tically
+									</span>{" "}
+									track your Progress?
 								</h1>
 								<p className="text-base md:text-lg font-medium text-muted-foreground max-w-prose pt-4">
-									Track your language learning activities for free. Add any activity, <b>any language</b>, anytime, any place.
+									Track your language learning activities for free. Add any
+									activity, <b>any language</b>, anytime, any place.
 								</p>
 								<div className="flex flex-col sm:flex-row gap-3 pt-4">
-									<Button asChild size="cta" variant="default"><Link href="/sign-in">Start Tracking</Link></Button>
+									<Button asChild size="cta" variant="default">
+										<Link href="/sign-in">Start Tracking</Link>
+									</Button>
 								</div>
 								{/* Store badges moved to AppStoreCard */}
 								<AppStoreCard className="p-2 w-fit h-fit md:absolute md:bottom-0 md:-right-4 md:translate-x-full" />
@@ -144,39 +170,64 @@ export function Hero() {
 				/>
 				<div className="flex items-center gap-4 pt-4">
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="ja" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="ja"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="en" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="en"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="es" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="es"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="fr" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="fr"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="de" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="de"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="ko" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="ko"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="zh" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="zh"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="hi" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="hi"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					<div className="relative h-8 aspect-[4/3] rounded-md border-2 border-border/10 opacity-80 overflow-hidden">
-						<LanguageFlagSVG language="ru" className="absolute inset-0 h-full !w-full" />
+						<LanguageFlagSVG
+							language="ru"
+							className="absolute inset-0 h-full !w-full"
+						/>
 					</div>
 					{/* And more */}
 				</div>
-			</section >
+			</section>
 		</>
 	);
 }
 
 export default Hero;
-
-

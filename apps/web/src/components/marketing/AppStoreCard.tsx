@@ -1,12 +1,12 @@
 "use client";
 import Image from "next/image";
-import { Card } from "../ui/card";
 import { cn } from "../../lib/utils";
+import { Card } from "../ui/card";
 
-export default function AppStoreCard({ className }: { className?: string; }) {
-    return (
-        <div className={cn("flex gap-3", className)}>
-            {/* <a
+export default function AppStoreCard({ className }: { className?: string }) {
+	return (
+		<div className={cn("flex gap-3", className)}>
+			{/* <a
                 href="https://apps.apple.com/app/idXXXXXXXXX"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -32,8 +32,6 @@ export default function AppStoreCard({ className }: { className?: string; }) {
                     <span className="text-sm font-semibold -mt-0.5">Google Play</span>
                 </span>
             </a> */}
-        </div>
-    );
+		</div>
+	);
 }
-
-

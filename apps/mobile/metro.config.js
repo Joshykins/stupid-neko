@@ -3,11 +3,11 @@ const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 // Force Metro 0.81+ plugin availability for SDK 53
 try {
-  require.resolve("metro/src/ModuleGraph/worker/importLocationsPlugin");
+	require.resolve("metro/src/ModuleGraph/worker/importLocationsPlugin");
 } catch (e) {
-  console.warn(
-    "Metro plugin importLocationsPlugin not found. Ensure metro@0.81+ is installed via expo install --fix."
-  );
+	console.warn(
+		"Metro plugin importLocationsPlugin not found. Ensure metro@0.81+ is installed via expo install --fix.",
+	);
 }
 
 const projectRoot = __dirname;
@@ -22,14 +22,14 @@ config.watchFolders = [workspaceRoot];
 // 2) Resolve modules from both the app and the workspace root node_modules
 config.resolver = config.resolver || {};
 config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, "node_modules"),
-  path.resolve(workspaceRoot, "node_modules"),
+	path.resolve(projectRoot, "node_modules"),
+	path.resolve(workspaceRoot, "node_modules"),
 ];
 
 // 2a) Ensure a single React instance (avoid pulling React 19 from workspace)
 config.resolver.extraNodeModules = {
-  react: path.resolve(projectRoot, "node_modules/react"),
-  "react-native": path.resolve(projectRoot, "node_modules/react-native"),
+	react: path.resolve(projectRoot, "node_modules/react"),
+	"react-native": path.resolve(projectRoot, "node_modules/react-native"),
 };
 // Make resolution deterministic to these paths only
 config.resolver.disableHierarchicalLookup = true;

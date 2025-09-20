@@ -1,13 +1,26 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Button } from "../ui/button";
-import { api } from "../../../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { Switch } from "../ui/switch";
+import * as React from "react";
+import { api } from "../../../../../convex/_generated/api";
+import { Button } from "../ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "../ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "../ui/dialog";
 import { Label } from "../ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Switch } from "../ui/switch";
 
 type Integration = {
     id: string;
@@ -17,17 +30,35 @@ type Integration = {
 };
 
 const DEFAULTS: Array<Integration> = [
-    { id: "anki", name: "Anki", description: "Auto-import reviews and new cards.", enabled: true },
-    { id: "youtube", name: "YouTube", description: "Track watch time from learning channels.", enabled: false },
-    { id: "spotify", name: "Spotify", description: "Log listening practice automatically.", enabled: false },
+    {
+        id: "anki",
+        name: "Anki",
+        description: "Auto-import reviews and new cards.",
+        enabled: true,
+    },
+    {
+        id: "youtube",
+        name: "YouTube",
+        description: "Track watch time from learning channels.",
+        enabled: false,
+    },
+    {
+        id: "spotify",
+        name: "Spotify",
+        description: "Log listening practice automatically.",
+        enabled: false,
+    },
 ];
 
 export default function IntegrationsCard() {
     const [items, setItems] = React.useState<Array<Integration>>(DEFAULTS);
-    const status = useQuery(api.spotify.getStatus, {});
-    const start = useMutation(api.spotify.startAuth);
-    const disconnect = useMutation(api.spotify.disconnect);
-    const [pending, setPending] = React.useState<{ action: "enable" | "disable"; item: Integration; } | null>(null);
+    const status = useQuery(api.spotifyFunctions.getStatus, {});
+    const start = useMutation(api.spotifyFunctions.startAuth);
+    const disconnect = useMutation(api.spotifyFunctions.disconnect);
+    const [pending, setPending] = React.useState<{
+        action: "enable" | "disable";
+        item: Integration;
+    } | null>(null);
     const [confirmOpen, setConfirmOpen] = React.useState(false);
     const [infoOpen, setInfoOpen] = React.useState(false);
 
@@ -50,7 +81,11 @@ export default function IntegrationsCard() {
     // Keep Spotify toggle in sync with backend connection status
     React.useEffect(() => {
         if (typeof status?.connected === "boolean") {
-            setItems((prev) => prev.map((p) => (p.id === "spotify" ? { ...p, enabled: !!status.connected } : p)));
+            setItems((prev) =>
+                prev.map((p) =>
+                    p.id === "spotify" ? { ...p, enabled: !!status.connected } : p,
+                ),
+            );
         }
     }, [status?.connected]);
 
@@ -58,7 +93,9 @@ export default function IntegrationsCard() {
         <Card>
             <CardHeader>
                 <CardTitle>Integrations</CardTitle>
-                <CardDescription>Turn on integrations to auto-track your activity.</CardDescription>
+                <CardDescription>
+                    Turn on integrations to auto-track your activity.
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {items.map((i) => (
@@ -72,12 +109,11 @@ export default function IntegrationsCard() {
                             </div>
                         </div>
                         <Switch
-                            style={{
-                                // Provide a CSS variable for the Switch component to consume
-                                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                                // @ts-ignore
-                                "--switch-checked-bg": COLORS[i.id] ?? "var(--main)",
-                            } as React.CSSProperties}
+                            style={
+                                {
+                                    "--switch-checked-bg": COLORS[i.id] ?? "var(--main)",
+                                } as React.CSSProperties
+                            }
                             checked={i.enabled}
                             onCheckedChange={(v) => toggleWithDialogs(i, v)}
                         />
@@ -85,19 +121,30 @@ export default function IntegrationsCard() {
                 ))}
 
                 {/* Disable confirmation dialog */}
-                <Dialog open={confirmOpen} onOpenChange={(o) => { setConfirmOpen(o); if (!o) setPending(null); }}>
+                <Dialog
+                    open={confirmOpen}
+                    onOpenChange={(o) => {
+                        setConfirmOpen(o);
+                        if (!o) setPending(null);
+                    }}
+                >
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Disable {pending?.item.name}?</DialogTitle>
                             <DialogDescription>
-                                This will stop auto-tracking from {pending?.item.name}. You can re-enable it anytime.
+                                This will stop auto-tracking from {pending?.item.name}. You can
+                                re-enable it anytime.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
                             <Button
                                 onClick={() => {
                                     // Revert switch
-                                    setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: true } : p)));
+                                    setItems((prev) =>
+                                        prev.map((p) =>
+                                            p.id === pending?.item.id ? { ...p, enabled: true } : p,
+                                        ),
+                                    );
                                     setConfirmOpen(false);
                                     setPending(null);
                                 }}
@@ -108,9 +155,15 @@ export default function IntegrationsCard() {
                                 variant="destructive"
                                 onClick={async () => {
                                     if (pending?.item.id === "spotify") {
-                                        try { await disconnect({}); } catch { }
+                                        try {
+                                            await disconnect({});
+                                        } catch { }
                                     }
-                                    setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: false } : p)));
+                                    setItems((prev) =>
+                                        prev.map((p) =>
+                                            p.id === pending?.item.id ? { ...p, enabled: false } : p,
+                                        ),
+                                    );
                                     setConfirmOpen(false);
                                     setPending(null);
                                 }}
@@ -122,7 +175,20 @@ export default function IntegrationsCard() {
                 </Dialog>
 
                 {/* Enable info dialog */}
-                <Dialog open={infoOpen} onOpenChange={(o) => { setInfoOpen(o); if (!o) { /* revert if closed without action */ setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: false } : p))); setPending(null); } }}>
+                <Dialog
+                    open={infoOpen}
+                    onOpenChange={(o) => {
+                        setInfoOpen(o);
+                        if (!o) {
+							/* revert if closed without action */ setItems((prev) =>
+                            prev.map((p) =>
+                                p.id === pending?.item.id ? { ...p, enabled: false } : p,
+                            ),
+                        );
+                            setPending(null);
+                        }
+                    }}
+                >
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Enable {pending?.item.name}</DialogTitle>
@@ -145,7 +211,11 @@ export default function IntegrationsCard() {
                             <Button
                                 onClick={() => {
                                     // Cancel -> revert
-                                    setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: false } : p)));
+                                    setItems((prev) =>
+                                        prev.map((p) =>
+                                            p.id === pending?.item.id ? { ...p, enabled: false } : p,
+                                        ),
+                                    );
                                     setInfoOpen(false);
                                     setPending(null);
                                 }}
@@ -156,7 +226,11 @@ export default function IntegrationsCard() {
                                 <Button
                                     onClick={async () => {
                                         // Keep enabled visually and kick off OAuth
-                                        setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: true } : p)));
+                                        setItems((prev) =>
+                                            prev.map((p) =>
+                                                p.id === pending?.item.id ? { ...p, enabled: true } : p,
+                                            ),
+                                        );
                                         setInfoOpen(false);
                                         setPending(null);
                                         const { url } = await start({});
@@ -169,7 +243,11 @@ export default function IntegrationsCard() {
                             ) : (
                                 <Button
                                     onClick={() => {
-                                        setItems((prev) => prev.map((p) => (p.id === pending?.item.id ? { ...p, enabled: true } : p)));
+                                        setItems((prev) =>
+                                            prev.map((p) =>
+                                                p.id === pending?.item.id ? { ...p, enabled: true } : p,
+                                            ),
+                                        );
                                         setInfoOpen(false);
                                         setPending(null);
                                     }}
@@ -184,5 +262,3 @@ export default function IntegrationsCard() {
         </Card>
     );
 }
-
-

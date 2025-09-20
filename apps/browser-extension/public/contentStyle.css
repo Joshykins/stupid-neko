@@ -2,34 +2,38 @@
    Uses absolute extension URLs per guidance: https://stackoverflow.com/questions/19210451/packaging-a-font-with-a-google-chrome-extension */
 
 @font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('chrome-extension://__MSG_@@extension_id__/fonts/PlusJakartaSans-VariableFont_wght.ttf') format('truetype');
+	font-family: "Plus Jakarta Sans";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("chrome-extension://__MSG_@@extension_id__/fonts/PlusJakartaSans-VariableFont_wght.ttf")
+		format("truetype");
 }
 
 @font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('chrome-extension://__MSG_@@extension_id__/fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf') format('truetype');
+	font-family: "Plus Jakarta Sans";
+	font-style: italic;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("chrome-extension://__MSG_@@extension_id__/fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf")
+		format("truetype");
 }
 
 @font-face {
-  font-family: 'Baloo 2';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('chrome-extension://__MSG_@@extension_id__/fonts/Baloo2-VariableFont_wght.ttf') format('truetype');
+	font-family: "Baloo 2";
+	font-style: normal;
+	font-weight: 400 800;
+	font-display: swap;
+	src: url("chrome-extension://__MSG_@@extension_id__/fonts/Baloo2-VariableFont_wght.ttf")
+		format("truetype");
 }
 
 /* Ensure our root and Radix popper inherit the intended fonts */
-#__stupid-neko-root, #__stupid-neko-root * {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+#__stupid-neko-root,
+#__stupid-neko-root * {
+	font-family: "Plus Jakarta Sans", sans-serif !important;
 }
 
 [data-radix-popper-content-wrapper] {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+	font-family: "Plus Jakarta Sans", sans-serif !important;
 }

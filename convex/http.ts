@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
-import { auth } from "./auth";
-import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { httpAction } from "./_generated/server";
+import { auth } from "./auth";
 
 const http = httpRouter();
 auth.addHttpRoutes(http);
@@ -22,11 +22,14 @@ http.route({
 			return new Response("Missing code or state", { status: 400 });
 		}
 		try {
-            await ctx.runAction(internal.spotifyActions.finishAuth, { code, state });
+			await ctx.runAction(internal.spotifyActions.finishAuth, { code, state });
 			// Redirect back to site settings page
 			const siteUrl = process.env.SITE_URL || process.env.VITE_SITE_URL || "";
 			const redirect = `${siteUrl}/dashboard?spotify=connected`;
-			return new Response(null, { status: 302, headers: { Location: redirect } });
+			return new Response(null, {
+				status: 302,
+				headers: { Location: redirect },
+			});
 		} catch (e) {
 			return new Response("Failed to finalize Spotify auth", { status: 500 });
 		}

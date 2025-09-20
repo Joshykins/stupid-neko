@@ -1,9 +1,14 @@
-import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
+import {
+	internalMutation,
+	internalQuery,
+	mutation,
+	query,
+} from "./_generated/server";
 // Use Web Crypto (available in Convex runtime) to generate random IDs
 
-export function generateIntegrationId(): string {
+export function generateIntegrationKey(): string {
 	const bytes = new Uint8Array(24);
 	crypto.getRandomValues(bytes);
 	// Hex encoding: URL-safe and no globals required
@@ -21,7 +26,7 @@ export const regenerateIntegrationKey = mutation({
 		if (!userId) throw new Error("Unauthorized");
 		const user = await ctx.db.get(userId);
 		if (!user) throw new Error("User not found");
-		const integrationId = generateIntegrationId();
+		const integrationId = generateIntegrationKey();
 		await ctx.db.patch(userId, { integrationKey: integrationId } as any);
 		return { integrationId };
 	},
@@ -51,31 +56,33 @@ export const clearIntegrationKey = mutation({
 	},
 });
 
-export const getUserByIntegrationId = internalQuery({
+export const getUserByIntegrationKey = internalQuery({
 	args: { integrationId: v.string() },
 	returns: v.union(v.object({ userId: v.id("users") }), v.null()),
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_integration_key", (q: any) => q.eq("integrationKey", args.integrationId))
+			.withIndex("by_integration_key", (q: any) =>
+				q.eq("integrationKey", args.integrationId),
+			)
 			.unique();
 		if (!user) return null;
 		return { userId: (user as any)._id } as any;
 	},
 });
 
-export const touchIntegrationId = internalMutation({
+export const touchIntegrationKey = internalMutation({
 	args: { integrationId: v.string() },
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_integration_key", (q: any) => q.eq("integrationKey", args.integrationId))
+			.withIndex("by_integration_key", (q: any) =>
+				q.eq("integrationKey", args.integrationId),
+			)
 			.unique();
 		if (!user) return null;
 		// No-op for now
 		return null;
 	},
 });
-
-

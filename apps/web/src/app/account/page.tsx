@@ -1,225 +1,292 @@
 "use client";
 
-import { useState } from "react";
-import { Authenticated, Unauthenticated } from "convex/react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import Link from "next/link";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useForm } from "@tanstack/react-form";
-import { Card } from "../../components/ui/card";
+import {
+	Authenticated,
+	Unauthenticated,
+	useMutation,
+	useQuery,
+} from "convex/react";
+import { Copy } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { api } from "../../../../../convex/_generated/api";
+import {
+	Avatar,
+	AvatarFallback,
+	AvatarImage,
+} from "../../components/ui/avatar";
 import { Button } from "../../components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import { Card } from "../../components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { Copy } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
-
 
 export default function AccountPage() {
-    const { signOut } = useAuthActions();
-    const me = useQuery(api.meFunctions.me, {});
-    const updateMe = useMutation(api.meFunctions.updateMe);
-    const integrationKey = useQuery(api.integrationsKeyFunctions.getIntegrationKey, {});
-    const regenerateIntegrationKey = useMutation(api.integrationsKeyFunctions.regenerateIntegrationKey);
-    const clearIntegrationKey = useMutation(api.integrationsKeyFunctions.clearIntegrationKey);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [copied, setCopied] = useState(false);
-    const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+	const { signOut } = useAuthActions();
+	const me = useQuery(api.userFunctions.me);
+	const updateMe = useMutation(api.userFunctions.updateMe);
+	const integrationKey = useQuery(
+		api.integrationKeyFunctions.getIntegrationKey,
+	);
+	const regenerateIntegrationKey = useMutation(
+		api.integrationKeyFunctions.regenerateIntegrationKey,
+	);
+	const clearIntegrationKey = useMutation(
+		api.integrationKeyFunctions.clearIntegrationKey,
+	);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
+	const [saving, setSaving] = useState(false);
+	const [copied, setCopied] = useState(false);
+	const [showRegenConfirm, setShowRegenConfirm] = useState(false);
 
-    return (
-        <div className="py-10">
-            <Unauthenticated>
-                <Card className="mx-auto max-w-xl p-6 text-center">
-                    <h1 className="mb-2 font-display text-3xl font-black text-main-foreground">My account</h1>
-                    <p className="mb-4 text-main-foreground/80">You need to be signed in to view your account.</p>
-                    <div className="flex justify-center gap-3">
-                        <Button asChild variant="neutral"><Link href="/sign-in">Sign in</Link></Button>
-                        <Button asChild variant="default"><Link href="/create-account">Create account</Link></Button>
-                    </div>
-                </Card>
-            </Unauthenticated>
+	return (
+		<div className="py-10">
+			<Unauthenticated>
+				<Card className="mx-auto max-w-xl p-6 text-center">
+					<h1 className="mb-2 font-display text-3xl font-black text-main-foreground">
+						My account
+					</h1>
+					<p className="mb-4 text-main-foreground/80">
+						You need to be signed in to view your account.
+					</p>
+					<div className="flex justify-center gap-3">
+						<Button asChild variant="neutral">
+							<Link href="/sign-in">Sign in</Link>
+						</Button>
+						<Button asChild variant="default">
+							<Link href="/create-account">Create account</Link>
+						</Button>
+					</div>
+				</Card>
+			</Unauthenticated>
 
-            <Authenticated>
-                <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-3">
-                    <Card className="p-6 md:col-span-1 flex flex-col items-center gap-4">
-                        <Avatar className="size-24">
-                            <AvatarImage src={me?.image ?? undefined} alt={me?.name ?? "User"} />
-                            <AvatarFallback>{(me?.name ?? "U").slice(0, 1)}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-center">
-                            <div className="text-xl font-heading">{me?.name ?? "Your Account"}</div>
+			<Authenticated>
+				<div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-3">
+					<Card className="p-6 md:col-span-1 flex flex-col items-center gap-4">
+						<Avatar className="size-24">
+							<AvatarImage
+								src={me?.image ?? undefined}
+								alt={me?.name ?? "User"}
+							/>
+							<AvatarFallback>{(me?.name ?? "U").slice(0, 1)}</AvatarFallback>
+						</Avatar>
+						<div className="text-center">
+							<div className="text-xl font-heading">
+								{me?.name ?? "Your Account"}
+							</div>
+						</div>
+					</Card>
 
-                        </div>
-                    </Card>
+					<Card className="p-6 md:col-span-2">
+						<h2 className=" font-heading text-xl">Profile details</h2>
 
-                    <Card className="p-6 md:col-span-2">
-                        <h2 className=" font-heading text-xl">Profile details</h2>
+						<div className="my-4 h-px w-full bg-border" />
 
+						<EditForm
+							initialName={me?.name ?? ""}
+							initialTimezone={me?.timezone ?? ""}
+							onSave={async (values) => {
+								setErrorMessage(null);
+								setSuccessMessage(null);
+								setSaving(true);
+								try {
+									await updateMe({ name: values.name || undefined });
+									setSuccessMessage("Profile updated");
+								} catch {
+									setErrorMessage("Failed to update profile");
+								} finally {
+									setSaving(false);
+								}
+							}}
+							saving={saving}
+							errorMessage={errorMessage}
+							successMessage={successMessage}
+						/>
 
-                        <div className="my-4 h-px w-full bg-border" />
+						<div className="my-6 h-px w-full bg-border" />
 
-                        <EditForm
-                            initialName={me?.name ?? ""}
-                            initialTimezone={me?.timezone ?? ""}
-                            onSave={async (values) => {
-                                setErrorMessage(null);
-                                setSuccessMessage(null);
-                                setSaving(true);
-                                try {
-                                    await updateMe({ name: values.name || undefined });
-                                    setSuccessMessage("Profile updated");
-                                } catch {
-                                    setErrorMessage("Failed to update profile");
-                                } finally {
-                                    setSaving(false);
-                                }
-                            }}
-                            saving={saving}
-                            errorMessage={errorMessage}
-                            successMessage={successMessage}
-                        />
+						<div>
+							<h2 className=" font-heading text-xl">Browser Integration</h2>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Use this key in the browser extension to connect your account.
+							</p>
 
-                        <div className="my-6 h-px w-full bg-border" />
-
-                        <div>
-                            <h2 className=" font-heading text-xl">Browser Integration</h2>
-                            <p className="mt-1 text-sm text-muted-foreground">Use this key in the browser extension to connect your account.</p>
-
-                            <div className="mt-3 flex items-center gap-2">
-                                <div className="relative w-full">
-                                    <Input
-                                        readOnly
-                                        value={integrationKey?.integrationId ?? "Not generated yet"}
-                                        className="pr-10"
-                                        onClick={(e) => {
-                                            const input = e.currentTarget as HTMLInputElement;
-                                            input.select();
-                                        }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-base p-1 text-main-foreground/80 hover:text-main-foreground hover:bg-border/30 cursor-pointer transition-colors duration-150 disabled:opacity-50"
-                                        onClick={async () => {
-                                            const key = integrationKey?.integrationId;
-                                            if (!key) return;
-                                            try {
-                                                await navigator.clipboard.writeText(key);
-                                                setCopied(true);
-                                                setTimeout(() => setCopied(false), 1500);
-                                            } catch { }
-                                        }}
-                                        disabled={!integrationKey?.integrationId}
-                                        aria-label="Copy integration key"
-                                        title="Copy"
-                                    >
-                                        <Copy className="size-4" />
-                                    </button>
-                                    {copied && (
-                                        <div className="absolute right-2 -top-7 rounded-base bg-secondary-background border-2 border-border px-2 py-1 text-xs text-main-foreground shadow-sm">
-                                            Copied
-                                        </div>
-                                    )}
-                                </div>
-                                <Dialog open={showRegenConfirm} onOpenChange={setShowRegenConfirm}>
-                                    <DialogTrigger asChild>
-                                        <Button type="button">{integrationKey?.integrationId ? "Regenerate" : "Generate"}</Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Regenerate integration key?</DialogTitle>
-                                            <DialogDescription>
-                                                This will replace your current key. You’ll need to paste the new key into your browser extension.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <DialogFooter>
-                                            <Button type="button" onClick={() => setShowRegenConfirm(false)}>Cancel</Button>
-                                            <Button
-                                                type="button"
-                                                onClick={async () => {
-                                                    try {
-                                                        await regenerateIntegrationKey({});
-                                                    } finally {
-                                                        setShowRegenConfirm(false);
-                                                    }
-                                                }}
-                                            >
-                                                Confirm
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                        </div>
-
-                    </Card>
-                </div>
-            </Authenticated>
-        </div>
-    );
+							<div className="mt-3 flex items-center gap-2">
+								<div className="relative w-full">
+									<Input
+										readOnly
+										value={integrationKey?.integrationId ?? "Not generated yet"}
+										className="pr-10"
+										onClick={(e) => {
+											const input = e.currentTarget as HTMLInputElement;
+											input.select();
+										}}
+									/>
+									<button
+										type="button"
+										className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-base p-1 text-main-foreground/80 hover:text-main-foreground hover:bg-border/30 cursor-pointer transition-colors duration-150 disabled:opacity-50"
+										onClick={async () => {
+											const key = integrationKey?.integrationId;
+											if (!key) return;
+											try {
+												await navigator.clipboard.writeText(key);
+												setCopied(true);
+												setTimeout(() => setCopied(false), 1500);
+											} catch {}
+										}}
+										disabled={!integrationKey?.integrationId}
+										aria-label="Copy integration key"
+										title="Copy"
+									>
+										<Copy className="size-4" />
+									</button>
+									{copied && (
+										<div className="absolute right-2 -top-7 rounded-base bg-secondary-background border-2 border-border px-2 py-1 text-xs text-main-foreground shadow-sm">
+											Copied
+										</div>
+									)}
+								</div>
+								<Dialog
+									open={showRegenConfirm}
+									onOpenChange={setShowRegenConfirm}
+								>
+									<DialogTrigger asChild>
+										<Button type="button">
+											{integrationKey?.integrationId
+												? "Regenerate"
+												: "Generate"}
+										</Button>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>Regenerate integration key?</DialogTitle>
+											<DialogDescription>
+												This will replace your current key. You’ll need to paste
+												the new key into your browser extension.
+											</DialogDescription>
+										</DialogHeader>
+										<DialogFooter>
+											<Button
+												type="button"
+												onClick={() => setShowRegenConfirm(false)}
+											>
+												Cancel
+											</Button>
+											<Button
+												type="button"
+												onClick={async () => {
+													try {
+														await regenerateIntegrationKey({});
+													} finally {
+														setShowRegenConfirm(false);
+													}
+												}}
+											>
+												Confirm
+											</Button>
+										</DialogFooter>
+									</DialogContent>
+								</Dialog>
+							</div>
+						</div>
+					</Card>
+				</div>
+			</Authenticated>
+		</div>
+	);
 }
-
 
 function EditForm({
-    initialName,
-    initialTimezone,
-    onSave,
-    saving,
-    errorMessage,
-    successMessage,
+	initialName,
+	initialTimezone,
+	onSave,
+	saving,
+	errorMessage,
+	successMessage,
 }: {
-    initialName: string;
-    initialTimezone: string;
-    onSave: (values: { name: string; timezone: string; }) => Promise<void>;
-    saving: boolean;
-    errorMessage: string | null;
-    successMessage: string | null;
+	initialName: string;
+	initialTimezone: string;
+	onSave: (values: { name: string; timezone: string }) => Promise<void>;
+	saving: boolean;
+	errorMessage: string | null;
+	successMessage: string | null;
 }) {
-    const form = useForm<{ name: string; timezone: string; }>({
-        defaultValues: {
-            name: initialName,
-            timezone: initialTimezone,
-        },
-        onSubmit: async ({ value }: { value: { name: string; timezone: string; }; }) => {
-            await onSave(value);
-        },
-    });
+	const form = useForm<{ name: string; timezone: string }>({
+		defaultValues: {
+			name: initialName,
+			timezone: initialTimezone,
+		},
+		onSubmit: async ({
+			value,
+		}: {
+			value: { name: string; timezone: string };
+		}) => {
+			await onSave(value);
+		},
+	});
 
-    return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                form.handleSubmit();
-            }}
-            className="space-y-4"
-        >
-            {/* Only name is editable by design */}
-            <div className="grid gap-1">
-                <Label htmlFor="name" className="font-heading text-sm">Username</Label>
-                <form.Field name="name" validators={{
-                    onChange: ({ value }) => ((value && value.length < 3) ? "Use at least 3 characters" : undefined),
-                }}>
-                    {(field) => (
-                        <>
-                            <Input id="name" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Choose a username" />
-                            {field.state.meta.errors?.[0] && (
-                                <p className="text-sm text-red-500">{String((field.state.meta.errors?.[0] as any)?.message ?? field.state.meta.errors?.[0])}</p>
-                            )}
-                        </>
-                    )}
-                </form.Field>
-            </div>
+	return (
+		<form
+			onSubmit={(e) => {
+				e.preventDefault();
+				form.handleSubmit();
+			}}
+			className="space-y-4"
+		>
+			{/* Only name is editable by design */}
+			<div className="grid gap-1">
+				<Label htmlFor="name" className="font-heading text-sm">
+					Username
+				</Label>
+				<form.Field
+					name="name"
+					validators={{
+						onChange: ({ value }) =>
+							value && value.length < 3
+								? "Use at least 3 characters"
+								: undefined,
+					}}
+				>
+					{(field) => (
+						<>
+							<Input
+								id="name"
+								value={field.state.value}
+								onChange={(e) => field.handleChange(e.target.value)}
+								placeholder="Choose a username"
+							/>
+							{field.state.meta.errors?.[0] && (
+								<p className="text-sm text-red-500">
+									{String(
+										(field.state.meta.errors?.[0] as any)?.message ??
+											field.state.meta.errors?.[0],
+									)}
+								</p>
+							)}
+						</>
+					)}
+				</form.Field>
+			</div>
 
+			{errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
+			{successMessage && (
+				<p className="text-sm text-green-600">{successMessage}</p>
+			)}
 
-
-            {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
-            {successMessage && <p className="text-sm text-green-600">{successMessage}</p>}
-
-            <Button type="submit" disabled={saving} className="mt-1">{saving ? "Saving..." : "Save changes"}</Button>
-        </form>
-    );
+			<Button type="submit" disabled={saving} className="mt-1">
+				{saving ? "Saving..." : "Save changes"}
+			</Button>
+		</form>
+	);
 }
-
-

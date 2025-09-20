@@ -1,49 +1,37 @@
 {
-  "manifest_version": 3,
-  "name": "Stupid Neko",
-  "description": "Japanese learning companion in your browser",
-  
-  "action": {
-    "default_popup": "src/pages/popup/index.html",
-    "default_icon": {
-      "128": "icon-128.png"
-    }
-  },
-  "icons": {
-    "128": "icon-128.png"
-  },
-  "background": {
-    "service_worker": "src/service-worker-loader.js",
-    "type": "module"
-  },
-  "permissions": [
-    "activeTab",
-    "tabs",
-    "storage"
-  ],
-  "content_scripts": [
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*",
-        "<all_urls>"
-      ],
-      "js": [
-        "src/pages/content/index.tsx"
-      ]
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "contentStyle.css",
-        "icon-128.png",
-        "icon-32.png",
-        "fonts/*"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ]
+	"manifest_version": 3,
+	"name": "Stupid Neko",
+	"description": "Japanese learning companion in your browser",
+
+	"action": {
+		"default_popup": "src/pages/popup/index.html",
+		"default_icon": {
+			"128": "icon-128.png"
+		}
+	},
+	"icons": {
+		"128": "icon-128.png"
+	},
+	"background": {
+		"service_worker": "src/service-worker-loader.js",
+		"type": "module"
+	},
+	"permissions": ["activeTab", "tabs", "storage"],
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*", "<all_urls>"],
+			"js": ["src/pages/content/index.tsx"]
+		}
+	],
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"contentStyle.css",
+				"icon-128.png",
+				"icon-32.png",
+				"fonts/*"
+			],
+			"matches": ["<all_urls>"]
+		}
+	]
 }

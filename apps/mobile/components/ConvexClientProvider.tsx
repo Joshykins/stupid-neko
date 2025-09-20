@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
+import { ConvexAuthProvider, type TokenStorage } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
-import { ConvexAuthProvider, TokenStorage } from "@convex-dev/auth/react";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import type { ReactNode } from "react";
 
 const convexUrl =
 	process.env.EXPO_PUBLIC_CONVEX_URL ||
@@ -39,5 +39,3 @@ export default function ConvexClientProvider({
 		</ConvexAuthProvider>
 	);
 }
-
-
