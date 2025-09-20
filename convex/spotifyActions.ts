@@ -36,17 +36,14 @@ export const finishAuth = internalAction({
 			redirect_uri: redirectUri,
 		});
 		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-		const resp = await fetch(
-			"https://accounts.spotifyFunctions.com/api/token",
-			{
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-					Authorization: `Basic ${basic}`,
-				},
-				body,
+		const resp = await fetch("https://accounts.spotify.com/api/token", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+				Authorization: `Basic ${basic}`,
 			},
-		);
+			body,
+		});
 		if (!resp.ok) {
 			const errText = await resp.text().catch(() => "");
 			throw new Error(
@@ -66,7 +63,7 @@ export const finishAuth = internalAction({
 		let spotifyUserId: string | undefined;
 		let displayName: string | undefined;
 		try {
-			const meResp = await fetch("https://api.spotifyFunctions.com/v1/me", {
+			const meResp = await fetch("https://api.spotify.com/v1/me", {
 				headers: { Authorization: `Bearer ${accessToken}` },
 			});
 			if (meResp.ok) {
@@ -116,17 +113,14 @@ export const refreshToken = internalAction({
 			refresh_token: (acct.refreshToken as string) || "",
 		});
 		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-		const resp = await fetch(
-			"https://accounts.spotifyFunctions.com/api/token",
-			{
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-					Authorization: `Basic ${basic}`,
-				},
-				body,
+		const resp = await fetch("https://accounts.spotify.com/api/token", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+				Authorization: `Basic ${basic}`,
 			},
-		);
+			body,
+		});
 		if (!resp.ok) return { ok: true } as const;
 		const json = (await resp.json()) as any;
 		const accessToken: string | undefined = json.access_token;

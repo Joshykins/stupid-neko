@@ -1,20 +1,16 @@
 "use client";
 
-import { Info, Lightbulb, ShieldQuestion } from "lucide-react";
+import { Info } from "lucide-react";
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { xpForNextLevel } from "../../../../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
 import { Button } from "./ui/button";
 import {
 	ChartContainer,
-	ChartLegend,
-	ChartLegendContent,
 	ChartTooltip,
 	ChartTooltipContent,
 } from "./ui/chart";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-
-type LevelPoint = { level: number; totalXp: number; deltaXp: number };
 
 type BucketPoint = {
 	bucketIndex: number;
@@ -86,7 +82,7 @@ export default function LevelExperienceInfo({
 	const bucketSize = 10;
 	const bucketedData = React.useMemo(
 		() => bucketizeLevels(bucketSize, Math.min(maxLevel, cutoffLevel)),
-		[bucketSize, maxLevel, cutoffLevel],
+		[maxLevel, cutoffLevel],
 	);
 	const flatCostAfterCutoff = React.useMemo(
 		() => xpForNextLevel(cutoffLevel),
@@ -105,7 +101,7 @@ export default function LevelExperienceInfo({
 			isFlatTail: true,
 		};
 		return [...base, tail];
-	}, [bucketedData, cutoffLevel, bucketSize, flatCostAfterCutoff]);
+	}, [bucketedData, cutoffLevel, flatCostAfterCutoff]);
 
 	return (
 		<Popover>
@@ -134,7 +130,7 @@ export default function LevelExperienceInfo({
 						config={{
 							cost: {
 								label: "XP to Next Level",
-								color: "var(--color-heatmap-1)",
+								color: "var(--color-experience)",
 							},
 						}}
 						className="aspect-[4/3] rounded-base border-2 border-border px-2 pt-2"
@@ -166,17 +162,20 @@ export default function LevelExperienceInfo({
 									typeof v === "number" ? v.toLocaleString() : String(v)
 								}
 							/>
-							{/** Casting due to Recharts generic prop types not aligning with our wrapper component */}
 							<ChartTooltip
 								content={
-									((props: any) => (
+									(props: {
+										active?: boolean;
+										payload?: Array<{ payload: BucketPoint; }>;
+										label?: string;
+									}) => (
 										<ChartTooltipContent
 											{...props}
 											labelFormatter={() => ""}
 											formatter={(
 												_value: number,
 												_name: string,
-												_item: any,
+												_item: { payload: BucketPoint; },
 												_index: number,
 												payload: BucketPoint,
 											) => {
@@ -201,7 +200,7 @@ export default function LevelExperienceInfo({
 												);
 											}}
 										/>
-									)) as any
+									)
 								}
 							/>
 							<Area

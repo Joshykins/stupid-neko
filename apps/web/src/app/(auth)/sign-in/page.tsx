@@ -53,7 +53,7 @@ export default function SignInPage() {
 				const saved = window.localStorage.getItem("lastAuthProvider");
 				if (saved) setLastUsedProvider(saved);
 			}
-		} catch {}
+		} catch { }
 	}, []);
 
 	const [preReleaseCode, setPreReleaseCode] = useState("");
@@ -85,7 +85,7 @@ export default function SignInPage() {
 		if (validation !== undefined) setIsValidating(false);
 	}, [validation, debouncedCode]);
 
-	const form = useForm<{ email: string; password: string }>({
+	const form = useForm<{ email: string; password: string; }>({
 		defaultValues: {
 			email: "",
 			password: "",
@@ -115,7 +115,7 @@ export default function SignInPage() {
 				<div className="flex flex-col gap-8 items-center">
 					<div className="w-full max-w-md rounded-[var(--radius-base)] border-2 border-border bg-secondary-background shadow-shadow text-main-foreground min-w-[460px]">
 						<div className="relative p-6 ">
-							<div className="absolute left-0 -top-2 -translate-y-[100%] ">
+							<div className="absolute left-0 -top-4 -translate-y-[100%] ">
 								<Link href="/">
 									<Button variant={"default"} size={"sm"}>
 										<ArrowBigLeftDash />
@@ -139,7 +139,7 @@ export default function SignInPage() {
 								priority
 							/>
 						</div>
-						<div className="w-full h-[1px] bg-border" />
+						<div className="w-full h-0.5 bg-border/70" />
 						{errorMessage && (
 							<div className="px-4 pb-6 mt-4">
 								<div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -148,7 +148,7 @@ export default function SignInPage() {
 							</div>
 						)}
 
-						<div className="flex flex-col gap-4 px-6 pb-6">
+						<div className="flex flex-col gap-4 px-6 pt-6 pb-6">
 							{!validation?.valid && (
 								<div className="grid gap-1">
 									<Label htmlFor="code" className="font-heading text-sm">
@@ -183,7 +183,7 @@ export default function SignInPage() {
 														const formatted = parts.join("-");
 														setPreReleaseCode(formatted);
 													}
-												} catch {}
+												} catch { }
 											}}
 											className="uppercase tracking-widest pr-8"
 										/>
@@ -242,7 +242,7 @@ export default function SignInPage() {
 												);
 												setLastUsedProvider("discord");
 											}
-										} catch {}
+										} catch { }
 										await signIn("discord", { redirectTo: "/get-started" });
 									} catch (err: any) {
 										setErrorMessage(
@@ -292,7 +292,7 @@ export default function SignInPage() {
 												);
 												setLastUsedProvider("google");
 											}
-										} catch {}
+										} catch { }
 										await signIn("google", { redirectTo: "/get-started" });
 									} catch (err: any) {
 										setErrorMessage(

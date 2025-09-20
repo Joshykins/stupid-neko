@@ -71,7 +71,7 @@ export const startAuth = mutation({
 			"user-read-playback-state",
 			"user-read-recently-played",
 		].join(" ");
-		const url = `https://accounts.spotifyFunctions.com/authorize?${encodeQuery({
+		const url = `https://accounts.spotify.com/authorize?${encodeQuery({
 			client_id: clientId,
 			response_type: "code",
 			redirect_uri: redirectUri,
