@@ -250,7 +250,7 @@ export default defineSchema({
 
 	// Labeling Engine
 	contentLabels: defineTable({
-		contentKey: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID"
+		contentKey: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID", "website:URL"
 		stage: v.union(
 			v.literal("queued"),
 			v.literal("processing"),

@@ -1,22 +1,16 @@
+import type { FunctionReturnType } from "convex/server";
 import { useEffect, useState } from "react";
+import type { api } from "../../../../../convex/_generated/api";
 
-// Mirrors convex/userFunctions.ts -> me return shape
-export type AuthMe = {
-	name?: string;
-	email?: string;
-	image?: string;
-	username?: string;
-	timezone?: string;
-	// Derived from user's current target language
-	languageCode?: string;
-	// Streak fields merged from getUserProgress in /extension/me
-	currentStreak?: number;
-	longestStreak?: number;
-	// Allow future fields; keep forward compatible with backend additions
-	[key: string]: unknown;
-};
+// Infer types from Convex functions
+type MeFromIntegration = FunctionReturnType<
+	typeof api.browserExtensionFunctions.meFromIntegration
+>;
 
-export type AuthState = {
+// AuthMe should match the structure returned by browser extension functions
+type AuthMe = NonNullable<MeFromIntegration>;
+
+type AuthState = {
 	isAuthed: boolean;
 	me: AuthMe | null;
 	loading: boolean;
@@ -45,13 +39,14 @@ export function useAuth(): AuthState {
 					const me: AuthMe | null = r?.me ? ({ ...r.me } as AuthMe) : null;
 					setState({ isAuthed: !!r?.isAuthed, me, loading: false });
 				});
-			} catch (e: any) {
+			} catch (e: unknown) {
 				if (!mounted) return;
+				const errorMessage = e instanceof Error ? e.message : "failed";
 				setState({
 					isAuthed: false,
 					me: null,
 					loading: false,
-					error: e?.message || "failed",
+					error: errorMessage,
 				});
 			}
 		};

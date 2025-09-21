@@ -1,4 +1,4 @@
-import type { LanguageCode } from "../../../../convex/schema";
+import type { LanguageCode } from "../convex/schema";
 
 export type AppLanguage = {
 	code: LanguageCode;
@@ -21,3 +21,10 @@ export const COMMON_LANGUAGES: Array<AppLanguage> = [
 	{ code: "pt", label: "Portuguese", supported: false },
 	{ code: "tr", label: "Turkish", supported: false },
 ];
+
+export const languageCodeToLabel = (languageCode: LanguageCode) => {
+	return (
+		COMMON_LANGUAGES.find((l) => l.code === languageCode)?.label ??
+		"Unknown Language"
+	);
+};

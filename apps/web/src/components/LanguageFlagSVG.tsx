@@ -9,28 +9,7 @@ export function LanguageFlagSVG({
 	language: LanguageCode;
 	className?: string;
 }) {
-	function starPoints(
-		cx: number,
-		cy: number,
-		outer: number,
-		inner: number,
-	): string {
-		const points: Array<string> = [];
-		const spikes = 5;
-		const step = Math.PI / spikes;
-		let rot = -Math.PI / 2; // start at top
-		for (let i = 0; i < spikes; i++) {
-			const xOuter = cx + Math.cos(rot) * outer;
-			const yOuter = cy + Math.sin(rot) * outer;
-			points.push(`${xOuter},${yOuter}`);
-			rot += step;
-			const xInner = cx + Math.cos(rot) * inner;
-			const yInner = cy + Math.sin(rot) * inner;
-			points.push(`${xInner},${yInner}`);
-			rot += step;
-		}
-		return points.join(" ");
-	}
+
 	switch (language) {
 		case "ja":
 			// Nisshoki (Hinomaru) - white field with red disc

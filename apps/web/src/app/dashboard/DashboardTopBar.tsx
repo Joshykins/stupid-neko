@@ -7,7 +7,7 @@ import { api } from "../../../../../convex/_generated/api";
 import LanguageFlagSVG from "../../components/LanguageFlagSVG";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import { COMMON_LANGUAGES } from "../../lib/languages";
+import { COMMON_LANGUAGES } from "../../../../../lib/languages";
 
 export const DashboardTopBar = () => {
 	const me = useQuery(api.userFunctions.me);

@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../../../../convex/_generated/api";
 import type { LanguageCode } from "../../../../../convex/schema";
 import dayjs from "../../../../../lib/dayjs";
-import { COMMON_LANGUAGES } from "../../lib/languages";
+import { COMMON_LANGUAGES } from "../../../../../lib/languages";
 import LanguageFlagSVG from "../LanguageFlagSVG";
 import LevelExperienceInfo from "../LevelExperienceInfo";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";

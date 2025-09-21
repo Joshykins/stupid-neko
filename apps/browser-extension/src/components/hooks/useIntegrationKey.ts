@@ -1,0 +1,103 @@
+import { useState, useCallback } from "react";
+import { useStorage } from "./useStorage";
+
+export function useIntegrationKey() {
+	const { value: integrationId, setValue: setIntegrationId } = useStorage(
+		"integrationId",
+		"",
+	);
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const saveKey = useCallback(
+		async (key: string) => {
+			const trimmedKey = key.trim();
+			setError(null);
+
+			if (!trimmedKey) {
+				setError("Integration ID is required.");
+				return false;
+			}
+
+			// Validate integration key format
+			if (!trimmedKey.startsWith("sn_int_")) {
+				setError("Invalid integration key format. Should start with 'sn_int_'");
+				return false;
+			}
+
+			setSaving(true);
+
+			try {
+				console.log("[useIntegrationKey] Saving integration key:", trimmedKey);
+
+				// Save to storage
+				await setIntegrationId(trimmedKey);
+				console.log("[useIntegrationKey] Saved to storage successfully");
+
+				// Refresh auth state with timeout
+				const response = await new Promise<{
+					ok: boolean;
+					auth?: { isAuthed: boolean; me: unknown };
+				}>((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						reject(
+							new Error(
+								"Authentication request timed out. Please check your connection and try again.",
+							),
+						);
+					}, 10000); // 10 second timeout
+
+					chrome.runtime.sendMessage({ type: "REFRESH_AUTH" }, (resp) => {
+						clearTimeout(timeout);
+						if (chrome.runtime?.lastError) {
+							console.error(
+								"[useIntegrationKey] Chrome runtime error:",
+								chrome.runtime.lastError,
+							);
+							reject(new Error(chrome.runtime.lastError.message));
+						} else {
+							console.log("[useIntegrationKey] Auth response:", resp);
+							resolve(
+								resp as {
+									ok: boolean;
+									auth?: { isAuthed: boolean; me: unknown };
+								},
+							);
+						}
+					});
+				});
+
+				const isAuthenticated =
+					response.ok && response.auth?.isAuthed && response.auth?.me;
+
+				if (isAuthenticated) {
+					console.log("[useIntegrationKey] Authentication successful");
+					setSaving(false);
+					return true;
+				} else {
+					console.log("[useIntegrationKey] Authentication failed:", response);
+					setError("Invalid Integration ID. Please verify and try again.");
+					setSaving(false);
+					return false;
+				}
+			} catch (err) {
+				console.error("[useIntegrationKey] Error during save:", err);
+				const errorMessage =
+					err instanceof Error ? err.message : "Failed to save Integration ID.";
+				setError(errorMessage);
+				setSaving(false);
+				return false;
+			}
+		},
+		[setIntegrationId],
+	);
+
+	return {
+		integrationId,
+		hasKey: !!integrationId,
+		saving,
+		error,
+		saveKey,
+		clearError: () => setError(null),
+	};
+}

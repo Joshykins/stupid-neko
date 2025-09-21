@@ -29,7 +29,8 @@
 		"**/*.ts",
 		"**/*.tsx",
 		".next/types/**/*.ts",
-		"src/middleware.ts"
+		"src/middleware.ts",
+		"../../lib/languages.ts"
 	],
 	"exclude": ["node_modules"]
 }
