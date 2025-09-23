@@ -16,6 +16,12 @@ export default mergeConfig(
 						service_worker: "src/pages/background/index.ts",
 						type: "module",
 					},
+					web_accessible_resources: [
+						{
+							resources: ["icon-128.png", "icon-32.png", "fonts/*"],
+							matches: ["<all_urls>"],
+						},
+					],
 				} as ManifestV3Export,
 				browser: "chrome",
 				contentScripts: {

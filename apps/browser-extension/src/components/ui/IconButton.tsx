@@ -17,16 +17,16 @@ export function IconButton({
     borderless = false,
     className = "",
 }: IconButtonProps) {
-    const baseClasses = "inline-flex items-center justify-center cursor-pointer rounded-md transition-colors";
+    const baseClasses = "snbex:inline-flex snbex:items-center snbex:justify-center snbex:cursor-pointer snbex:rounded-md snbex:transition-colors";
     const borderClasses = borderless
-        ? "border border-transparent"
-        : "border !border-neutral-700/50";
+        ? "snbex:border snbex:border-transparent"
+        : "snbex:border !snbex:border-neutral-700/50";
     const stateClasses = selected
-        ? (borderless ? "bg-black/15" : "border-neutral-700/50 bg-black/15")
+        ? (borderless ? "snbex:bg-black/15" : "snbex:border-neutral-700/50 snbex:bg-black/15")
         : "";
-    const hoverClasses = "hover:bg-black/10";
-    const spacingClasses = "px-[4px] py-[2px]";
-    const textClasses = "text-gray-900";
+    const hoverClasses = "snbex:hover:bg-black/10";
+    const spacingClasses = "snbex:px-[4px] snbex:py-[2px]";
+    const textClasses = "snbex:text-gray-900";
 
     return (
         <button

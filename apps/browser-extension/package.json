@@ -24,7 +24,9 @@
 		"framer-motion": "^12.23.12",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"webextension-polyfill": "^0.12.0"
+		"webextension-polyfill": "^0.12.0",
+		"tailwindcss": "^4.1.12",
+		"tw-animate-css": "^1.3.7"
 	},
 	"devDependencies": {
 		"@crxjs/vite-plugin": "^2.0.3",
@@ -39,7 +41,6 @@
 		"@vitejs/plugin-react": "^4.7.0",
 		"fs-extra": "^11.3.0",
 		"nodemon": "^3.1.10",
-		"tailwindcss": "^4.1.12",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.2",
 		"vite": "^6.3.5",

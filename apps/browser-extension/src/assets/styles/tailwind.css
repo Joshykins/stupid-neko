@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" prefix(snbex);
 @import "tw-animate-css";
 
 :root {

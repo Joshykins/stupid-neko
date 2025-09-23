@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Stupid Neko",
-	"description": "Japanese learning companion in your browser",
+	"description": "Language learning companion in your browser",
 
 	"action": {
 		"default_popup": "src/pages/popup/index.html",
@@ -25,12 +25,7 @@
 	],
 	"web_accessible_resources": [
 		{
-			"resources": [
-				"contentStyle.css",
-				"icon-128.png",
-				"icon-32.png",
-				"fonts/*"
-			],
+			"resources": ["icon-128.png", "icon-32.png", "fonts/*"],
 			"matches": ["<all_urls>"]
 		}
 	]

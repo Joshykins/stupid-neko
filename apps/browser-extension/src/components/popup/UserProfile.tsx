@@ -17,16 +17,16 @@ export function UserProfile({ className }: { className?: string; }) {
         : "Language";
 
     return (
-        <div className={cn("w-full flex flex-col items-center gap-2 !px-2 !py-1", className)}>
-            <div className="flex items-center gap-1">
+        <div className={cn("snbex:w-full snbex:flex snbex:flex-col snbex:items-center snbex:gap-2 snbex:!px-2 snbex:!py-1", className)}>
+            <div className="snbex:flex snbex:items-center snbex:gap-1">
                 {auth.me.image && (
                     <img
                         src={auth.me.image}
                         alt={auth.me.name || "User"}
-                        className="h-5 w-5 rounded-full border border-neutral-300 object-cover"
+                        className="snbex:h-5 snbex:w-5 snbex:rounded-full snbex:border snbex:border-neutral-300 snbex:object-cover"
                     />
                 )}
-                <span className="text-sm font-medium pr-2">
+                <span className="snbex:text-sm snbex:font-medium snbex:pr-2">
                     {(auth.me.name)}
                 </span>
             </div>

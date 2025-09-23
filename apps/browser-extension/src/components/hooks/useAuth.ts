@@ -1,6 +1,7 @@
 import type { FunctionReturnType } from "convex/server";
 import { useEffect, useState } from "react";
 import type { api } from "../../../../../convex/_generated/api";
+import { callBackground } from "../../messaging/messagesContentRouter";
 
 // Infer types from Convex functions
 type MeFromIntegration = FunctionReturnType<
@@ -27,17 +28,19 @@ export function useAuth(): AuthState {
 	useEffect(() => {
 		let mounted = true;
 
-		const requestAuth = () => {
+		const requestAuth = async () => {
 			try {
-				chrome.runtime.sendMessage({ type: "GET_AUTH_STATE" }, (resp) => {
-					if (!mounted) return;
-					const r =
-						(resp as {
-							isAuthed?: boolean;
-							me?: Partial<AuthMe> | null;
-						} | null) || {};
-					const me: AuthMe | null = r?.me ? ({ ...r.me } as AuthMe) : null;
-					setState({ isAuthed: !!r?.isAuthed, me, loading: false });
+				const response = await callBackground("GET_AUTH_STATE", {});
+				if (!mounted) return;
+
+				const me: AuthMe | null = response.me
+					? ({ ...response.me } as AuthMe)
+					: null;
+				setState({
+					isAuthed: response.isAuthed,
+					me,
+					loading: false,
+					error: undefined,
 				});
 			} catch (e: unknown) {
 				if (!mounted) return;

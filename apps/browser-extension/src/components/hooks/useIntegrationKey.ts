@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useStorage } from "./useStorage";
+import { callBackground } from "../../messaging/messagesContentRouter";
 
 export function useIntegrationKey() {
 	const { value: integrationId, setValue: setIntegrationId } = useStorage(
@@ -47,24 +48,20 @@ export function useIntegrationKey() {
 						);
 					}, 10000); // 10 second timeout
 
-					chrome.runtime.sendMessage({ type: "REFRESH_AUTH" }, (resp) => {
-						clearTimeout(timeout);
-						if (chrome.runtime?.lastError) {
-							console.error(
-								"[useIntegrationKey] Chrome runtime error:",
-								chrome.runtime.lastError,
-							);
-							reject(new Error(chrome.runtime.lastError.message));
-						} else {
+					callBackground("REFRESH_AUTH", {})
+						.then((resp) => {
+							clearTimeout(timeout);
 							console.log("[useIntegrationKey] Auth response:", resp);
-							resolve(
-								resp as {
-									ok: boolean;
-									auth?: { isAuthed: boolean; me: unknown };
-								},
-							);
-						}
-					});
+							resolve({
+								ok: resp.ok,
+								auth: resp.auth,
+							});
+						})
+						.catch((error) => {
+							clearTimeout(timeout);
+							console.error("[useIntegrationKey] Auth error:", error);
+							reject(error);
+						});
 				});
 
 				const isAuthenticated =

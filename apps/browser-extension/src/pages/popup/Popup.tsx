@@ -18,16 +18,16 @@ export default function Popup() {
 	const auth = useAuth();
 
 	return (
-		<div className="p-14 pt-20 relative">
+		<div className="snbex:p-14 snbex:pt-20 snbex:relative">
 			<img
 				src={background}
-				className="h-full w-full absolute inset-0 pointer-events-none object-cover"
+				className="snbex:h-full snbex:w-full snbex:absolute snbex:inset-0 snbex:pointer-events-none snbex:object-cover"
 				alt="Stupid Neko"
 			/>
 
-			<div className="flex gap-4 relative z-10">
-				<Card className="w-[360px] relative">
-					<Card className="absolute left-0 py-2 px-3 -top-4 -translate-y-full">
+			<div className="snbex:flex snbex:gap-4 snbex:relative snbex:z-10">
+				<Card className="snbex:w-[360px] snbex:relative">
+					<Card className="snbex:absolute snbex:left-0 snbex:py-2 snbex:px-3 snbex:-top-4 snbex:-translate-y-full">
 
 						<AnimatePresence mode="wait">
 							{auth.isAuthed && (<motion.div
@@ -35,19 +35,19 @@ export default function Popup() {
 								animate={{ opacity: 1, y: 0 }}
 								exit={{ opacity: 0, y: -8 }}
 								transition={{ duration: 0.3 }}
-								className=" absolute opacity-0 bottom-0 -right-4 translate-x-full">
-								<Card className="!p-0 rounded-lg">
+								className="snbex:absolute snbex:opacity-0 snbex:bottom-0 snbex:-right-4 snbex:translate-x-full">
+								<Card className="snbex:!p-0 snbex:rounded-lg">
 									<UserProfile />
 								</Card>
 							</motion.div>)}
 
 						</AnimatePresence>
 
-						<h1 className="font-semibold text-xl tracking-tight">
+						<h1 className="snbex:font-semibold snbex:text-xl snbex:tracking-tight">
 							StupidNeko
 						</h1>
 					</Card>
-					<header className="flex flex-col items-center justify-center px-4 pb-4 pt-6">
+					<header className="snbex:flex snbex:flex-col snbex:items-center snbex:justify-center snbex:px-4 snbex:pb-4 snbex:pt-6">
 						<SettingsPanel
 							showEdit={showEdit}
 							settingsTab={settingsTab}
@@ -57,11 +57,11 @@ export default function Popup() {
 
 						<img
 							src={largeNekoOnTree}
-							className="absolute -right-40 top-0 translate-y-[-50%] h-44"
+							className="snbex:absolute snbex:-right-40 snbex:top-0 snbex:translate-y-[-50%] snbex:h-44"
 							alt="Stupid Neko"
 						/>
 
-						<div className="relative w-full min-h-[160px]">
+						<div className="snbex:relative snbex:w-full snbex:min-h-[160px]">
 							<AnimatePresence mode="wait">
 								{!showEdit ? (
 									<MainView
@@ -74,7 +74,7 @@ export default function Popup() {
 								) : (
 									<div
 										key="settings-view"
-										className="mt-2 w-full px-4 py-2"
+										className="snbex:mt-2 snbex:w-full snbex:px-4 snbex:py-2"
 									>
 										{settingsTab === "integration" ? (
 											<IntegrationSettings

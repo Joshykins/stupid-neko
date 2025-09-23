@@ -26,7 +26,7 @@ function PopoverContent({
 	return (
 		<PopoverPrimitive.Portal
 			container={
-				(window as any).__stupidNekoPortalEl as HTMLElement | undefined
+				(window as unknown as Record<string, unknown>).__stupidNekoPortalEl as HTMLElement | undefined
 			}
 		>
 			<PopoverPrimitive.Content
@@ -38,19 +38,12 @@ function PopoverContent({
 				<div
 					data-slot="popover-content"
 					className={cn(
-						"!z-[2147483647] !w-[320px] !rounded-[8px] !border-2 !border-black !bg-foreground !p-[16px] !text-black !outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-popover-content-transform-origin)",
+						"snbex:z-[2147483647] snbex:w-80 snbex:rounded-base snbex:border-2 snbex:border-border snbex:bg-foreground snbex:p-4 snbex:text-main-foreground snbex:font-base snbex:outline-none snbex:shadow-shadow snbex:data-[state=open]:animate-in snbex:data-[state=closed]:animate-out snbex:data-[state=closed]:fade-out-0 snbex:data-[state=open]:fade-in-0 snbex:data-[state=closed]:zoom-out-95 snbex:data-[state=open]:zoom-in-95 snbex:data-[side=bottom]:slide-in-from-top-2 snbex:data-[side=left]:slide-in-from-right-2 snbex:data-[side=right]:slide-in-from-left-2 snbex:data-[side=top]:slide-in-from-bottom-2 snbex:origin-(--radix-popover-content-transform-origin)",
 						className,
 					)}
 					style={{
 						zIndex: 2147483647,
 						pointerEvents: "auto",
-						background: "#fff",
-						color: "#000",
-						border: "2px solid #000",
-						borderRadius: "8px",
-						padding: "16px",
-						width: "320px",
-						boxShadow: "4px 4px 0 0 #000",
 					}}
 				>
 					{children}

@@ -28,7 +28,13 @@ export const languageCodeValidator = v.union(
 );
 
 // Content Source validator
-export const ContentSources = ["youtube", "spotify", "anki", "manual"] as const;
+export const ContentSources = [
+	"youtube",
+	"spotify",
+	"anki",
+	"manual",
+	"language-detection",
+] as const;
 export type ContentSource = (typeof ContentSources)[number];
 export const contentSourceValidator = v.union(
 	...ContentSources.map((s) => v.literal(s)),

@@ -14,8 +14,8 @@ export function WidgetSettings() {
 
     return (
         <div>
-            <div className="mt-3 flex items-center justify-between">
-                <div className="text-sm font-medium">
+            <div className="snbex:mt-3 snbex:flex snbex:items-center snbex:justify-between">
+                <div className="snbex:text-sm snbex:font-medium">
                     Show widget on supported pages
                 </div>
                 <Switch

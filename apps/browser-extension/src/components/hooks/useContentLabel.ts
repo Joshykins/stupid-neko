@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { callBackground } from "../../messaging/messagesContentRouter";
 
 export function useContentLabel(contentKey: string | null | undefined) {
 	const [label, setLabel] = useState<any | null>(null);
@@ -12,17 +13,15 @@ export function useContentLabel(contentKey: string | null | undefined) {
 				return;
 			}
 			try {
-				chrome.runtime.sendMessage(
-					{ type: "GET_CONTENT_LABEL", contentKey },
-					(resp) => {
-						if (!mounted) return;
-						const value = (resp as any)?.contentLabel ?? null;
-						setLabel(value);
-						setLoading(false);
-					},
-				);
-			} catch {
+				const response = await callBackground("GET_CONTENT_LABEL", {
+					contentKey,
+				});
 				if (!mounted) return;
+				setLabel(response.contentLabel);
+				setLoading(false);
+			} catch (error) {
+				if (!mounted) return;
+				console.error("Failed to get content label:", error);
 				setLoading(false);
 			}
 		}

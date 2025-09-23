@@ -42,37 +42,37 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
     // Show setup flow if no integration key is set
     if (!integrationKey.hasKey) {
         return (
-            <div className="mt-2 w-full px-4 py-2">
-                <div className="space-y-6">
-                    <div className="text-center">
-                        <h2 className="text-lg font-semibold mb-2">To get started...</h2>
-                        <p className="text-sm text-gray-600">
+            <div className="snbex:mt-2 snbex:w-full snbex:px-4 snbex:py-2">
+                <div className="snbex:space-y-6">
+                    <div className="snbex:text-center">
+                        <h2 className="snbex:text-lg snbex:font-semibold snbex:mb-2">To get started...</h2>
+                        <p className="snbex:text-sm snbex:text-gray-600">
                             Connect your browser extension to start tracking your learning activity automatically.
                         </p>
                     </div>
 
                     {/* Step 1: Copy Integration Key */}
-                    <div className="space-y-3">
-                        <h3 className="font-semibold text-sm">Step 1: Copy Your Integration Key</h3>
-                        <div className="p-4 rounded-lg bg-gray-50 border">
-                            <p className="text-sm text-gray-600 mb-3">
+                    <div className="snbex:space-y-3">
+                        <h3 className="snbex:font-semibold snbex:text-sm">Step 1: Copy Your Integration Key</h3>
+                        <div className="snbex:p-4 snbex:rounded-lg snbex:bg-gray-50 snbex:border">
+                            <p className="snbex:text-sm snbex:text-gray-600 snbex:mb-3">
                                 Copy this key from your{" "}
                                 <a
                                     href="https://stupidneko.com/dashboard"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="underline text-blue-700 hover:text-blue-900"
+                                    className="snbex:underline snbex:text-blue-700 snbex:hover:text-blue-900"
                                 >
                                     dashboard
                                 </a>{" "}
                                 and paste it below.
                             </p>
-                            <div className="flex items-center gap-2">
-                                <div className="relative flex-1">
+                            <div className="snbex:flex snbex:items-center snbex:gap-2">
+                                <div className="snbex:relative snbex:flex-1">
                                     <Input
                                         readOnly
                                         value={integrationKey.integrationId || "Not generated yet"}
-                                        className="pr-10"
+                                        className="snbex:pr-10"
                                         onClick={(e) => {
                                             const input = e.currentTarget as HTMLInputElement;
                                             input.select();
@@ -80,16 +80,16 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
                                     />
                                     <button
                                         type="button"
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 cursor-pointer transition-colors duration-150 disabled:opacity-50"
+                                        className="snbex:absolute snbex:right-2 snbex:top-1/2 snbex:-translate-y-1/2 snbex:inline-flex snbex:items-center snbex:justify-center snbex:rounded snbex:p-1 snbex:text-gray-600 snbex:hover:text-gray-900 snbex:hover:bg-gray-200 snbex:cursor-pointer snbex:transition-colors snbex:duration-150 snbex:disabled:opacity-50"
                                         onClick={handleCopy}
                                         disabled={!integrationKey.integrationId}
                                         aria-label="Copy integration key"
                                         title="Copy"
                                     >
-                                        <Copy className="size-4" />
+                                        <Copy className="snbex:size-4" />
                                     </button>
                                     {copied && (
-                                        <div className="absolute right-2 -top-7 rounded bg-white border px-2 py-1 text-xs text-gray-900 shadow-sm">
+                                        <div className="snbex:absolute snbex:right-2 snbex:-top-7 snbex:rounded snbex:bg-white snbex:border snbex:px-2 snbex:py-1 snbex:text-xs snbex:text-gray-900 snbex:shadow-sm">
                                             Copied
                                         </div>
                                     )}
@@ -107,10 +107,10 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
                     </div>
 
                     {/* Step 2: Paste in Extension */}
-                    <div className="space-y-3">
-                        <h3 className="font-semibold text-sm">Step 2: Paste Key in Extension</h3>
-                        <div className="p-4 rounded-lg bg-gray-50 border">
-                            <p className="text-sm text-gray-600">
+                    <div className="snbex:space-y-3">
+                        <h3 className="snbex:font-semibold snbex:text-sm">Step 2: Paste Key in Extension</h3>
+                        <div className="snbex:p-4 snbex:rounded-lg snbex:bg-gray-50 snbex:border">
+                            <p className="snbex:text-sm snbex:text-gray-600">
                                 Paste the integration key in the input field above and click "Set" to establish the connection.
                                 Once connected, you'll see your profile and can start tracking your learning activity!
                             </p>
@@ -118,14 +118,14 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
                     </div>
 
                     {/* Help Link */}
-                    <div className="text-center">
+                    <div className="snbex:text-center">
                         <Button
                             variant="neutral"
                             size="sm"
                             onClick={() => window.open('https://stupidneko.com/dashboard', '_blank')}
-                            className="gap-2"
+                            className="snbex:gap-2"
                         >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="snbex:w-4 snbex:h-4" />
                             Open Dashboard
                         </Button>
                     </div>
@@ -136,22 +136,22 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
 
     return (
         <div>
-            <h2 className="text-base font-semibold">
+            <h2 className="snbex:text-base snbex:font-semibold">
                 Browser Integration
             </h2>
-            <p className="mt-1 text-xs text-gray-600">
+            <p className="snbex:mt-1 snbex:text-xs snbex:text-gray-600">
                 Update your Integration ID from your{" "}
                 <a
                     href="https://stupidneko.com/dashboard"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline text-blue-700 hover:text-blue-900"
+                    className="snbex:underline snbex:text-blue-700 snbex:hover:text-blue-900"
                 >
                     dashboard
                 </a>{" "}
                 if needed.
             </p>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="snbex:mt-3 snbex:flex snbex:items-center snbex:gap-2">
                 <Input
                     placeholder="sn_int_..."
                     value={inputValue}
@@ -163,8 +163,8 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
                     disabled={integrationKey.saving || !inputValue.trim()}
                 >
                     {integrationKey.saving ? (
-                        <span className="inline-flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="snbex:inline-flex snbex:items-center snbex:gap-2">
+                            <Loader2 className="snbex:h-4 snbex:w-4 snbex:animate-spin" />
                         </span>
                     ) : (
                         "Set"
@@ -172,7 +172,7 @@ export function IntegrationSettings({ onSaveSuccess }: IntegrationSettingsProps)
                 </Button>
             </div>
             {integrationKey.error && (
-                <div className="mt-2 text-xs text-red-600">
+                <div className="snbex:mt-2 snbex:text-xs snbex:text-red-600">
                     {integrationKey.error}
                 </div>
             )}
