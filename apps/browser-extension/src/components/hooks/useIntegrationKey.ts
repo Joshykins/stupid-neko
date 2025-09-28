@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
-import { useStorage } from "./useStorage";
-import { callBackground } from "../../messaging/messagesContentRouter";
+import { useState, useCallback } from 'react';
+import { useStorage } from './useStorage';
+import { callBackground } from '../../messaging/messagesContentRouter';
 
 export function useIntegrationKey() {
 	const { value: integrationId, setValue: setIntegrationId } = useStorage(
-		"integrationId",
-		"",
+		'integrationId',
+		''
 	);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -16,12 +16,12 @@ export function useIntegrationKey() {
 			setError(null);
 
 			if (!trimmedKey) {
-				setError("Integration ID is required.");
+				setError('Integration ID is required.');
 				return false;
 			}
 
 			// Validate integration key format
-			if (!trimmedKey.startsWith("sn_int_")) {
+			if (!trimmedKey.startsWith('sn_int_')) {
 				setError("Invalid integration key format. Should start with 'sn_int_'");
 				return false;
 			}
@@ -29,11 +29,11 @@ export function useIntegrationKey() {
 			setSaving(true);
 
 			try {
-				console.log("[useIntegrationKey] Saving integration key:", trimmedKey);
+				console.log('[useIntegrationKey] Saving integration key:', trimmedKey);
 
 				// Save to storage
 				await setIntegrationId(trimmedKey);
-				console.log("[useIntegrationKey] Saved to storage successfully");
+				console.log('[useIntegrationKey] Saved to storage successfully');
 
 				// Refresh auth state with timeout
 				const response = await new Promise<{
@@ -43,23 +43,23 @@ export function useIntegrationKey() {
 					const timeout = setTimeout(() => {
 						reject(
 							new Error(
-								"Authentication request timed out. Please check your connection and try again.",
-							),
+								'Authentication request timed out. Please check your connection and try again.'
+							)
 						);
 					}, 10000); // 10 second timeout
 
-					callBackground("REFRESH_AUTH", {})
-						.then((resp) => {
+					callBackground('REFRESH_AUTH', {})
+						.then(resp => {
 							clearTimeout(timeout);
-							console.log("[useIntegrationKey] Auth response:", resp);
+							console.log('[useIntegrationKey] Auth response:', resp);
 							resolve({
 								ok: resp.ok,
 								auth: resp.auth,
 							});
 						})
-						.catch((error) => {
+						.catch(error => {
 							clearTimeout(timeout);
-							console.error("[useIntegrationKey] Auth error:", error);
+							console.error('[useIntegrationKey] Auth error:', error);
 							reject(error);
 						});
 				});
@@ -68,25 +68,25 @@ export function useIntegrationKey() {
 					response.ok && response.auth?.isAuthed && response.auth?.me;
 
 				if (isAuthenticated) {
-					console.log("[useIntegrationKey] Authentication successful");
+					console.log('[useIntegrationKey] Authentication successful');
 					setSaving(false);
 					return true;
 				} else {
-					console.log("[useIntegrationKey] Authentication failed:", response);
-					setError("Invalid Integration ID. Please verify and try again.");
+					console.log('[useIntegrationKey] Authentication failed:', response);
+					setError('Invalid Integration ID. Please verify and try again.');
 					setSaving(false);
 					return false;
 				}
 			} catch (err) {
-				console.error("[useIntegrationKey] Error during save:", err);
+				console.error('[useIntegrationKey] Error during save:', err);
 				const errorMessage =
-					err instanceof Error ? err.message : "Failed to save Integration ID.";
+					err instanceof Error ? err.message : 'Failed to save Integration ID.';
 				setError(errorMessage);
 				setSaving(false);
 				return false;
 			}
 		},
-		[setIntegrationId],
+		[setIntegrationId]
 	);
 
 	return {

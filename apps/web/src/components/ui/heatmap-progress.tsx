@@ -1,8 +1,8 @@
-"use client";
-import * as ProgressPrimitive from "@radix-ui/react-progress";
-import type * as React from "react";
-import { cn } from "@/lib/utils";
-import styles from "./heatmap-progress.module.css";
+'use client';
+import * as ProgressPrimitive from '@radix-ui/react-progress';
+import type * as React from 'react';
+import { cn } from '@/lib/utils';
+import styles from './heatmap-progress.module.css';
 
 type HeatmapProgressProps = React.ComponentProps<
 	typeof ProgressPrimitive.Root
@@ -30,9 +30,9 @@ export function HeatmapProgress({
 			<div className="absolute overflow-hidden blur-sm -inset-1 rounded-lg">
 				<div
 					className={cn(
-						"absolute inset-0 aspect-square -translate-y-[47%] scale-y-30 opacity-0",
-						is100Percent && "opacity-100",
-						styles.heatmapSpin,
+						'absolute inset-0 aspect-square -translate-y-[47%] scale-y-30 opacity-0',
+						is100Percent && 'opacity-100',
+						styles.heatmapSpin
 					)}
 					style={{
 						backgroundImage: `linear-gradient(90deg,
@@ -47,26 +47,26 @@ export function HeatmapProgress({
 			</div>
 
 			<div
-				className={cn("absolute overflow-hidden -inset-[2.5px] rounded-full")}
+				className={cn('absolute overflow-hidden -inset-[2.5px] rounded-full')}
 			>
 				<div
 					className={cn(
-						"absolute inset-0 aspect-square -translate-y-[47%] scale-y-30",
-						is100Percent && "bg-transparent",
-						styles.heatmapSpin,
+						'absolute inset-0 aspect-square -translate-y-[47%] scale-y-30',
+						is100Percent && 'bg-transparent',
+						styles.heatmapSpin
 					)}
 					style={
 						!is100Percent
-							? { backgroundColor: "var(--color-heatmap-bg)" }
+							? { backgroundColor: 'var(--color-heatmap-bg)' }
 							: {
-								backgroundImage: `linear-gradient(90deg,
+									backgroundImage: `linear-gradient(90deg,
                         var(--color-heatmap-4) 0%,
                         var(--color-heatmap-3) 25%,
                         var(--color-heatmap-2) 50%,
                         var(--color-heatmap-3) 75%,
                         var(--color-heatmap-4) 100%
                     )`,
-							}
+								}
 					}
 				></div>
 			</div>
@@ -74,14 +74,14 @@ export function HeatmapProgress({
 			<ProgressPrimitive.Root
 				data-slot="progress blur"
 				className={cn(
-					"relative h-4 z-[2] w-full overflow-hidden rounded-base bg-[var(--color-heatmap-bg)]",
+					'relative h-4 z-[2] w-full overflow-hidden rounded-base bg-[var(--color-heatmap-bg)]'
 				)}
 				{...props}
 			>
 				<ProgressPrimitive.Indicator
 					data-slot="progress-indicator"
 					className={cn(
-						"h-full relative w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out",
+						'h-full relative w-full flex-1 border-r-2 border-[var(--color-heatmap-4)] transition-transform duration-700 ease-out'
 					)}
 					style={{
 						transform: `translateX(-${100 - (value || 0)}%)`,

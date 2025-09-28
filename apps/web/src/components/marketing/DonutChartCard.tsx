@@ -1,45 +1,45 @@
-"use client";
-import * as React from "react";
-import { Cell, Pie, PieChart } from "recharts";
-import { useCountUp } from "../../lib/useCountUp";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
+'use client';
+import * as React from 'react';
+import { Cell, Pie, PieChart } from 'recharts';
+import { useCountUp } from '../../lib/useCountUp';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart';
 
 export function DonutChartCard() {
 	const chartConfig = {
-		new: { label: "New", color: "var(--color-flashcards-new)" },
-		learning: { label: "Learning", color: "var(--color-flashcards-learning)" },
-		review: { label: "Review", color: "var(--color-flashcards-review)" },
+		new: { label: 'New', color: 'var(--color-flashcards-new)' },
+		learning: { label: 'Learning', color: 'var(--color-flashcards-learning)' },
+		review: { label: 'Review', color: 'var(--color-flashcards-review)' },
 		suspended: {
-			label: "Suspended",
-			color: "var(--color-flashcards-suspended)",
+			label: 'Suspended',
+			color: 'var(--color-flashcards-suspended)',
 		},
 	} as const;
 
 	const data = [
-		{ key: "new", name: "New", value: 48, fill: "var(--color-flashcards-new)" },
+		{ key: 'new', name: 'New', value: 48, fill: 'var(--color-flashcards-new)' },
 		{
-			key: "learning",
-			name: "Learning",
+			key: 'learning',
+			name: 'Learning',
 			value: 22,
-			fill: "var(--color-flashcards-learning)",
+			fill: 'var(--color-flashcards-learning)',
 		},
 		{
-			key: "review",
-			name: "Review",
+			key: 'review',
+			name: 'Review',
 			value: 132,
-			fill: "var(--color-flashcards-review)",
+			fill: 'var(--color-flashcards-review)',
 		},
 		{
-			key: "suspended",
-			name: "Suspended",
+			key: 'suspended',
+			name: 'Suspended',
 			value: 6,
-			fill: "var(--color-flashcards-suspended)",
+			fill: 'var(--color-flashcards-suspended)',
 		},
 	];
 	const total = React.useMemo(
 		() => data.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
-		[data],
+		[data]
 	);
 	return (
 		<Card>
@@ -119,11 +119,11 @@ export function DonutChartCard() {
 						</div>
 					</div>
 					<ul className="text-sm font-bold space-y-1">
-						{data.map((d) => (
+						{data.map(d => (
 							<li key={d.name} className="flex items-center gap-2">
 								<span
 									className="inline-block w-3 h-3 rounded-sm border-2 border-border"
-									style={{ background: d.fill as React.CSSProperties["color"] }}
+									style={{ background: d.fill as React.CSSProperties['color'] }}
 								/>
 								{d.value} {d.name}
 							</li>

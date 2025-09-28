@@ -1,41 +1,41 @@
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import type { Id, Doc } from "./_generated/dataModel";
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import type { Id, Doc } from './_generated/dataModel';
 import {
 	mutation,
 	query,
 	type QueryCtx,
 	type MutationCtx,
-} from "./_generated/server";
-import { contentSourceValidator, languageCodeValidator } from "./schema";
+} from './_generated/server';
+import { contentSourceValidator, languageCodeValidator } from './schema';
 
 async function resolveUserId(
 	ctx: QueryCtx,
-	integrationId: string,
-): Promise<Id<"users">> {
+	integrationId: string
+): Promise<Id<'users'>> {
 	const user = (await ctx.runQuery(
 		internal.integrationKeyFunctions.getUserByIntegrationKey,
-		{ integrationId },
-	)) as Doc<"users"> | null;
-	if (!user) throw new Error("Unauthorized");
+		{ integrationId }
+	)) as Doc<'users'> | null;
+	if (!user) throw new Error('Unauthorized');
 	return user._id;
 }
 
 async function resolveUserIdAndMarkUsed(
 	ctx: MutationCtx,
-	integrationId: string,
-): Promise<Id<"users">> {
+	integrationId: string
+): Promise<Id<'users'>> {
 	const user = (await ctx.runQuery(
 		internal.integrationKeyFunctions.getUserByIntegrationKey,
-		{ integrationId },
+		{ integrationId }
 	)) as any;
-	if (!user) throw new Error("Unauthorized");
+	if (!user) throw new Error('Unauthorized');
 
 	// Only mark as used if not already set
 	if (!user.integrationKeyUsedByPlugin) {
 		await ctx.runMutation(
 			internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
-			{ integrationId },
+			{ integrationId }
 		);
 	}
 
@@ -52,7 +52,7 @@ export const meFromIntegration = query({
 			timezone: v.optional(v.string()),
 			languageCode: v.optional(v.string()),
 		}),
-		v.null(),
+		v.null()
 	),
 	handler: async (ctx, args) => {
 		const userId = await resolveUserId(ctx, args.integrationId);
@@ -60,7 +60,7 @@ export const meFromIntegration = query({
 		if (!user) return null;
 		const currentTargetLanguageId = user.currentTargetLanguageId;
 		if (!currentTargetLanguageId)
-			throw new Error("Current target language not found");
+			throw new Error('Current target language not found');
 		const tl = await ctx.db.get(currentTargetLanguageId);
 		return {
 			name: user.name ?? undefined,
@@ -78,8 +78,8 @@ export const markIntegrationKeyAsUsedFromExtension = mutation({
 	handler: async (ctx, args) => {
 		const user = (await ctx.runQuery(
 			internal.integrationKeyFunctions.getUserByIntegrationKey,
-			{ integrationId: args.integrationId },
-		)) as Doc<"users"> | null;
+			{ integrationId: args.integrationId }
+		)) as Doc<'users'> | null;
 
 		if (!user) {
 			return { success: false };
@@ -89,7 +89,7 @@ export const markIntegrationKeyAsUsedFromExtension = mutation({
 		if (!user.integrationKeyUsedByPlugin) {
 			await ctx.runMutation(
 				internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
-				{ integrationId: args.integrationId },
+				{ integrationId: args.integrationId }
 			);
 		}
 
@@ -102,10 +102,10 @@ export const recordContentActivityFromIntegration = mutation({
 		integrationId: v.string(),
 		source: contentSourceValidator,
 		activityType: v.union(
-			v.literal("heartbeat"),
-			v.literal("start"),
-			v.literal("pause"),
-			v.literal("end"),
+			v.literal('heartbeat'),
+			v.literal('start'),
+			v.literal('pause'),
+			v.literal('end')
 		),
 		contentKey: v.string(),
 		url: v.optional(v.string()),
@@ -114,8 +114,8 @@ export const recordContentActivityFromIntegration = mutation({
 	returns: v.object({
 		ok: v.boolean(),
 		saved: v.boolean(),
-		contentActivityId: v.optional(v.id("contentActivities")),
-		contentLabelId: v.optional(v.id("contentLabels")),
+		contentActivityId: v.optional(v.id('contentActivities')),
+		contentLabelId: v.optional(v.id('contentLabels')),
 		isWaitingOnLabeling: v.optional(v.boolean()),
 		reason: v.optional(v.string()),
 		contentKey: v.optional(v.string()),
@@ -123,38 +123,38 @@ export const recordContentActivityFromIntegration = mutation({
 		currentTargetLanguage: v.optional(
 			v.union(
 				v.object({ languageCode: v.optional(languageCodeValidator) }),
-				v.null(),
-			),
+				v.null()
+			)
 		),
 	}),
 	handler: async (
 		ctx,
-		args,
+		args
 	): Promise<{
 		ok: boolean;
 		saved: boolean;
-		contentActivityId?: Id<"contentActivities">;
-		contentLabelId?: Id<"contentLabels">;
+		contentActivityId?: Id<'contentActivities'>;
+		contentLabelId?: Id<'contentLabels'>;
 		isWaitingOnLabeling?: boolean;
 		reason?: string;
 		contentKey?: string;
 		contentLabel?: unknown;
 		currentTargetLanguage?: {
-			languageCode?: import("./schema").LanguageCode;
+			languageCode?: import('./schema').LanguageCode;
 		} | null;
 	}> => {
 		const { integrationId, ...rest } = args;
 		const userId = await resolveUserIdAndMarkUsed(ctx, integrationId);
 		const result = await ctx.runMutation(
 			internal.contentActivityFunctions.recordContentActivity,
-			{ userId, ...rest },
+			{ userId, ...rest }
 		);
 		let contentLabel = null;
 		try {
 			if (result?.contentKey) {
 				contentLabel = await ctx.runQuery(
 					internal.contentLabelFunctions.getByContentKey,
-					{ contentKey: result.contentKey },
+					{ contentKey: result.contentKey }
 				);
 			}
 		} catch {}
@@ -162,7 +162,7 @@ export const recordContentActivityFromIntegration = mutation({
 		try {
 			currentTargetLanguage = await ctx.runQuery(
 				internal.userFunctions.getCurrentTargetLanguage,
-				{ userId },
+				{ userId }
 			);
 		} catch {}
 		return { ...result, contentLabel, currentTargetLanguage };

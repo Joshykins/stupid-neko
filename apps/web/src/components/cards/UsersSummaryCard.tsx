@@ -1,30 +1,27 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import {
-	Award,
-	BookOpenText,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
-import type { LanguageCode } from "../../../../../convex/schema";
-import dayjs from "../../../../../lib/dayjs";
-import { COMMON_LANGUAGES } from "../../../../../lib/languages";
-import LanguageFlagSVG from "../LanguageFlagSVG";
-import LevelExperienceInfo from "../LevelExperienceInfo";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Progress } from "../ui/progress";
+import { useQuery } from 'convex/react';
+import { Award, BookOpenText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api } from '../../../../../convex/_generated/api';
+import type { LanguageCode } from '../../../../../convex/schema';
+import dayjs from '../../../../../lib/dayjs';
+import { COMMON_LANGUAGES } from '../../../../../lib/languages';
+import LanguageFlagSVG from '../LanguageFlagSVG';
+import LevelExperienceInfo from '../LevelExperienceInfo';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Progress } from '../ui/progress';
 
 type MockUser = {
 	name: string;
 	level: number;
 	avatarUrl: string;
 	isLeaderboardPlacer: boolean;
-	skills: Array<{ label: string; value: number; hours: number; }>;
+	skills: Array<{ label: string; value: number; hours: number }>;
 	recentWins: Array<string>;
-	language: "japanese";
+	language: 'japanese';
 	totalMsLearning: number;
 	// Add missing properties to match real user data structure
 	currentLevel: number;
@@ -39,21 +36,21 @@ type MockUser = {
 };
 
 const mockUser: MockUser = {
-	name: "Kenji",
+	name: 'Kenji',
 	level: 59,
-	avatarUrl: "/stupid-neko-icon.png",
+	avatarUrl: '/stupid-neko-icon.png',
 	isLeaderboardPlacer: true,
 	skills: [
-		{ label: "Reading", value: 42, hours: 120 },
-		{ label: "Listening", value: 68, hours: 210 },
-		{ label: "Speaking", value: 55, hours: 150 },
-		{ label: "Writing", value: 28, hours: 80 },
+		{ label: 'Reading', value: 42, hours: 120 },
+		{ label: 'Listening', value: 68, hours: 210 },
+		{ label: 'Speaking', value: 55, hours: 150 },
+		{ label: 'Writing', value: 28, hours: 80 },
 	],
 	recentWins: [
-		"Hit 200-day streak! (Meme sent to Discord)",
-		"+50 XP to Speaking Lv. 6",
+		'Hit 200-day streak! (Meme sent to Discord)',
+		'+50 XP to Speaking Lv. 6',
 	],
-	language: "japanese",
+	language: 'japanese',
 	// 560 hours
 	totalMsLearning: 560 * 60 * 60 * 1000,
 	// Add missing properties
@@ -82,7 +79,7 @@ export const UsersSummaryCard = ({
 
 	const xpPercent = Math.min(
 		100,
-		Math.round((experienceTowardsNextLevel / nextLevelXp) * 100),
+		Math.round((experienceTowardsNextLevel / nextLevelXp) * 100)
 	);
 	const xpString = `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`;
 
@@ -95,19 +92,17 @@ export const UsersSummaryCard = ({
 
 	// Helper function to get language display info
 	const getLanguageInfo = (
-		languageCode?: string,
-	): { flag: LanguageCode; name: string; } => {
-		if (!languageCode) return { flag: "ja" as LanguageCode, name: "Japanese" };
+		languageCode?: string
+	): { flag: LanguageCode; name: string } => {
+		if (!languageCode) return { flag: 'ja' as LanguageCode, name: 'Japanese' };
 
-		const language = COMMON_LANGUAGES.find(
-			(lang) => lang.code === languageCode,
-		);
+		const language = COMMON_LANGUAGES.find(lang => lang.code === languageCode);
 		if (language) {
 			return { flag: language.code, name: language.label };
 		}
 
 		// Fallback to Japanese if language not found
-		return { flag: "ja" as LanguageCode, name: "Japanese" };
+		return { flag: 'ja' as LanguageCode, name: 'Japanese' };
 	};
 
 	const languageInfo = getLanguageInfo(userProgress?.languageCode);
@@ -142,7 +137,7 @@ export const UsersSummaryCard = ({
 						</div>
 					</div>
 					<div className="flex flex-col gap-2 items-end sm:items-end shrink-0">
-						<Badge variant={"neutral"} className="whitespace-nowrap">
+						<Badge variant={'neutral'} className="whitespace-nowrap">
 							<LanguageFlagSVG
 								language={languageInfo.flag}
 								className="!h-4 !w-4"
@@ -170,8 +165,8 @@ export const UsersSummaryCard = ({
 						<div className="font-semibold text-xs">Tracked Hours</div>
 						<div className="text-2xl font-bold text-main-foreground">
 							{userProgress
-								? Math.round(((displayData.totalMsLearning) / 1000 / 60 / 60))
-								: Math.round(mockUser.totalMsLearning / 1000 / 60 / 60)}{" "}
+								? Math.round(displayData.totalMsLearning / 1000 / 60 / 60)
+								: Math.round(mockUser.totalMsLearning / 1000 / 60 / 60)}{' '}
 							hrs
 						</div>
 					</div>
@@ -187,7 +182,7 @@ export const UsersSummaryCard = ({
 						<div className="mt-2">
 							<Progress
 								value={displayedXpPercent}
-								indicatorColor={"var(--color-level)"}
+								indicatorColor={'var(--color-level)'}
 							/>
 						</div>
 					</div>
@@ -197,12 +192,12 @@ export const UsersSummaryCard = ({
 					<div className="flex items-center gap-2 font-normal text-sm">
 						<BookOpenText className="size-4" />
 						<span>
-							Tracking <b>{languageInfo.name}</b> since{" "}
+							Tracking <b>{languageInfo.name}</b> since{' '}
 							<b>
 								{dayjs(
 									userProgress?.targetLanguageCreatedAt ||
-									mockUser.targetLanguageCreatedAt,
-								).format("MMM Do, YYYY")}
+										mockUser.targetLanguageCreatedAt
+								).format('MMM Do, YYYY')}
 							</b>
 							.
 						</span>

@@ -1,9 +1,9 @@
-import type { CSSProperties, FC } from "react";
-import { useEffect, useState } from "react";
+import type { CSSProperties, FC } from 'react';
+import { useEffect, useState } from 'react';
 
 // Local helper for safe class concatenation without external deps
 function cx(...classes: Array<string | undefined | false>): string {
-	return classes.filter(Boolean).join(" ");
+	return classes.filter(Boolean).join(' ');
 }
 
 // Configuration (editable)
@@ -56,7 +56,7 @@ export const Bird: FC<BirdProps> = ({
 	if (isRightward) {
 		baseRotation = orientationDeg * -1;
 	}
-	const containerTransform = `${isRightward ? "scaleX(-1) " : ""}rotate(${baseRotation}deg) scale(${scale})`;
+	const containerTransform = `${isRightward ? 'scaleX(-1) ' : ''}rotate(${baseRotation}deg) scale(${scale})`;
 	const wingAnimation = `bird-flap ${flapDurationSec}s ease-in-out ${delaySeconds}s infinite alternate`;
 
 	const mergedStyle: CSSProperties = {
@@ -67,24 +67,24 @@ export const Bird: FC<BirdProps> = ({
 	return (
 		<div
 			className={cx(
-				"absolute origin-top-left will-change-transform",
-				className,
+				'absolute origin-top-left will-change-transform',
+				className
 			)}
 			style={mergedStyle}
 		>
 			{/* Body */}
 			<div
 				className={cx(
-					"w-[150px] h-10 bg-[#0E1B34]",
-					"[clip-path:polygon(0_100%,20%_20%,40%_0,100%_100%,20%_80%)]",
+					'w-[150px] h-10 bg-[#0E1B34]',
+					'[clip-path:polygon(0_100%,20%_20%,40%_0,100%_100%,20%_80%)]'
 				)}
 			/>
 
 			{/* Wing group */}
 			<div
 				className={cx(
-					"relative left-10 -top-5 w-10 h-[50px] bg-[#0E1B34]",
-					"[transform:skew(10deg)] [transform-origin:0_0]",
+					'relative left-10 -top-5 w-10 h-[50px] bg-[#0E1B34]',
+					'[transform:skew(10deg)] [transform-origin:0_0]'
 				)}
 				style={{ animation: wingAnimation }}
 			>
@@ -101,12 +101,12 @@ function randomBetween(min: number, max: number): number {
 	return Math.random() * (max - min) + min;
 }
 
-type Side = "left" | "right";
+type Side = 'left' | 'right';
 function pickHorizontalSide(): Side {
-	return Math.random() < 0.5 ? "left" : "right";
+	return Math.random() < 0.5 ? 'left' : 'right';
 }
 function opposite(side: Side): Side {
-	return side === "left" ? "right" : "left";
+	return side === 'left' ? 'right' : 'left';
 }
 
 type GroupSpec = {
@@ -131,15 +131,15 @@ function makeGroup(existingStartY: Array<number>): GroupSpec {
 	const enter = pickHorizontalSide();
 	const exit = opposite(enter);
 
-	const startXvw = enter === "left" ? -SPAWN_MARGIN_VW : 100 + SPAWN_MARGIN_VW;
-	const endXvw = exit === "right" ? 100 + SPAWN_MARGIN_VW : -SPAWN_MARGIN_VW;
+	const startXvw = enter === 'left' ? -SPAWN_MARGIN_VW : 100 + SPAWN_MARGIN_VW;
+	const endXvw = exit === 'right' ? 100 + SPAWN_MARGIN_VW : -SPAWN_MARGIN_VW;
 
 	// Choose startY with minimum separation from other groups
 	let startYvh = randomBetween(0, 100);
 	let guard = 0;
 	while (
 		existingStartY.some(
-			(y) => Math.abs(y - startYvh) < MIN_GROUP_SEPARATION_VH,
+			y => Math.abs(y - startYvh) < MIN_GROUP_SEPARATION_VH
 		) &&
 		guard < 50
 	) {
@@ -154,7 +154,7 @@ function makeGroup(existingStartY: Array<number>): GroupSpec {
 	const dy = randomBetween(-maxDy, maxDy);
 	const endYvh = Math.max(
 		-SPAWN_MARGIN_VW,
-		Math.min(100 + SPAWN_MARGIN_VW, startYvh + dy),
+		Math.min(100 + SPAWN_MARGIN_VW, startYvh + dy)
 	);
 
 	const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
@@ -163,21 +163,21 @@ function makeGroup(existingStartY: Array<number>): GroupSpec {
 	const delaySec = -randomBetween(0, durationSec);
 	const fadeDelaySec = randomBetween(
 		FADE_DELAY_SEC_RANGE[0],
-		FADE_DELAY_SEC_RANGE[1],
+		FADE_DELAY_SEC_RANGE[1]
 	);
 
 	// Generate birds within this group, enforcing some minimum spacing
 	const count = Math.round(
-		randomBetween(BIRDS_PER_GROUP_RANGE[0], BIRDS_PER_GROUP_RANGE[1] + 0.49),
+		randomBetween(BIRDS_PER_GROUP_RANGE[0], BIRDS_PER_GROUP_RANGE[1] + 0.49)
 	);
 	const baseScale = randomBetween(SCALE_RANGE[0], SCALE_RANGE[1]);
-	const birds: GroupSpec["birds"] = [];
+	const birds: GroupSpec['birds'] = [];
 	for (let i = 0; i < count; i += 1) {
 		let ox = randomBetween(GROUP_OFFSET_RANGE_VW[0], GROUP_OFFSET_RANGE_VW[1]);
 		let oy = randomBetween(GROUP_OFFSET_RANGE_VH[0], GROUP_OFFSET_RANGE_VH[1]);
 		let tries = 0;
 		while (
-			birds.some((b) => Math.hypot(b.offsetXvw - ox, b.offsetYvh - oy) < 1.5) &&
+			birds.some(b => Math.hypot(b.offsetXvw - ox, b.offsetYvh - oy) < 1.5) &&
 			tries < 20
 		) {
 			ox = randomBetween(GROUP_OFFSET_RANGE_VW[0], GROUP_OFFSET_RANGE_VW[1]);
@@ -188,15 +188,15 @@ function makeGroup(existingStartY: Array<number>): GroupSpec {
 			1 +
 			randomBetween(
 				-SCALE_VARIATION_WITHIN_GROUP,
-				SCALE_VARIATION_WITHIN_GROUP,
+				SCALE_VARIATION_WITHIN_GROUP
 			);
 		const scale = Math.max(
 			SCALE_RANGE[0],
-			Math.min(SCALE_RANGE[1], baseScale * scaleVariation),
+			Math.min(SCALE_RANGE[1], baseScale * scaleVariation)
 		);
 		const flapDurationSec = randomBetween(
 			FLAP_DURATION_RANGE_SEC[0],
-			FLAP_DURATION_RANGE_SEC[1],
+			FLAP_DURATION_RANGE_SEC[1]
 		);
 		const flapDelaySec = -randomBetween(0, flapDurationSec); // start mid-cycle so it's already flapping during fade-in
 		birds.push({
@@ -246,8 +246,8 @@ export const BackgroundBirds: FC<{ className?: string; enabled?: boolean }> = ({
 	return (
 		<div
 			className={cx(
-				"absolute inset-0 pointer-events-none select-none z-[1]",
-				className,
+				'absolute inset-0 pointer-events-none select-none z-[1]',
+				className
 			)}
 		>
 			<style>{`
@@ -276,14 +276,14 @@ export const BackgroundBirds: FC<{ className?: string; enabled?: boolean }> = ({
 						className="absolute"
 						style={{
 							opacity: 0,
-							willChange: "opacity, transform",
+							willChange: 'opacity, transform',
 							animation: `bird-fade-in ${Math.max(FADE_DURATION_SEC_RANGE[0], Math.min(FADE_DURATION_SEC_RANGE[1], g.durationSec * 0.04)).toFixed(2)}s ease-out ${g.fadeDelaySec.toFixed(2)}s 1 forwards`,
 						}}
 					>
 						<div
 							className="absolute"
 							style={{
-								willChange: "transform",
+								willChange: 'transform',
 								animation: `bird-group-${gi}-travel ${g.durationSec}s linear ${g.delaySec}s infinite`,
 							}}
 						>

@@ -1,13 +1,13 @@
-import * as React from "react";
-import { AddManualActvitiyCard } from "../../components/cards/manual-activity-card/AddManualActvitiyCard";
-import StreakDisplayCard from "../../components/cards/streaks-card/StreakDisplayCard";
-import { StreakVacationCard } from "../../components/cards/streaks-card/StreakVacationCard";
-import { UsersSummaryCard } from "../../components/cards/UsersSummaryCard";
-import IntegrationsCard from "../../components/dashboard/IntegrationsCard";
-import TrackedHistoryCard from "../../components/dashboard/TrackedHistoryCard";
-import { WeeklyBarsCard } from "../../components/marketing/WeeklyBarsCard";
-import UserXPChart from "../../components/userXPChart";
-import { DashboardTopBar } from "./DashboardTopBar";
+import * as React from 'react';
+import { AddManualActvitiyCard } from '../../components/cards/manual-activity-card/AddManualActvitiyCard';
+import StreakDisplayCard from '../../components/cards/streaks-card/StreakDisplayCard';
+import { StreakVacationCard } from '../../components/cards/streaks-card/StreakVacationCard';
+import { UsersSummaryCard } from '../../components/cards/UsersSummaryCard';
+import IntegrationsCard from '../../components/dashboard/IntegrationsCard';
+import TrackedHistoryCard from '../../components/dashboard/TrackedHistoryCard';
+import { WeeklyBarsCard } from '../../components/marketing/WeeklyBarsCard';
+import UserXPChart from '../../components/userXPChart';
+import { DashboardTopBar } from './DashboardTopBar';
 
 export default async function DashboardPage() {
 	return (
@@ -24,10 +24,7 @@ export default async function DashboardPage() {
 					<IntegrationsCard />
 				</div>
 				<div className="lg:col-span-1 space-y-4">
-					<StreakDisplayCard
-						title="Daily Streak"
-						liveVersion={true}
-					/>
+					<StreakDisplayCard title="Daily Streak" liveVersion={true} />
 
 					<StreakVacationCard isLiveVersion={true} />
 					{/* <DonutChartCard /> */}

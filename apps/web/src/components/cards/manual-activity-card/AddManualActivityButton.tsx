@@ -1,10 +1,10 @@
-import { useMutation } from "convex/react";
-import { PlusCircle } from "lucide-react";
-import React from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { api } from "../../../../../../convex/_generated/api";
-import { Button, buttonVariants } from "../../ui/button";
+import { useMutation } from 'convex/react';
+import { PlusCircle } from 'lucide-react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { api } from '../../../../../../convex/_generated/api';
+import { Button, buttonVariants } from '../../ui/button';
 import {
 	Dialog,
 	DialogContent,
@@ -13,11 +13,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "../../ui/dialog";
-import { Form, FormField } from "../../ui/form";
-import { Input } from "../../ui/input";
-import { Textarea } from "../../ui/textarea";
-import { Label } from "../../ui/label";
+} from '../../ui/dialog';
+import { Form, FormField } from '../../ui/form';
+import { Input } from '../../ui/input';
+import { Textarea } from '../../ui/textarea';
+import { Label } from '../../ui/label';
 
 type FormValues = {
 	title: string;
@@ -42,10 +42,10 @@ type AddManualActivityButtonProps = {
 export function AddManualActivityButton({
 	autoFillData,
 	shouldOpenDialog,
-	onDialogClose
+	onDialogClose,
 }: AddManualActivityButtonProps = {}) {
 	const addManual = useMutation(
-		api.userTargetLanguageActivityFunctions.addManualLanguageActivity,
+		api.userTargetLanguageActivityFunctions.addManualLanguageActivity
 	);
 
 	const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -59,10 +59,10 @@ export function AddManualActivityButton({
 
 	const form = useForm<FormValues>({
 		defaultValues: {
-			title: "",
+			title: '',
 			durationInMinutes: 10,
-			description: "",
-			externalUrl: "",
+			description: '',
+			externalUrl: '',
 		},
 	});
 
@@ -72,8 +72,8 @@ export function AddManualActivityButton({
 			form.reset({
 				title: autoFillData.title,
 				durationInMinutes: autoFillData.defaultDurationInMinutes,
-				description: autoFillData.description || "",
-				externalUrl: autoFillData.externalUrl || "",
+				description: autoFillData.description || '',
+				externalUrl: autoFillData.externalUrl || '',
 			});
 
 			// Set custom time fields
@@ -104,7 +104,7 @@ export function AddManualActivityButton({
 		const hours = Math.floor(minutes / 60);
 		const rem = minutes % 60;
 		if (hours > 0 && rem > 0) return `${hours}hr ${rem}m`;
-		if (hours > 0) return `${hours}hr${hours > 1 ? "s" : ""}`;
+		if (hours > 0) return `${hours}hr${hours > 1 ? 's' : ''}`;
 		return `${rem}m`;
 	}
 
@@ -113,10 +113,10 @@ export function AddManualActivityButton({
 			<DialogTrigger asChild>
 				<Button
 					size="cta"
-					variant={"default"}
+					variant={'default'}
 					className="bg-accent w-full flex-1 bold flex items-center justify-center"
 				>
-					<span className="truncate">Add New</span>{" "}
+					<span className="truncate">Add New</span>{' '}
 					<PlusCircle className="!size-6 !stroke-2.5 ml-2 flex-shrink-0" />
 				</Button>
 			</DialogTrigger>
@@ -137,20 +137,18 @@ export function AddManualActivityButton({
 							<FormField
 								control={form.control}
 								name="title"
-								render={({ field }) => (
-									<Input {...field} placeholder="Name" />
-								)}
+								render={({ field }) => <Input {...field} placeholder="Name" />}
 							/>
 						</div>
 						<div className="grid gap-2">
 							<Label>Minutes</Label>
 							<div className="flex flex-wrap gap-2">
-								{[5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map((m) => (
+								{[5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map(m => (
 									<button
 										key={m}
 										type="button"
 										onClick={() => {
-											form.setValue("durationInMinutes", m, {
+											form.setValue('durationInMinutes', m, {
 												shouldDirty: true,
 												shouldValidate: true,
 											});
@@ -158,12 +156,12 @@ export function AddManualActivityButton({
 										}}
 										className={buttonVariants({
 											variant:
-												form.watch("durationInMinutes") === m &&
-													!useCustomMinutes
-													? "default"
-													: "neutral",
-											size: "sm",
-											className: "px-3",
+												form.watch('durationInMinutes') === m &&
+												!useCustomMinutes
+													? 'default'
+													: 'neutral',
+											size: 'sm',
+											className: 'px-3',
 										})}
 									>
 										{m >= 60
@@ -178,15 +176,15 @@ export function AddManualActivityButton({
 									onClick={() => {
 										setUseCustomMinutes(true);
 										const total = customHours * 60 + customMinutes;
-										form.setValue("durationInMinutes", total, {
+										form.setValue('durationInMinutes', total, {
 											shouldDirty: true,
 											shouldValidate: true,
 										});
 									}}
 									className={buttonVariants({
-										variant: useCustomMinutes ? "default" : "neutral",
-										size: "sm",
-										className: "px-3",
+										variant: useCustomMinutes ? 'default' : 'neutral',
+										size: 'sm',
+										className: 'px-3',
 									})}
 								>
 									Custom
@@ -200,14 +198,14 @@ export function AddManualActivityButton({
 											min={0}
 											step={1}
 											value={customHours}
-											onChange={(e) => {
+											onChange={e => {
 												const h = Math.max(
 													0,
-													Math.min(999, Number(e.target.value) || 0),
+													Math.min(999, Number(e.target.value) || 0)
 												);
 												setCustomHours(h);
 												const total = h * 60 + customMinutes;
-												form.setValue("durationInMinutes", total, {
+												form.setValue('durationInMinutes', total, {
 													shouldDirty: true,
 													shouldValidate: true,
 												});
@@ -223,14 +221,14 @@ export function AddManualActivityButton({
 											max={59}
 											step={1}
 											value={customMinutes}
-											onChange={(e) => {
+											onChange={e => {
 												const m = Math.max(
 													0,
-													Math.min(59, Number(e.target.value) || 0),
+													Math.min(59, Number(e.target.value) || 0)
 												);
 												setCustomMinutes(m);
 												const total = customHours * 60 + m;
-												form.setValue("durationInMinutes", total, {
+												form.setValue('durationInMinutes', total, {
 													shouldDirty: true,
 													shouldValidate: true,
 												});
@@ -276,7 +274,7 @@ export function AddManualActivityButton({
 								onClick={() => setConfirmTrackOpen(true)}
 							>
 								{isSubmitting ? (
-									"Adding…"
+									'Adding…'
 								) : (
 									<>
 										<PlusCircle className="mr-2 !size-5 !stroke-2.5" /> Track
@@ -288,8 +286,6 @@ export function AddManualActivityButton({
 					</form>
 				</Form>
 
-
-
 				{/* Confirm Track */}
 				<Dialog open={confirmTrackOpen} onOpenChange={setConfirmTrackOpen}>
 					<DialogContent>
@@ -297,9 +293,9 @@ export function AddManualActivityButton({
 							<DialogTitle>Add this record?</DialogTitle>
 						</DialogHeader>
 						<div className="text-sm text-main-foreground">
-							{(form.getValues().title ?? "").trim() || "(untitled)"} —{" "}
+							{(form.getValues().title ?? '').trim() || '(untitled)'} —{' '}
 							{formatMinutesLabel(
-								Number(form.getValues().durationInMinutes) || 0,
+								Number(form.getValues().durationInMinutes) || 0
 							)}
 						</div>
 						<DialogFooter>
@@ -315,14 +311,13 @@ export function AddManualActivityButton({
 										setIsSubmitting(true);
 										const values = form.getValues();
 										await addManual({
-											title: ((values.title ?? "").trim() ||
+											title: ((values.title ?? '').trim() ||
 												undefined) as string,
 											description: values.description || undefined,
-											durationInMinutes:
-												Number(values.durationInMinutes) || 0,
+											durationInMinutes: Number(values.durationInMinutes) || 0,
 											externalUrl: values.externalUrl || undefined,
 										});
-										toast.success("Activity tracked");
+										toast.success('Activity tracked');
 										setConfirmTrackOpen(false);
 										form.reset();
 										setUseCustomMinutes(false);

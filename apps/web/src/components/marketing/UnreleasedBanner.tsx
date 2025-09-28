@@ -1,8 +1,8 @@
-"use client";
-import { Moon } from "lucide-react";
-import { type CSSProperties, useEffect, useState } from "react";
-import { cn } from "../../lib/utils";
-import { Card } from "../ui/card";
+'use client';
+import { Moon } from 'lucide-react';
+import { type CSSProperties, useEffect, useState } from 'react';
+import { cn } from '../../lib/utils';
+import { Card } from '../ui/card';
 
 const STAR_COUNT = 14;
 const STAR_SIZE_RANGE = [3, 10];
@@ -25,8 +25,8 @@ const Star = ({
 		width: `${size}px`,
 		height: `${size}px`,
 		opacity: 0.9,
-		["--twinkle-duration"]: `${twinkleDuration}ms`,
-	} as CSSProperties & { ["--twinkle-duration"]?: string };
+		['--twinkle-duration']: `${twinkleDuration}ms`,
+	} as CSSProperties & { ['--twinkle-duration']?: string };
 
 	return (
 		<svg
@@ -108,10 +108,10 @@ export const UnreleasedBanner = ({ className }: { className?: string }) => {
 	return (
 		<Card
 			className={cn(
-				"bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] p-4 relative overflow-hidden",
-				className,
+				'bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] p-4 relative overflow-hidden',
+				className
 			)}
-			style={{ ["--card-bg" as any]: "oklch(0.2441 0.0096 34.94)" }}
+			style={{ ['--card-bg' as any]: 'oklch(0.2441 0.0096 34.94)' }}
 		>
 			{stars.map((p, index) => (
 				<Star

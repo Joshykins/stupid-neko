@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useForm } from "@tanstack/react-form";
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useForm } from '@tanstack/react-form';
 import {
 	Authenticated,
 	Unauthenticated,
 	useMutation,
 	useQuery,
-} from "convex/react";
-import Link from "next/link";
-import { useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
+} from 'convex/react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { api } from '../../../../../convex/_generated/api';
 import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
-} from "../../components/ui/avatar";
-import { Button } from "../../components/ui/button";
-import { Card } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+} from '../../components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 
 export default function AccountPage() {
 	const { signOut } = useAuthActions();
@@ -56,13 +56,13 @@ export default function AccountPage() {
 						<Avatar className="size-24">
 							<AvatarImage
 								src={me?.image ?? undefined}
-								alt={me?.name ?? "User"}
+								alt={me?.name ?? 'User'}
 							/>
-							<AvatarFallback>{(me?.name ?? "U").slice(0, 1)}</AvatarFallback>
+							<AvatarFallback>{(me?.name ?? 'U').slice(0, 1)}</AvatarFallback>
 						</Avatar>
 						<div className="text-center">
 							<div className="text-xl font-heading">
-								{me?.name ?? "Your Account"}
+								{me?.name ?? 'Your Account'}
 							</div>
 						</div>
 					</Card>
@@ -73,17 +73,17 @@ export default function AccountPage() {
 						<div className="my-4 h-px w-full bg-border" />
 
 						<EditForm
-							initialName={me?.name ?? ""}
-							initialTimezone={me?.timezone ?? ""}
-							onSave={async (values) => {
+							initialName={me?.name ?? ''}
+							initialTimezone={me?.timezone ?? ''}
+							onSave={async values => {
 								setErrorMessage(null);
 								setSuccessMessage(null);
 								setSaving(true);
 								try {
 									await updateMe({ name: values.name || undefined });
-									setSuccessMessage("Profile updated");
+									setSuccessMessage('Profile updated');
 								} catch {
-									setErrorMessage("Failed to update profile");
+									setErrorMessage('Failed to update profile');
 								} finally {
 									setSaving(false);
 								}
@@ -92,7 +92,6 @@ export default function AccountPage() {
 							errorMessage={errorMessage}
 							successMessage={successMessage}
 						/>
-
 					</Card>
 				</div>
 			</Authenticated>
@@ -110,12 +109,12 @@ function EditForm({
 }: {
 	initialName: string;
 	initialTimezone: string;
-	onSave: (values: { name: string; timezone: string; }) => Promise<void>;
+	onSave: (values: { name: string; timezone: string }) => Promise<void>;
 	saving: boolean;
 	errorMessage: string | null;
 	successMessage: string | null;
 }) {
-	const form = useForm<{ name: string; timezone: string; }>({
+	const form = useForm<{ name: string; timezone: string }>({
 		defaultValues: {
 			name: initialName,
 			timezone: initialTimezone,
@@ -123,7 +122,7 @@ function EditForm({
 		onSubmit: async ({
 			value,
 		}: {
-			value: { name: string; timezone: string; };
+			value: { name: string; timezone: string };
 		}) => {
 			await onSave(value);
 		},
@@ -131,7 +130,7 @@ function EditForm({
 
 	return (
 		<form
-			onSubmit={(e) => {
+			onSubmit={e => {
 				e.preventDefault();
 				form.handleSubmit();
 			}}
@@ -147,23 +146,23 @@ function EditForm({
 					validators={{
 						onChange: ({ value }) =>
 							value && value.length < 3
-								? "Use at least 3 characters"
+								? 'Use at least 3 characters'
 								: undefined,
 					}}
 				>
-					{(field) => (
+					{field => (
 						<>
 							<Input
 								id="name"
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={e => field.handleChange(e.target.value)}
 								placeholder="Choose a username"
 							/>
 							{field.state.meta.errors?.[0] && (
 								<p className="text-sm text-red-500">
 									{String(
 										(field.state.meta.errors?.[0] as any)?.message ??
-										field.state.meta.errors?.[0],
+											field.state.meta.errors?.[0]
 									)}
 								</p>
 							)}
@@ -178,7 +177,7 @@ function EditForm({
 			)}
 
 			<Button type="submit" disabled={saving} className="mt-1">
-				{saving ? "Saving..." : "Save changes"}
+				{saving ? 'Saving...' : 'Save changes'}
 			</Button>
 		</form>
 	);

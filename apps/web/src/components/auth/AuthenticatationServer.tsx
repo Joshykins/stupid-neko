@@ -1,5 +1,5 @@
-import { isAuthenticatedNextjs } from "@convex-dev/auth/nextjs/server";
-import { headers } from "next/headers";
+import { isAuthenticatedNextjs } from '@convex-dev/auth/nextjs/server';
+import { headers } from 'next/headers';
 
 export const AuthenticatedServer = async ({
 	children,

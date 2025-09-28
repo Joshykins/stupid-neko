@@ -1,15 +1,15 @@
-import type { CSSProperties, FC } from "react";
-import { useEffect, useState } from "react";
+import type { CSSProperties, FC } from 'react';
+import { useEffect, useState } from 'react';
 
 // Local helper for safe class concatenation without external deps
 function cx(...classes: Array<string | undefined | false>): string {
-	return classes.filter(Boolean).join(" ");
+	return classes.filter(Boolean).join(' ');
 }
 
 // Configuration (editable)
 export const CLOUD_SPAWN_AREA_VH = 75; // clouds spawn within the top X% of viewport height
 export const CLOUD_TRAVEL_MARGIN_PX = 220; // offscreen margin for spawn/exit
-export const CLOUD_COLOR = "#FFFFFF"; // base cloud color
+export const CLOUD_COLOR = '#FFFFFF'; // base cloud color
 export const CLOUD_OPACITY_RANGE: Readonly<[number, number]> = [0.1, 0.2];
 export const CLOUD_FADE_DURATION_SEC_RANGE: Readonly<[number, number]> = [3, 6];
 export const CLOUD_FADE_DELAY_SEC_RANGE: Readonly<[number, number]> = [0, 6];
@@ -53,30 +53,30 @@ function Cloud({
 	};
 	const fadeStyle: CSSProperties = {
 		opacity: 0,
-		willChange: "opacity",
+		willChange: 'opacity',
 		animation: `cloud-fade-in ${fadeDurationSec}s ease-out ${fadeDelaySec}s forwards`,
 	};
 	const travelStyle: CSSProperties = {
-		willChange: "transform",
+		willChange: 'transform',
 		animation: `cloud-travel ${speedSec}s linear ${delaySec}s infinite`,
-		["--cloud-distance" as any]: `calc(100vw + ${2 * CLOUD_TRAVEL_MARGIN_PX}px + ${2 * CLOUD_BASE_WIDTH_PX * scale}px)`,
+		['--cloud-distance' as any]: `calc(100vw + ${2 * CLOUD_TRAVEL_MARGIN_PX}px + ${2 * CLOUD_BASE_WIDTH_PX * scale}px)`,
 	};
 	const cloudStyle: CSSProperties = {
 		width: `${CLOUD_BASE_WIDTH_PX}px`,
 		height: `${CLOUD_BASE_HEIGHT_PX}px`,
 		transform: `scale(${scale})`,
-		transformOrigin: "top left",
+		transformOrigin: 'top left',
 		opacity,
 	};
 
-	const circleBase = "absolute rounded-full";
+	const circleBase = 'absolute rounded-full';
 
 	return (
 		<div className="absolute" style={outerStyle}>
 			<div style={fadeStyle}>
 				<div style={travelStyle}>
 					<div
-						className={cx("relative overflow-hidden blur-xs")}
+						className={cx('relative overflow-hidden blur-xs')}
 						style={cloudStyle}
 					>
 						{/* Circles composing the cloud silhouette (port from SCSS) */}
@@ -181,7 +181,7 @@ export const BackgroundClouds: FC<{
 
 		const totalCount = randInt(
 			CLOUD_COUNT_RANGE[0],
-			CLOUD_COUNT_RANGE[1] + 0.49,
+			CLOUD_COUNT_RANGE[1] + 0.49
 		);
 
 		const built: Array<CloudInstance> = [];
@@ -192,7 +192,7 @@ export const BackgroundClouds: FC<{
 			const speedSec = rand(CLOUD_SPEED_SEC_RANGE[0], CLOUD_SPEED_SEC_RANGE[1]);
 			const baseDelay = rand(
 				CLOUD_DELAY_SEC_RANGE[0],
-				CLOUD_DELAY_SEC_RANGE[1],
+				CLOUD_DELAY_SEC_RANGE[1]
 			);
 			const negativeOffset = -rand(0, speedSec); // start mid-flight
 			const opacity = rand(CLOUD_OPACITY_RANGE[0], CLOUD_OPACITY_RANGE[1]);
@@ -204,11 +204,11 @@ export const BackgroundClouds: FC<{
 				opacity,
 				fadeDurationSec: rand(
 					CLOUD_FADE_DURATION_SEC_RANGE[0],
-					CLOUD_FADE_DURATION_SEC_RANGE[1],
+					CLOUD_FADE_DURATION_SEC_RANGE[1]
 				),
 				fadeDelaySec: rand(
 					CLOUD_FADE_DELAY_SEC_RANGE[0],
-					CLOUD_FADE_DELAY_SEC_RANGE[1],
+					CLOUD_FADE_DELAY_SEC_RANGE[1]
 				),
 				zIndex: opacity > opacityThreshold ? 2 : 0,
 			});
@@ -224,8 +224,8 @@ export const BackgroundClouds: FC<{
 	return (
 		<div
 			className={cx(
-				"absolute inset-x-0 top-0 pointer-events-none select-none",
-				className,
+				'absolute inset-x-0 top-0 pointer-events-none select-none',
+				className
 			)}
 			style={{ height: `${CLOUD_SPAWN_AREA_VH}vh` }}
 		>

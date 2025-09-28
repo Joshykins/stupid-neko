@@ -1,4 +1,4 @@
-import { cn } from "../../lib/utils";
+import { cn } from '../../lib/utils';
 
 const Mountain1 = ({ className }: { className?: string }) => {
 	return (
@@ -56,20 +56,20 @@ export const BackgroundSVGs = ({
 	className,
 }: {
 	type:
-		| "bg-mountain-1"
-		| "bg-mountain-2"
-		| "bg-mountain-3"
-		| "bg-cloud"
-		| "fuji-san";
+		| 'bg-mountain-1'
+		| 'bg-mountain-2'
+		| 'bg-mountain-3'
+		| 'bg-cloud'
+		| 'fuji-san';
 	className?: string;
 }) => {
 	switch (type) {
-		case "bg-mountain-1":
+		case 'bg-mountain-1':
 			return <Mountain1 className={className} />;
-		case "bg-mountain-2":
+		case 'bg-mountain-2':
 			//implement rest of mountains
 			return <Mountain2 className={className} />;
-		case "bg-mountain-3":
+		case 'bg-mountain-3':
 			//implement rest of mountains
 			return <Mountain3 className={className} />;
 	}

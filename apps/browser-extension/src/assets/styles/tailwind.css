@@ -1,5 +1,5 @@
-@import "tailwindcss" prefix(snbex);
-@import "tw-animate-css";
+@import 'tailwindcss' prefix(snbex);
+@import 'tw-animate-css';
 
 :root {
 	--bg-mountain-sky: oklch(0.7 0.06 255);
@@ -59,8 +59,16 @@
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
 	--source-misc: #9ca3af;
-	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
-	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
+	--source-youtube-soft: color-mix(
+		in oklch,
+		var(--source-youtube) 80%,
+		#ffffff
+	);
+	--source-spotify-soft: color-mix(
+		in oklch,
+		var(--source-spotify) 80%,
+		#ffffff
+	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
@@ -89,11 +97,13 @@
 
 	/* darker backdrop variant */
 	--background: oklch(34.09% 0.0517 243.85); /* deeper navy */
-	--secondary-background: oklch(39.97% 0.053 242.72); /* slightly lighter navy panels */
+	--secondary-background: oklch(
+		39.97% 0.053 242.72
+	); /* slightly lighter navy panels */
 	--foreground: oklch(93.34% 0.0447 72.67); /* cream text */
 	--main-foreground: oklch(93.34% 0.0447 72.67); /* cream text on dark cards */
 	--main: oklch(78.34% 0.0905 47.53); /* salmon accent */
-	--border: oklch(31.00% 0.052 242); /* near-black navy */
+	--border: oklch(31% 0.052 242); /* near-black navy */
 	--ring: oklch(78.34% 0.0905 47.53); /* salmon focus ring */
 	--accent: oklch(0.6889 0.1279 35.78); /* badge accent */
 	--shadow: 2px 2px 0px 0px var(--border);
@@ -124,8 +134,16 @@
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
 	--source-misc: #9ca3af;
-	--source-youtube-soft: color-mix(in oklch, var(--source-youtube) 80%, #ffffff);
-	--source-spotify-soft: color-mix(in oklch, var(--source-spotify) 80%, #ffffff);
+	--source-youtube-soft: color-mix(
+		in oklch,
+		var(--source-youtube) 80%,
+		#ffffff
+	);
+	--source-spotify-soft: color-mix(
+		in oklch,
+		var(--source-spotify) 80%,
+		#ffffff
+	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 

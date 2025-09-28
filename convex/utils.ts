@@ -1,24 +1,24 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
-import dayjs from "../lib/dayjs";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import type { MutationCtx, QueryCtx } from './_generated/server';
+import dayjs from '../lib/dayjs';
 
 // Type guard to check if context has mutation capabilities
 function isMutationCtx(ctx: QueryCtx | MutationCtx): ctx is MutationCtx {
-	return "patch" in ctx.db;
+	return 'patch' in ctx.db;
 }
 
 export function dangerousTestingEnabled(): boolean {
-	return process.env.DANGEROUS_TESTING === "enabled";
+	return process.env.DANGEROUS_TESTING === 'enabled';
 }
 
 export function assertDangerousTestingEnabled(): void {
 	if (!dangerousTestingEnabled()) {
-		throw new Error("Dangerous testing is not enabled");
+		throw new Error('Dangerous testing is not enabled');
 	}
 }
 
 export async function getEffectiveNow(
-	ctx: QueryCtx | MutationCtx,
+	ctx: QueryCtx | MutationCtx
 ): Promise<number> {
 	if (!dangerousTestingEnabled()) return Date.now();
 	const userId = await getAuthUserId(ctx).catch(() => null as any);
@@ -28,7 +28,7 @@ export async function getEffectiveNow(
 	const devDate = (user as any).devDate as number | undefined;
 
 	// If devDate is set, preserve the day but use current time
-	if (typeof devDate === "number") {
+	if (typeof devDate === 'number') {
 		const now = Date.now();
 
 		// Extract the day from devDate and time from current time using dayjs
@@ -44,7 +44,7 @@ export async function getEffectiveNow(
 
 		// If the effective date is significantly in the past (more than 1 hour), clear devDate
 		// This prevents clearing devDate immediately when advancing time
-		if (effectiveDate.isBefore(nowDayjs.subtract(1, "hour"))) {
+		if (effectiveDate.isBefore(nowDayjs.subtract(1, 'hour'))) {
 			// Only clear devDate if we're in a mutation context
 			if (isMutationCtx(ctx)) {
 				await ctx.db.patch(userId, { devDate: undefined } as any);

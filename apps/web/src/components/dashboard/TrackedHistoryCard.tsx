@@ -1,37 +1,40 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import { ExternalLink, Rocket, Zap, History } from "lucide-react";
-import * as React from "react";
-import { api } from "../../../../../convex/_generated/api";
-import type { LanguageCode } from "../../../../../convex/schema";
-import Image from "next/image";
-import { LanguageFlagSVG } from "../LanguageFlagSVG";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { useQuery } from 'convex/react';
+import { ExternalLink, Rocket, Zap, History } from 'lucide-react';
+import * as React from 'react';
+import { api } from '../../../../../convex/_generated/api';
+import type { LanguageCode } from '../../../../../convex/schema';
+import Image from 'next/image';
+import { LanguageFlagSVG } from '../LanguageFlagSVG';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 // Use Convex-generated return types; avoid local type definitions
 // Avoid Radix ScrollArea here to prevent inner display: table wrapper pushing content
-import { ScrollArea } from "../ui/scroll-area";
-import { Button } from "../ui/button";
+import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '../ui/button';
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "../ui/tooltip";
-import { FunctionReturnType } from "convex/server";
-import dayjs from "../../../../../lib/dayjs";
+} from '../ui/tooltip';
+import { FunctionReturnType } from 'convex/server';
+import dayjs from '../../../../../lib/dayjs';
 
 //
 
 function formatTime(ts?: number, timeZone?: string): string {
-	if (!ts) return "";
+	if (!ts) return '';
 	const tsDate = timeZone ? dayjs(ts).tz(timeZone) : dayjs(ts);
 	return tsDate.format('LT').toLowerCase(); // "11:24 AM" -> "11:24 am"
 }
 
-
-function dateFooterLabel(ts?: number, timeZone?: string, effectiveNow?: number): string {
-	if (!ts) return "";
+function dateFooterLabel(
+	ts?: number,
+	timeZone?: string,
+	effectiveNow?: number
+): string {
+	if (!ts) return '';
 
 	// Use effectiveNow if provided (includes devDate), otherwise use current time
 	const nowTimestamp = effectiveNow ?? Date.now();
@@ -45,7 +48,7 @@ function dateFooterLabel(ts?: number, timeZone?: string, effectiveNow?: number):
 
 	// If it's yesterday, show "Yesterday"
 	if (tsDate.isSame(now.subtract(1, 'day'), 'day')) {
-		return "Yesterday";
+		return 'Yesterday';
 	}
 
 	// If it's within the last 7 days, show the day name
@@ -71,7 +74,7 @@ function formatHoursMinutesLabel(totalSeconds?: number): string {
 	if (hours > 0) parts.push(`${hours}h`);
 	// Show minutes if there are any, or always when hours is 0 (e.g., 0h 05m -> 5m)
 	if (minutes > 0 || hours === 0) parts.push(`${minutes}m`);
-	return parts.join(" ");
+	return parts.join(' ');
 }
 
 // Language flag SVG is provided by LanguageFlagSVG component
@@ -79,79 +82,88 @@ function formatHoursMinutesLabel(totalSeconds?: number): string {
 // Configurable page size for the recent activity list
 const PAGE_SIZE = 8;
 
-
-
-type RecentData = FunctionReturnType<typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities>;
+type RecentData = FunctionReturnType<
+	typeof api.userTargetLanguageActivityFunctions.listRecentLanguageActivities
+>;
 type RecentItems = RecentData['items'];
 type RecentItem = RecentItems extends Array<infer T> ? T : never;
 
-const TrackedHistoryItem = ({ item, timeZone, effectiveNow }: { item: RecentItem; timeZone?: string; effectiveNow?: number; }) => {
+const TrackedHistoryItem = ({
+	item,
+	timeZone,
+	effectiveNow,
+}: {
+	item: RecentItem;
+	timeZone?: string;
+	effectiveNow?: number;
+}) => {
 	const contentKey = item.contentKey;
 	const key =
 		item.isManuallyTracked || !contentKey
-			? "manual"
-			: contentKey.startsWith("youtube:")
-				? "youtube"
-				: contentKey.startsWith("spotify:")
-					? "spotify"
-					: contentKey.startsWith("anki:")
-						? "anki"
-						: "manual";
+			? 'manual'
+			: contentKey.startsWith('youtube:')
+				? 'youtube'
+				: contentKey.startsWith('spotify:')
+					? 'spotify'
+					: contentKey.startsWith('anki:')
+						? 'anki'
+						: 'manual';
 
 	const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
 
 	const SOURCE_STYLES: Record<
 		string,
-		{ dot: string; border: string; badge: string; }
+		{ dot: string; border: string; badge: string }
 	> = React.useMemo(
 		() => ({
 			youtube: {
-				dot: "bg-[var(--source-youtube)]",
-				border: "border-[var(--source-youtube)]",
-				badge: "bg-[var(--source-youtube-soft)]",
+				dot: 'bg-[var(--source-youtube)]',
+				border: 'border-[var(--source-youtube)]',
+				badge: 'bg-[var(--source-youtube-soft)]',
 			},
 			spotify: {
-				dot: "bg-[var(--source-spotify)]",
-				border: "border-[var(--source-spotify)]",
-				badge: "bg-[var(--source-spotify-soft)]",
+				dot: 'bg-[var(--source-spotify)]',
+				border: 'border-[var(--source-spotify)]',
+				badge: 'bg-[var(--source-spotify-soft)]',
 			},
 			anki: {
-				dot: "bg-[var(--source-anki)]",
-				border: "border-[var(--source-anki)]",
-				badge: "bg-[var(--source-anki-soft)]",
+				dot: 'bg-[var(--source-anki)]',
+				border: 'border-[var(--source-anki)]',
+				badge: 'bg-[var(--source-anki-soft)]',
 			},
 			manual: {
-				dot: "bg-[var(--source-misc)]",
-				border: "border-[var(--source-misc)]",
-				badge: "bg-[var(--source-misc-soft)]",
+				dot: 'bg-[var(--source-misc)]',
+				border: 'border-[var(--source-misc)]',
+				badge: 'bg-[var(--source-misc-soft)]',
 			},
 		}),
-		[],
+		[]
 	);
 
 	const SOURCE_ICON: Record<string, string> = React.useMemo(
 		() => ({
-			youtube: "/brands/youtube.svg",
-			spotify: "/brands/spotify.svg",
-			anki: "/brands/anki.svg",
+			youtube: '/brands/youtube.svg',
+			spotify: '/brands/spotify.svg',
+			anki: '/brands/anki.svg',
 		}),
-		[],
+		[]
 	);
 
 	const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
 
 	// Derive presentation fields
-	const legacyDurationSeconds =
-		(item as { durationInSeconds?: number; }).durationInSeconds;
+	const legacyDurationSeconds = (item as { durationInSeconds?: number })
+		.durationInSeconds;
 	const durationMs =
-		(item as { durationMs?: number; }).durationMs ??
-		(item as { durationInMs?: number; }).durationInMs ??
-		(typeof legacyDurationSeconds === "number"
+		(item as { durationMs?: number }).durationMs ??
+		(item as { durationInMs?: number }).durationInMs ??
+		(typeof legacyDurationSeconds === 'number'
 			? legacyDurationSeconds * 1000
-			: undefined) ?? 0;
+			: undefined) ??
+		0;
 	const durationSeconds = Math.max(0, Math.round(durationMs / 1000));
 	const occurredAt = item.occurredAt ?? item._creationTime;
-	const title = item.title ?? item.label?.title ?? "(untitled)";
+	const title = item.title ?? item.label?.title ?? '(untitled)';
 
 	return (
 		<li key={item._id as string}>
@@ -159,10 +171,10 @@ const TrackedHistoryItem = ({ item, timeZone, effectiveNow }: { item: RecentItem
 				<TooltipTrigger asChild>
 					<div
 						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
-					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
+						// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
-							{key === "manual" ? (
+							{key === 'manual' ? (
 								<Zap
 									size={24}
 									className="fill-black stroke-black inline-block"
@@ -239,7 +251,7 @@ const TrackedHistoryItem = ({ item, timeZone, effectiveNow }: { item: RecentItem
 									</span>
 								</span>
 							)}
-							{key !== "manual" && (
+							{key !== 'manual' && (
 								<span
 									className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${styles.badge}`}
 								>
@@ -288,15 +300,15 @@ export default function TrackedHistoryCard() {
 	const me = useQuery(api.userFunctions.me, {});
 	const data = useQuery(
 		api.userTargetLanguageActivityFunctions.listRecentLanguageActivities,
-		{ limit: page * PAGE_SIZE + 1 },
+		{ limit: page * PAGE_SIZE + 1 }
 	);
 
 	const items = React.useMemo(() => {
 		if (!data) return [] as RecentItems;
 		// Show the latest activities regardless of day, prioritizing in-progress items first
 		return data.items.slice().sort((a, b) => {
-			const aActive = a.state === "in-progress";
-			const bActive = b.state === "in-progress";
+			const aActive = a.state === 'in-progress';
+			const bActive = b.state === 'in-progress';
 			if (aActive && !bActive) return -1;
 			if (!aActive && bActive) return 1;
 			return (
@@ -304,7 +316,6 @@ export default function TrackedHistoryCard() {
 			);
 		}) as RecentItems;
 	}, [data]);
-
 
 	const { visibleItems, hasPrev, hasNext } = React.useMemo(() => {
 		const startIndex = (page - 1) * PAGE_SIZE;
@@ -371,7 +382,7 @@ export default function TrackedHistoryCard() {
 						{items.length > 0 && (
 							<TooltipProvider delayDuration={0}>
 								<ul className="space-y-2">
-									{visibleItems.map((i) => (
+									{visibleItems.map(i => (
 										<TrackedHistoryItem
 											key={String(i._id)}
 											item={i}
@@ -390,17 +401,15 @@ export default function TrackedHistoryCard() {
 							variant="neutral"
 							size="sm"
 							disabled={!hasPrev}
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
+							onClick={() => setPage(p => Math.max(1, p - 1))}
 						>
 							Previous
 						</Button>
-						<div className="text-xs text-muted-foreground">
-							Page {page}
-						</div>
+						<div className="text-xs text-muted-foreground">Page {page}</div>
 						<Button
 							size="sm"
 							disabled={!hasNext}
-							onClick={() => setPage((p) => p + 1)}
+							onClick={() => setPage(p => p + 1)}
 						>
 							Load more
 						</Button>

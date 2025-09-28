@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import { Info, Palmtree } from "lucide-react";
-import Image from "next/image";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
-import { cn } from "../../../lib/utils";
-import { Card } from "../../ui/card";
-import { Progress } from "../../ui/progress";
+import { useQuery } from 'convex/react';
+import { Info, Palmtree } from 'lucide-react';
+import Image from 'next/image';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
+import { cn } from '../../../lib/utils';
+import { Card } from '../../ui/card';
+import { Progress } from '../../ui/progress';
 
 type StreakVacationCardProps = {
 	isLiveVersion?: boolean;
@@ -18,7 +18,7 @@ export const StreakVacationCard = ({
 }: StreakVacationCardProps) => {
 	const status = useQuery(
 		api.userStreakFunctions.getVacationStatus,
-		isLiveVersion ? {} : "skip",
+		isLiveVersion ? {} : 'skip'
 	);
 
 	// Demo fallback when not live
@@ -86,11 +86,11 @@ export const StreakVacationCard = ({
 						></Progress>
 						<div
 							className={cn(
-								"text-right text-xs font-semibold text-main-foreground absolute top-0.5",
-								capped || percent >= 70 ? "left-2" : "right-2",
+								'text-right text-xs font-semibold text-main-foreground absolute top-0.5',
+								capped || percent >= 70 ? 'left-2' : 'right-2'
 							)}
 						>
-							{capped ? "At cap" : `${percent}% to next`}
+							{capped ? 'At cap' : `${percent}% to next`}
 						</div>
 					</div>
 

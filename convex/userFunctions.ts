@@ -1,12 +1,12 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { v } from 'convex/values';
 import {
 	levelFromXp,
 	xpForNextLevel,
-} from "../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
-import type { Id } from "./_generated/dataModel";
-import { action, internalQuery, mutation, query } from "./_generated/server";
-import { type LanguageCode, languageCodeValidator } from "./schema";
+} from '../lib/levelAndExperienceCalculations/levelAndExperienceCalculator';
+import type { Id } from './_generated/dataModel';
+import { action, internalQuery, mutation, query } from './_generated/server';
+import { type LanguageCode, languageCodeValidator } from './schema';
 
 export type MeInfo = {
 	name?: string;
@@ -27,12 +27,12 @@ export const me = query({
 			timezone: v.optional(v.string()),
 			languageCode: v.optional(v.string()),
 			streakDisplayMode: v.optional(
-				v.union(v.literal("grid"), v.literal("week")),
+				v.union(v.literal('grid'), v.literal('week'))
 			),
 		}),
-		v.null(),
+		v.null()
 	),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return null;
 		const user = await ctx.db.get(userId);
@@ -40,10 +40,10 @@ export const me = query({
 
 		// Resolve current target language from the user record
 		const currentTargetLanguageId = user.currentTargetLanguageId as
-			| Id<"userTargetLanguages">
+			| Id<'userTargetLanguages'>
 			| undefined;
 		if (!currentTargetLanguageId) {
-			throw new Error("Current target language not found");
+			throw new Error('Current target language not found');
 		}
 		const utl = await ctx.db.get(currentTargetLanguageId);
 		const languageCode = utl?.languageCode;
@@ -65,9 +65,9 @@ export const updateMe = mutation({
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 
 		await ctx.db.patch(userId, {
 			...(args.name !== undefined ? { name: args.name || undefined } : {}),
@@ -83,9 +83,9 @@ export const updateTimezone = mutation({
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 
 		await ctx.db.patch(userId, {
 			timezone: args.timezone,
@@ -96,14 +96,14 @@ export const updateTimezone = mutation({
 
 export const updateStreakDisplayCardMode = mutation({
 	args: {
-		mode: v.union(v.literal("grid"), v.literal("week")),
+		mode: v.union(v.literal('grid'), v.literal('week')),
 	},
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 
 		await ctx.db.patch(userId, { streakDisplayMode: args.mode } as any);
 		return null;
@@ -127,9 +127,9 @@ export const getUserProgress = query({
 			experienceTowardsNextLevel: v.number(),
 			hasPreReleaseCode: v.boolean(),
 		}),
-		v.null(),
+		v.null()
 	),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return null;
 
@@ -138,17 +138,17 @@ export const getUserProgress = query({
 
 		// Resolve current target language from the user record
 		const currentTargetLanguageId = user.currentTargetLanguageId as
-			| Id<"userTargetLanguages">
+			| Id<'userTargetLanguages'>
 			| undefined;
 		if (!currentTargetLanguageId)
-			throw new Error("Current target language not found");
+			throw new Error('Current target language not found');
 		const targetLanguage = await ctx.db.get(currentTargetLanguageId);
 		if (!targetLanguage) return null;
 
 		// Determine if the user has a pre-release code (or was manually granted)
 		const code = await ctx.db
-			.query("preReleaseCodes")
-			.withIndex("by_user", (q: any) => q.eq("usedByUserId", userId))
+			.query('preReleaseCodes')
+			.withIndex('by_user', (q: any) => q.eq('usedByUserId', userId))
 			.take(1);
 		const hasPreReleaseCode =
 			Boolean((user as any)?.preReleaseGranted) || code.length > 0;
@@ -156,11 +156,11 @@ export const getUserProgress = query({
 		// Read total XP from latest ledger event
 		const latest = (
 			await ctx.db
-				.query("userTargetLanguageExperienceLedgers")
-				.withIndex("by_user_target_language", (q: any) =>
-					q.eq("userTargetLanguageId", currentTargetLanguageId),
+				.query('userTargetLanguageExperienceLedgers')
+				.withIndex('by_user_target_language', (q: any) =>
+					q.eq('userTargetLanguageId', currentTargetLanguageId)
 				)
-				.order("desc")
+				.order('desc')
 				.take(1)
 		)[0] as any | undefined;
 
@@ -196,12 +196,12 @@ export const getUserProgress = query({
 });
 
 export const getCurrentTargetLanguage = internalQuery({
-	args: { userId: v.id("users") },
+	args: { userId: v.id('users') },
 	returns: v.union(
 		v.null(),
 		v.object({
 			languageCode: v.optional(languageCodeValidator),
-		}),
+		})
 	),
 	handler: async (ctx, args) => {
 		const user = await ctx.db.get(args.userId);
@@ -216,12 +216,12 @@ export const listAllUsersForCron = internalQuery({
 	args: {},
 	returns: v.array(
 		v.object({
-			_id: v.id("users"),
+			_id: v.id('users'),
 			devDate: v.optional(v.number()),
-		}),
+		})
 	),
-	handler: async (ctx) => {
-		const rows = await ctx.db.query("users").take(10000);
-		return rows.map((r) => ({ _id: r._id, devDate: (r as any).devDate }));
+	handler: async ctx => {
+		const rows = await ctx.db.query('users').take(10000);
+		return rows.map(r => ({ _id: r._id, devDate: (r as any).devDate }));
 	},
 });

@@ -1,16 +1,16 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { UserIdentity } from "convex/server";
-import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { type LanguageCode, languageCodeValidator } from "./schema";
-import { getEffectiveNow } from "./utils";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { UserIdentity } from 'convex/server';
+import { v } from 'convex/values';
+import { api, internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import { action, internalMutation, mutation, query } from './_generated/server';
+import { type LanguageCode, languageCodeValidator } from './schema';
+import { getEffectiveNow } from './utils';
 
 // Create activity, update streak, then add experience (internal)
 export const addLanguageActivity = internalMutation({
 	args: {
-		userId: v.optional(v.id("users")),
+		userId: v.optional(v.id('users')),
 		title: v.string(),
 		description: v.optional(v.string()),
 		durationInMinutes: v.number(),
@@ -21,31 +21,31 @@ export const addLanguageActivity = internalMutation({
 		contentCategories: v.optional(
 			v.array(
 				v.union(
-					v.literal("audio"),
-					v.literal("video"),
-					v.literal("text"),
-					v.literal("other"),
-				),
-			),
+					v.literal('audio'),
+					v.literal('video'),
+					v.literal('text'),
+					v.literal('other')
+				)
+			)
 		),
 		isManuallyTracked: v.optional(v.boolean()),
-		userTargetLanguageId: v.id("userTargetLanguages"),
+		userTargetLanguageId: v.id('userTargetLanguages'),
 
 		source: v.optional(
 			v.union(
-				v.literal("youtube"),
-				v.literal("spotify"),
-				v.literal("anki"),
-				v.literal("manual"),
-			),
+				v.literal('youtube'),
+				v.literal('spotify'),
+				v.literal('anki'),
+				v.literal('manual')
+			)
 		),
 	},
 	returns: v.object({
-		activityId: v.id("userTargetLanguageActivities"),
+		activityId: v.id('userTargetLanguageActivities'),
 		currentStreak: v.number(),
 		longestStreak: v.number(),
 		experience: v.object({
-			userTargetLanguageId: v.id("userTargetLanguages"),
+			userTargetLanguageId: v.id('userTargetLanguages'),
 			previousTotalExperience: v.number(),
 			newTotalExperience: v.number(),
 			previousLevel: v.number(),
@@ -55,13 +55,13 @@ export const addLanguageActivity = internalMutation({
 	}),
 	handler: async (
 		ctx,
-		args,
+		args
 	): Promise<{
 		activityId: any;
 		currentStreak: number;
 		longestStreak: number;
 		experience: {
-			userTargetLanguageId: Id<"userTargetLanguages">;
+			userTargetLanguageId: Id<'userTargetLanguages'>;
 			previousTotalExperience: number;
 			newTotalExperience: number;
 			previousLevel: number;
@@ -70,15 +70,15 @@ export const addLanguageActivity = internalMutation({
 		};
 	}> => {
 		const userId = args.userId ?? (await getAuthUserId(ctx));
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		// 1) Create the language activity
 		const nowEffective = await getEffectiveNow(ctx);
 		const occurredAt = args.occurredAt ?? nowEffective;
-		const activityId = await ctx.db.insert("userTargetLanguageActivities", {
+		const activityId = await ctx.db.insert('userTargetLanguageActivities', {
 			userId,
 			isManuallyTracked:
-				args.isManuallyTracked ?? (args.source ?? "manual") === "manual",
+				args.isManuallyTracked ?? (args.source ?? 'manual') === 'manual',
 			languageCode: args.languageCode,
 			title: args.title,
 			userTargetLanguageId: args.userTargetLanguageId,
@@ -86,7 +86,7 @@ export const addLanguageActivity = internalMutation({
 			// Canonical ms field
 			durationInMs: Math.max(0, Math.round(args.durationInMinutes * 60 * 1000)),
 			occurredAt,
-			state: "completed",
+			state: 'completed',
 			contentKey: args.contentKey ?? undefined,
 			externalUrl: args.externalUrl ?? undefined,
 		});
@@ -97,7 +97,7 @@ export const addLanguageActivity = internalMutation({
 			{
 				userId,
 				occurredAt,
-			},
+			}
 		);
 
 		// 3) Add experience (with optional streak bonus)
@@ -116,11 +116,11 @@ export const addLanguageActivity = internalMutation({
 						isManuallyTracked: args.isManuallyTracked ?? false,
 						durationInMinutes: args.durationInMinutes,
 						occurredAt,
-					},
+					}
 				),
 				isApplyingStreakBonus: true,
 				durationInMinutes: args.durationInMinutes,
-			},
+			}
 		);
 
 		return {
@@ -150,36 +150,36 @@ export const addManualLanguageActivity = mutation({
 		contentCategories: v.optional(
 			v.array(
 				v.union(
-					v.literal("audio"),
-					v.literal("video"),
-					v.literal("text"),
-					v.literal("other"),
-				),
-			),
+					v.literal('audio'),
+					v.literal('video'),
+					v.literal('text'),
+					v.literal('other')
+				)
+			)
 		),
 	},
-	returns: v.object({ activityId: v.id("userTargetLanguageActivities") }),
+	returns: v.object({ activityId: v.id('userTargetLanguageActivities') }),
 	handler: async (
 		ctx,
-		args,
-	): Promise<{ activityId: Id<"userTargetLanguageActivities"> }> => {
+		args
+	): Promise<{ activityId: Id<'userTargetLanguageActivities'> }> => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		const nowEffective = await getEffectiveNow(ctx);
 		const occurredAt = args.occurredAt ?? nowEffective;
 
 		// Infer language from user's current target language id
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 		const currentTargetLanguageId = user.currentTargetLanguageId as
-			| Id<"userTargetLanguages">
+			| Id<'userTargetLanguages'>
 			| undefined;
 		if (!currentTargetLanguageId)
-			throw new Error("User target language not found");
+			throw new Error('User target language not found');
 		const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
 		if (!currentTargetLanguage)
-			throw new Error("User target language not found");
+			throw new Error('User target language not found');
 		const languageCode = currentTargetLanguage.languageCode as LanguageCode;
 
 		const result = await ctx.runMutation(
@@ -193,7 +193,7 @@ export const addManualLanguageActivity = mutation({
 				externalUrl: args.externalUrl ?? undefined,
 				isManuallyTracked: true,
 				languageCode: languageCode as LanguageCode,
-			},
+			}
 		);
 
 		return { activityId: result.activityId };
@@ -203,13 +203,13 @@ export const addManualLanguageActivity = mutation({
 export const listManualTrackedLanguageActivities = query({
 	args: {},
 	returns: v.array(v.string()),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
 		const items = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
-			.order("desc")
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.order('desc')
 			.take(200);
 		const set = new Set<string>();
 		for (const it of items) {
@@ -224,10 +224,10 @@ export const listRecentLanguageActivities = query({
 	returns: v.object({
 		items: v.array(
 			v.object({
-				_id: v.id("userTargetLanguageActivities"),
+				_id: v.id('userTargetLanguageActivities'),
 				_creationTime: v.number(),
-				userId: v.id("users"),
-				userTargetLanguageId: v.id("userTargetLanguages"),
+				userId: v.id('users'),
+				userTargetLanguageId: v.id('userTargetLanguages'),
 				// source removed from schema
 				// categories removed from persisted schema
 				isManuallyTracked: v.optional(v.boolean()),
@@ -236,7 +236,7 @@ export const listRecentLanguageActivities = query({
 				description: v.optional(v.string()),
 				durationInMs: v.optional(v.number()),
 				occurredAt: v.optional(v.number()),
-				state: v.union(v.literal("in-progress"), v.literal("completed")),
+				state: v.union(v.literal('in-progress'), v.literal('completed')),
 				contentKey: v.optional(v.string()),
 				externalUrl: v.optional(v.string()),
 				label: v.optional(
@@ -246,10 +246,10 @@ export const listRecentLanguageActivities = query({
 						thumbnailUrl: v.optional(v.string()),
 						fullDurationInSeconds: v.optional(v.number()),
 						contentUrl: v.optional(v.string()),
-					}),
+					})
 				),
 				awardedExperience: v.number(),
-			}),
+			})
 		),
 		effectiveNow: v.number(),
 	}),
@@ -262,9 +262,9 @@ export const listRecentLanguageActivities = query({
 
 		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
 		const items = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user_and_occurred", (q: any) => q.eq("userId", userId))
-			.order("desc")
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user_and_occurred', (q: any) => q.eq('userId', userId))
+			.order('desc')
 			.take(limit);
 		const results: Array<any> = [];
 		for (const it of items) {
@@ -272,9 +272,9 @@ export const listRecentLanguageActivities = query({
 			const contentKey = (it as any).contentKey as string | undefined;
 			if (contentKey) {
 				const l = await ctx.db
-					.query("contentLabels")
-					.withIndex("by_content_key", (q: any) =>
-						q.eq("contentKey", contentKey),
+					.query('contentLabels')
+					.withIndex('by_content_key', (q: any) =>
+						q.eq('contentKey', contentKey)
 					)
 					.unique();
 				if (l) {
@@ -289,14 +289,14 @@ export const listRecentLanguageActivities = query({
 			}
 			// Sum actual awarded experience tied to this activity from the ledger
 			const exps = await ctx.db
-				.query("userTargetLanguageExperienceLedgers")
-				.withIndex("by_language_activity", (q: any) =>
-					q.eq("languageActivityId", (it as any)._id),
+				.query('userTargetLanguageExperienceLedgers')
+				.withIndex('by_language_activity', (q: any) =>
+					q.eq('languageActivityId', (it as any)._id)
 				)
 				.collect();
 			const awardedExperience = exps.reduce(
 				(sum: number, e: any) => sum + Math.floor(e?.deltaExperience ?? 0),
-				0,
+				0
 			);
 			results.push({
 				...(it as any),
@@ -316,20 +316,20 @@ export const recentManualLanguageActivities = query({
 			durationInMs: v.optional(v.number()),
 			// categories removed from persisted schema
 			description: v.optional(v.string()),
-			userTargetLanguageId: v.id("userTargetLanguages"),
-		}),
+			userTargetLanguageId: v.id('userTargetLanguages'),
+		})
 	),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
 		const items = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
-			.order("desc")
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.order('desc')
 			.take(Math.max(1, Math.min(20, args.limit ?? 8)));
 		return items
-			.filter((it) => it.isManuallyTracked)
-			.map((it) => ({
+			.filter(it => it.isManuallyTracked)
+			.map(it => ({
 				title: it.title,
 				durationInMs: (it as any).durationInMs,
 				description: it.description,
@@ -348,16 +348,16 @@ export const getWeeklySourceDistribution = query({
 			spotify: v.number(),
 			anki: v.number(),
 			misc: v.number(),
-		}),
+		})
 	),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
 
 		// Load user's preferred timezone (fallback to UTC)
 		const user = await ctx.db.get(userId);
 		const timeZone: string =
-			((user as any)?.timezone as string | undefined) || "UTC";
+			((user as any)?.timezone as string | undefined) || 'UTC';
 
 		// Helpers to work with local dates in a given timezone
 		function getLocalYmdParts(ms: number): {
@@ -366,15 +366,15 @@ export const getWeeklySourceDistribution = query({
 			d: number;
 			weekday: string;
 		} {
-			const fmt = new Intl.DateTimeFormat("en-US", {
+			const fmt = new Intl.DateTimeFormat('en-US', {
 				timeZone,
-				year: "numeric",
-				month: "numeric",
-				day: "numeric",
-				weekday: "short",
+				year: 'numeric',
+				month: 'numeric',
+				day: 'numeric',
+				weekday: 'short',
 			});
 			const parts = fmt.formatToParts(new Date(ms));
-			const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+			const lookup = Object.fromEntries(parts.map(p => [p.type, p.value]));
 			const y = parseInt(lookup.year, 10);
 			const m = parseInt(lookup.month, 10);
 			const d = parseInt(lookup.day, 10);
@@ -387,29 +387,28 @@ export const getWeeklySourceDistribution = query({
 
 		// Get current date in user's timezone
 		const nowInUserTz = new Date(effectiveNowMs);
-		const userTzFormatter = new Intl.DateTimeFormat("en-CA", {
+		const userTzFormatter = new Intl.DateTimeFormat('en-CA', {
 			timeZone,
-			year: "numeric",
-			month: "2-digit",
-			day: "2-digit",
-			weekday: "short",
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			weekday: 'short',
 		});
 
 		const nowParts = userTzFormatter.formatToParts(nowInUserTz);
 		const nowYear = parseInt(
-			nowParts.find((p) => p.type === "year")?.value || "0",
-			10,
+			nowParts.find(p => p.type === 'year')?.value || '0',
+			10
 		);
 		const nowMonth = parseInt(
-			nowParts.find((p) => p.type === "month")?.value || "0",
-			10,
+			nowParts.find(p => p.type === 'month')?.value || '0',
+			10
 		);
 		const nowDay = parseInt(
-			nowParts.find((p) => p.type === "day")?.value || "0",
-			10,
+			nowParts.find(p => p.type === 'day')?.value || '0',
+			10
 		);
-		const nowWeekday =
-			nowParts.find((p) => p.type === "weekday")?.value || "Mon";
+		const nowWeekday = nowParts.find(p => p.type === 'weekday')?.value || 'Mon';
 
 		// Calculate days since Monday (0 = Monday, 6 = Sunday)
 		const weekdayIndexMap: Record<string, number> = {
@@ -427,12 +426,12 @@ export const getWeeklySourceDistribution = query({
 		const mondayDate = new Date(
 			nowYear,
 			nowMonth - 1,
-			nowDay - daysSinceMonday,
+			nowDay - daysSinceMonday
 		);
 		const sundayDate = new Date(
 			nowYear,
 			nowMonth - 1,
-			nowDay - daysSinceMonday + 6,
+			nowDay - daysSinceMonday + 6
 		);
 
 		// Get UTC timestamps for the start of Monday and end of Sunday in user's timezone
@@ -445,14 +444,14 @@ export const getWeeklySourceDistribution = query({
 			1;
 
 		// Initialize 7-day bins Mon..Sun
-		const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+		const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 		const bins: Array<{
 			day: string;
 			youtube: number;
 			spotify: number;
 			anki: number;
 			misc: number;
-		}> = labels.map((label) => ({
+		}> = labels.map(label => ({
 			day: label,
 			youtube: 0,
 			spotify: 0,
@@ -462,12 +461,12 @@ export const getWeeklySourceDistribution = query({
 
 		// Query activities within this local week window using UTC timestamps
 		const itemsWithOccurredAt = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user_and_occurred", (q: any) =>
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user_and_occurred', (q: any) =>
 				q
-					.eq("userId", userId)
-					.gte("occurredAt", mondayStartLocalUtcMs)
-					.lte("occurredAt", sundayEndLocalUtcMs),
+					.eq('userId', userId)
+					.gte('occurredAt', mondayStartLocalUtcMs)
+					.lte('occurredAt', sundayEndLocalUtcMs)
 			)
 			.collect();
 
@@ -475,12 +474,12 @@ export const getWeeklySourceDistribution = query({
 		// This covers historical records created before `occurredAt` was consistently set.
 		const allItems: Array<any> = [...itemsWithOccurredAt];
 		const candidates = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const it of candidates) {
 			const occ = (it as any)?.occurredAt as number | undefined;
-			if (typeof occ === "number") continue; // already included via occurredAt index
+			if (typeof occ === 'number') continue; // already included via occurredAt index
 			const created = (it as any)._creationTime as number;
 			if (created < mondayStartLocalUtcMs || created > sundayEndLocalUtcMs)
 				continue;
@@ -494,7 +493,7 @@ export const getWeeklySourceDistribution = query({
 			const occurredInUserTz = new Date(occurred);
 			const occurredParts = userTzFormatter.formatToParts(occurredInUserTz);
 			const occurredWeekday =
-				occurredParts.find((p) => p.type === "weekday")?.value || "Mon";
+				occurredParts.find(p => p.type === 'weekday')?.value || 'Mon';
 
 			// Calculate day index (0 = Monday, 6 = Sunday)
 			const dayIndex = weekdayIndexMap[occurredWeekday] ?? 0;
@@ -502,28 +501,28 @@ export const getWeeklySourceDistribution = query({
 
 			const minutes = Math.max(
 				0,
-				Math.round(((it as any).durationInMs ?? 0) / 60000),
+				Math.round(((it as any).durationInMs ?? 0) / 60000)
 			);
 
 			const key = (it as any).contentKey as string | undefined;
-			const inferred: "youtube" | "spotify" | "anki" | "misc" = key?.startsWith(
-				"youtube:",
+			const inferred: 'youtube' | 'spotify' | 'anki' | 'misc' = key?.startsWith(
+				'youtube:'
 			)
-				? "youtube"
-				: key?.startsWith("spotify:")
-					? "spotify"
-					: key?.startsWith("anki:")
-						? "anki"
-						: "misc";
+				? 'youtube'
+				: key?.startsWith('spotify:')
+					? 'spotify'
+					: key?.startsWith('anki:')
+						? 'anki'
+						: 'misc';
 
 			switch (inferred) {
-				case "youtube":
+				case 'youtube':
 					bins[dayIndex].youtube += minutes;
 					break;
-				case "spotify":
+				case 'spotify':
 					bins[dayIndex].spotify += minutes;
 					break;
-				case "anki":
+				case 'anki':
 					bins[dayIndex].anki += minutes;
 					break;
 				default:
@@ -536,30 +535,30 @@ export const getWeeklySourceDistribution = query({
 });
 
 export const deleteLanguageActivity = mutation({
-	args: { activityId: v.id("userTargetLanguageActivities") },
+	args: { activityId: v.id('userTargetLanguageActivities') },
 	returns: v.object({ deleted: v.boolean(), reversedDelta: v.number() }),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		const act = await ctx.db.get(args.activityId);
 		if (!act) return { deleted: false, reversedDelta: 0 };
-		if ((act as any).userId !== userId) throw new Error("Forbidden");
+		if ((act as any).userId !== userId) throw new Error('Forbidden');
 
 		const utlId = (act as any)
-			.userTargetLanguageId as Id<"userTargetLanguages">;
+			.userTargetLanguageId as Id<'userTargetLanguages'>;
 		const languageCode = (act as any).languageCode;
 
 		// Sum all experience deltas tied to this activity
 		const exps = await ctx.db
-			.query("userTargetLanguageExperienceLedgers")
-			.withIndex("by_language_activity", (q: any) =>
-				q.eq("languageActivityId", args.activityId),
+			.query('userTargetLanguageExperienceLedgers')
+			.withIndex('by_language_activity', (q: any) =>
+				q.eq('languageActivityId', args.activityId)
 			)
 			.collect();
 		const totalDelta = exps.reduce(
 			(sum, e: any) => sum + (e.deltaExperience ?? 0),
-			0,
+			0
 		);
 
 		if (totalDelta !== 0) {
@@ -571,14 +570,14 @@ export const deleteLanguageActivity = mutation({
 					languageActivityId: args.activityId,
 					deltaExperience: -totalDelta,
 					isApplyingStreakBonus: false,
-				},
+				}
 			);
 		}
 
 		// Adjust minutes
 		const durationMinutes = Math.max(
 			0,
-			Math.round(((act as any).durationInMs ?? 0) / 60000),
+			Math.round(((act as any).durationInMs ?? 0) / 60000)
 		);
 		if (durationMinutes > 0) {
 			const utl = await ctx.db.get(utlId);
@@ -587,7 +586,7 @@ export const deleteLanguageActivity = mutation({
 				await ctx.db.patch(utlId, {
 					totalMinutesLearning: Math.max(
 						0,
-						currentTotalMinutes - durationMinutes,
+						currentTotalMinutes - durationMinutes
 					),
 				} as any);
 			}

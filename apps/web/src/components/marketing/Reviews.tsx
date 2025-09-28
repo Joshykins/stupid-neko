@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { motion, useAnimationFrame, useReducedMotion } from "framer-motion";
-import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Card } from "../ui/card";
+import { motion, useAnimationFrame, useReducedMotion } from 'framer-motion';
+import React from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
 
 // --- Types
 export type Review = {
@@ -15,16 +15,16 @@ export type Review = {
 	avatarUrl?: string;
 	rating: 1 | 2 | 3 | 4 | 5;
 	text: string;
-	source?: "Discord" | "Reddit" | "App" | "Twitter" | "YouTube" | string;
+	source?: 'Discord' | 'Reddit' | 'App' | 'Twitter' | 'YouTube' | string;
 	date?: string;
 };
 
-type Variant = "marquee" | "card";
+type Variant = 'marquee' | 'card';
 
 export type ReviewsShowcaseProps = {
 	reviews: Review[];
 	variant?: Variant; // marquee = infinite scroll; card = swipeable deck
-	direction?: "left" | "right";
+	direction?: 'left' | 'right';
 	speed?: number; // pixels per second
 	className?: string;
 };
@@ -39,7 +39,7 @@ const Stars: React.FC<{ rating: number }> = ({ rating }) => (
 			<svg
 				key={i}
 				viewBox="0 0 20 20"
-				className={`h-4 w-4 ${i < rating ? "fill-main" : "fill-border"}`}
+				className={`h-4 w-4 ${i < rating ? 'fill-main' : 'fill-border'}`}
 				aria-hidden="true"
 			>
 				<path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.62L10 0 7.19 6.62 0 7.24l5.46 4.73L3.82 19 10 15.27z" />
@@ -50,9 +50,9 @@ const Stars: React.FC<{ rating: number }> = ({ rating }) => (
 
 const ReviewCard: React.FC<
 	{ r: Review } & React.HTMLAttributes<HTMLDivElement>
-> = ({ r, className = "", ...rest }) => (
+> = ({ r, className = '', ...rest }) => (
 	<Card
-		className={"group relative w-[20rem] shrink-0 px-4 py-3 " + className}
+		className={'group relative w-[20rem] shrink-0 px-4 py-3 ' + className}
 		{...rest}
 	>
 		<div className="flex items-center gap-3">
@@ -62,10 +62,10 @@ const ReviewCard: React.FC<
 				) : (
 					<AvatarFallback>
 						{r.name
-							.split(" ")
-							.map((n) => n[0])
+							.split(' ')
+							.map(n => n[0])
 							.slice(0, 2)
-							.join("")}
+							.join('')}
 					</AvatarFallback>
 				)}
 			</Avatar>
@@ -99,8 +99,8 @@ const ReviewCard: React.FC<
 
 // --- Marquee variant
 const Marquee: React.FC<
-	Omit<ReviewsShowcaseProps, "variant"> & { _id?: string }
-> = ({ reviews, direction = "left", speed = 80, className = "" }) => {
+	Omit<ReviewsShowcaseProps, 'variant'> & { _id?: string }
+> = ({ reviews, direction = 'left', speed = 80, className = '' }) => {
 	const prefersReduced = useReducedMotion();
 	const xRef = React.useRef(0);
 	const containerRef = React.useRef<HTMLDivElement>(null);
@@ -112,20 +112,20 @@ const Marquee: React.FC<
 		const container = containerRef.current;
 		if (!container) return;
 
-		const pxPerMs = (speed / 1000) * (direction === "left" ? -1 : 1);
+		const pxPerMs = (speed / 1000) * (direction === 'left' ? -1 : 1);
 		xRef.current += pxPerMs * delta;
 
 		const trackWidth = container.scrollWidth / 2; // because we duplicate
 		// wrap with modulo so there is no momentary flicker
 		const wrapped = ((xRef.current % trackWidth) + trackWidth) % trackWidth; // positive modulo
-		container.style.transform = `translateX(${direction === "left" ? wrapped * -1 : wrapped}px)`;
+		container.style.transform = `translateX(${direction === 'left' ? wrapped * -1 : wrapped}px)`;
 	});
 
 	const duplicated = React.useMemo(() => [...reviews, ...reviews], [reviews]);
 
 	return (
 		<div
-			className={"relative overflow-hidden rounded-base " + className}
+			className={'relative overflow-hidden rounded-base ' + className}
 			onMouseEnter={() => setPaused(true)}
 			onMouseLeave={() => setPaused(false)}
 		>
@@ -150,12 +150,12 @@ const Marquee: React.FC<
 
 // --- Card (swipeable) variant
 const SwipeDeck: React.FC<
-	Omit<ReviewsShowcaseProps, "variant"> & { _id?: string }
-> = ({ reviews, className = "" }) => {
+	Omit<ReviewsShowcaseProps, 'variant'> & { _id?: string }
+> = ({ reviews, className = '' }) => {
 	return (
 		<div
 			className={
-				"relative rounded-base border-2 border-border bg-secondary-background p-4 shadow-shadow " +
+				'relative rounded-base border-2 border-border bg-secondary-background p-4 shadow-shadow ' +
 				className
 			}
 		>
@@ -177,9 +177,9 @@ const SwipeDeck: React.FC<
 						left: -Math.max(0, reviews.length * 320 - 320),
 						right: 0,
 					}}
-					whileTap={{ cursor: "grabbing" }}
+					whileTap={{ cursor: 'grabbing' }}
 				>
-					{reviews.map((r) => (
+					{reviews.map(r => (
 						<ReviewCard key={r.id} r={r} />
 					))}
 				</motion.div>
@@ -201,12 +201,12 @@ const SwipeDeck: React.FC<
 // --- Main exported component
 const ReviewsShowcase: React.FC<ReviewsShowcaseProps> = ({
 	reviews,
-	variant = "marquee",
+	variant = 'marquee',
 	direction,
 	speed,
 	className,
 }) => {
-	if (variant === "card") {
+	if (variant === 'card') {
 		return <SwipeDeck reviews={reviews} className={className} />;
 	}
 	return (
@@ -224,48 +224,48 @@ export default ReviewsShowcase;
 // --- Example usage ----------------------------------------------------------
 export const demoReviews: Review[] = [
 	{
-		id: "1",
-		name: "Aiko Tanaka",
-		handle: "aiko",
+		id: '1',
+		name: 'Aiko Tanaka',
+		handle: 'aiko',
 		rating: 5,
-		text: "Hit a 30‑day streak and the app dropped a celebratory meme in Discord. Actually made me laugh while studying kanji.",
-		source: "Discord",
-		date: "2 days ago",
+		text: 'Hit a 30‑day streak and the app dropped a celebratory meme in Discord. Actually made me laugh while studying kanji.',
+		source: 'Discord',
+		date: '2 days ago',
 	},
 	{
-		id: "2",
-		name: "Marco S",
+		id: '2',
+		name: 'Marco S',
 		rating: 5,
-		text: "The auto‑nya‑lytics are wild. I just listen to music and YouTube and the stats update by themselves.",
-		source: "App",
-		date: "This week",
+		text: 'The auto‑nya‑lytics are wild. I just listen to music and YouTube and the stats update by themselves.',
+		source: 'App',
+		date: 'This week',
 	},
 	{
-		id: "3",
-		name: "Yuri P",
+		id: '3',
+		name: 'Yuri P',
 		rating: 4,
-		text: "Finally a tracker that gets immersion. My Anki + Spotify habits are all in one place.",
-		source: "Reddit",
+		text: 'Finally a tracker that gets immersion. My Anki + Spotify habits are all in one place.',
+		source: 'Reddit',
 	},
 	{
-		id: "4",
-		name: "Samir",
+		id: '4',
+		name: 'Samir',
 		rating: 5,
-		text: "Clean UI, cute cat, and the XP bar is dangerously motivating.",
-		source: "Twitter",
+		text: 'Clean UI, cute cat, and the XP bar is dangerously motivating.',
+		source: 'Twitter',
 	},
 	{
-		id: "5",
-		name: "Lucia",
+		id: '5',
+		name: 'Lucia',
 		rating: 5,
-		text: "I learn when I’m bored now. Subway Surfers + vocab = focus mode.",
-		source: "App",
+		text: 'I learn when I’m bored now. Subway Surfers + vocab = focus mode.',
+		source: 'App',
 	},
 	{
-		id: "6",
-		name: "Kenji",
+		id: '6',
+		name: 'Kenji',
 		rating: 5,
-		text: "Hit N5 in 6 months. The weekly charts showed exactly where I was slacking.",
-		source: "App",
+		text: 'Hit N5 in 6 months. The weekly charts showed exactly where I was slacking.',
+		source: 'App',
 	},
 ];

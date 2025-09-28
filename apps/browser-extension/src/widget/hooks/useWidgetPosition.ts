@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useAnimation, useMotionValue } from "framer-motion";
+import { useEffect, useRef, useState } from 'react';
+import { useAnimation, useMotionValue } from 'framer-motion';
 
 type Position = { left: number; top: number };
 
@@ -36,7 +36,7 @@ function savePosition(p: Position) {
 		chrome.storage.sync.set({ trackingWidgetPos: p });
 	} catch {}
 	try {
-		localStorage.setItem("trackingWidgetPos", JSON.stringify(p));
+		localStorage.setItem('trackingWidgetPos', JSON.stringify(p));
 	} catch {}
 }
 
@@ -60,29 +60,29 @@ export function useWidgetPosition() {
 	useEffect(() => {
 		(async () => {
 			try {
-				const data = await new Promise<Record<string, any>>((resolve) => {
+				const data = await new Promise<Record<string, any>>(resolve => {
 					try {
-						chrome.storage.sync.get(["trackingWidgetPos"], (items) =>
-							resolve(items || {}),
+						chrome.storage.sync.get(['trackingWidgetPos'], items =>
+							resolve(items || {})
 						);
 					} catch {
 						resolve({});
 					}
 				});
 				const p = data?.trackingWidgetPos;
-				if (p && typeof p.left === "number" && typeof p.top === "number") {
+				if (p && typeof p.left === 'number' && typeof p.top === 'number') {
 					setPosition({ left: p.left, top: p.top });
 					return;
 				}
 			} catch {}
 			try {
-				const raw = localStorage.getItem("trackingWidgetPos");
+				const raw = localStorage.getItem('trackingWidgetPos');
 				if (raw) {
 					const parsed = JSON.parse(raw);
 					if (
 						parsed &&
-						typeof parsed.left === "number" &&
-						typeof parsed.top === "number"
+						typeof parsed.left === 'number' &&
+						typeof parsed.top === 'number'
 					)
 						setPosition(parsed);
 				}
@@ -107,8 +107,8 @@ export function useWidgetPosition() {
 			mvLeft.set(snapped.left);
 			mvTop.set(snapped.top);
 		};
-		window.addEventListener("resize", onResize);
-		return () => window.removeEventListener("resize", onResize);
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
 	}, [position.left, position.top, mvLeft, mvTop]);
 
 	const onDragStart = () => {
@@ -126,7 +126,7 @@ export function useWidgetPosition() {
 
 	const onDragEnd = async (
 		_e: any,
-		info: { offset: { x: number; y: number } },
+		info: { offset: { x: number; y: number } }
 	) => {
 		const start = startRef.current || {
 			left: position.left,
@@ -143,7 +143,7 @@ export function useWidgetPosition() {
 			y: 0,
 			left: snapped.left,
 			top: snapped.top,
-			transition: { type: "spring", stiffness: 500, damping: 40 },
+			transition: { type: 'spring', stiffness: 500, damping: 40 },
 		});
 		setPosition(snapped);
 		mvLeft.set(snapped.left);

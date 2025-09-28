@@ -1,8 +1,8 @@
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
-import type * as React from "react";
+import type * as React from 'react';
 
-import { cn } from "../../lib/utils";
+import { cn } from '../../lib/utils';
 
 function ScrollArea({
 	className,
@@ -12,10 +12,10 @@ function ScrollArea({
 	return (
 		<ScrollAreaPrimitive.Root
 			data-slot="scroll-area"
-			className={cn("h-[225px] overflow-hidden", className)}
+			className={cn('h-[225px] overflow-hidden', className)}
 			{...props}
 		>
-			<ScrollAreaPrimitive.Viewport className={cn("h-full w-full font-base")}>
+			<ScrollAreaPrimitive.Viewport className={cn('h-full w-full font-base')}>
 				{children}
 			</ScrollAreaPrimitive.Viewport>
 			<ScrollBar />
@@ -26,7 +26,7 @@ function ScrollArea({
 
 function ScrollBar({
 	className,
-	orientation = "vertical",
+	orientation = 'vertical',
 	...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
 	return (
@@ -34,12 +34,12 @@ function ScrollBar({
 			data-slot="scroll-area-scrollbar"
 			orientation={orientation}
 			className={cn(
-				"flex touch-none select-none transition-colors",
-				orientation === "vertical" &&
-					"h-full w-2.5 border-l border-l-transparent p-[1px]",
-				orientation === "horizontal" &&
-					"h-2.5 flex-col border-t border-t-transparent p-[1px]",
-				className,
+				'flex touch-none select-none transition-colors',
+				orientation === 'vertical' &&
+					'h-full w-2.5 border-l border-l-transparent p-[1px]',
+				orientation === 'horizontal' &&
+					'h-2.5 flex-col border-t border-t-transparent p-[1px]',
+				className
 			)}
 			{...props}
 		>

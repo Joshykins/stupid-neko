@@ -2,7 +2,7 @@ import type {
 	ContentActivityEvent,
 	ContentHandler,
 	ContentMetadata,
-} from "./types";
+} from './types';
 
 // Default content handler - runs in content script context
 let isActive = false;
@@ -31,48 +31,48 @@ const detectLanguage = (): string | null => {
 
 	// Check meta language tags
 	const metaLang = document.querySelector(
-		'meta[http-equiv="content-language"]',
+		'meta[http-equiv="content-language"]'
 	);
 	if (metaLang) {
-		return metaLang.getAttribute("content")?.toLowerCase() ?? null;
+		return metaLang.getAttribute('content')?.toLowerCase() ?? null;
 	}
 
 	// Check for language in content (simple heuristic)
-	const bodyText = document.body?.textContent || "";
-	const titleText = document.title || "";
-	const allText = (bodyText + " " + titleText).toLowerCase();
+	const bodyText = document.body?.textContent || '';
+	const titleText = document.title || '';
+	const allText = (bodyText + ' ' + titleText).toLowerCase();
 
 	// Simple language detection based on common words/characters
 	// This is a basic implementation - could be enhanced with more sophisticated detection
 	if (/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(allText)) {
-		return "ja"; // Japanese
+		return 'ja'; // Japanese
 	}
 	if (/[\u4e00-\u9faf]/.test(allText)) {
-		return "zh"; // Chinese
+		return 'zh'; // Chinese
 	}
 	if (/[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(allText)) {
-		return "ko"; // Korean
+		return 'ko'; // Korean
 	}
 	if (
 		/[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/.test(
-			allText,
+			allText
 		)
 	) {
-		return "ar"; // Arabic
+		return 'ar'; // Arabic
 	}
 	if (/[\u0400-\u04ff]/.test(allText)) {
-		return "ru"; // Russian
+		return 'ru'; // Russian
 	}
 
 	return null;
 };
 
-const emit = (event: "start" | "pause" | "end" | "progress"): void => {
+const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 	if (!onPlaybackEvent) return;
 
 	const metadata = getCurrentMetadata();
 	const payload: ContentActivityEvent = {
-		source: "manual",
+		source: 'manual',
 		event,
 		url: location.href,
 		ts: Date.now(),
@@ -80,14 +80,14 @@ const emit = (event: "start" | "pause" | "end" | "progress"): void => {
 	};
 
 	// Add position/duration for progress events
-	if (event === "progress" && startTime) {
+	if (event === 'progress' && startTime) {
 		payload.position = Math.floor((Date.now() - startTime) / 1000);
 		payload.duration = Math.floor((Date.now() - startTime) / 1000);
 		payload.rate = 1;
 	}
 
 	try {
-		console.debug("[content][default] emit", payload);
+		console.debug('[content][default] emit', payload);
 	} catch {
 		// Ignore console errors
 	}
@@ -99,7 +99,7 @@ const setupActivityTracking = (): void => {
 	// Emit progress events every 30 seconds
 	activityTimer = window.setInterval(() => {
 		if (isActive) {
-			emit("progress");
+			emit('progress');
 		}
 	}, 30000);
 };
@@ -114,8 +114,8 @@ const checkLanguageMatch = (targetLanguage?: string): void => {
 		if (onPlaybackEvent) {
 			const metadata = getCurrentMetadata();
 			const payload: ContentActivityEvent = {
-				source: "language-detection",
-				event: "language-detected",
+				source: 'language-detection',
+				event: 'language-detected',
 				url: location.href,
 				ts: Date.now(),
 				metadata: {
@@ -139,7 +139,7 @@ export const defaultContentHandler: ContentHandler = {
 		startTime = Date.now();
 
 		// Emit start event
-		emit("start");
+		emit('start');
 
 		// Set up activity tracking
 		setupActivityTracking();
@@ -151,7 +151,7 @@ export const defaultContentHandler: ContentHandler = {
 		isActive = false;
 
 		// Emit end event
-		emit("end");
+		emit('end');
 
 		// Clean up timers
 		if (activityTimer) {

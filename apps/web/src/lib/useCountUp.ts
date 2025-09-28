@@ -1,5 +1,5 @@
-import { CountUp } from "countup.js";
-import * as React from "react";
+import { CountUp } from 'countup.js';
+import * as React from 'react';
 
 type UseCountUpOptions = {
 	duration?: number;
@@ -12,8 +12,8 @@ export function useCountUp(value: number, options: UseCountUpOptions = {}) {
 	const {
 		duration = 1.2,
 		decimalPlaces = 0,
-		prefix = "",
-		suffix = "",
+		prefix = '',
+		suffix = '',
 	} = options;
 	const ref = React.useRef<HTMLSpanElement | null>(null);
 	const last = React.useRef<number>(0);
@@ -28,7 +28,7 @@ export function useCountUp(value: number, options: UseCountUpOptions = {}) {
 			decimalPlaces,
 			useEasing: true,
 			useGrouping: true,
-			separator: ",",
+			separator: ',',
 			prefix,
 			suffix,
 		});
@@ -37,7 +37,7 @@ export function useCountUp(value: number, options: UseCountUpOptions = {}) {
 				last.current = value;
 			});
 		} else {
-			node.textContent = `${prefix ?? ""}${value.toLocaleString(undefined, { maximumFractionDigits: decimalPlaces })}${suffix ?? ""}`;
+			node.textContent = `${prefix ?? ''}${value.toLocaleString(undefined, { maximumFractionDigits: decimalPlaces })}${suffix ?? ''}`;
 			last.current = value;
 		}
 		return () => cu.reset();

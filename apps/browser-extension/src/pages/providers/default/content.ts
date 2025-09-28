@@ -1,6 +1,6 @@
-import type { ContentActivityEvent } from "../../background/providers/types";
-import { callBackground } from "../../../messaging/messagesContentRouter";
-import { defaultContentHandler } from "../../background/providers/default";
+import type { ContentActivityEvent } from '../../background/providers/types';
+import { callBackground } from '../../../messaging/messagesContentRouter';
+import { defaultContentHandler } from '../../background/providers/default';
 
 let userTargetLanguage: string | undefined;
 
@@ -10,7 +10,7 @@ export default {
 
 		const forward = (e: ContentActivityEvent) => {
 			if (cb) cb(e);
-			callBackground("CONTENT_ACTIVITY_EVENT", { payload: e }).catch(() => {});
+			callBackground('CONTENT_ACTIVITY_EVENT', { payload: e }).catch(() => {});
 		};
 		defaultContentHandler.start(forward);
 

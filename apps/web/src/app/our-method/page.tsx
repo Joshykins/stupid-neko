@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import {
 	Award,
 	BookOpenCheck,
@@ -9,17 +9,17 @@ import {
 	Sparkles,
 	Timer,
 	TrendingUp,
-} from "lucide-react";
-import Link from "next/link";
-import * as React from "react";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
+} from 'lucide-react';
+import Link from 'next/link';
+import * as React from 'react';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
-} from "../../components/ui/card";
+} from '../../components/ui/card';
 
 export default function OurMethodPage() {
 	return (
@@ -86,19 +86,19 @@ export default function OurMethodPage() {
 								<div className="grid grid-cols-4 h-full">
 									<div
 										style={{
-											backgroundColor: "var(--color-source-youtube-soft)",
+											backgroundColor: 'var(--color-source-youtube-soft)',
 										}}
 									/>
 									<div
 										style={{
-											backgroundColor: "var(--color-source-spotify-soft)",
+											backgroundColor: 'var(--color-source-spotify-soft)',
 										}}
 									/>
 									<div
-										style={{ backgroundColor: "var(--color-source-anki-soft)" }}
+										style={{ backgroundColor: 'var(--color-source-anki-soft)' }}
 									/>
 									<div
-										style={{ backgroundColor: "var(--color-source-misc-soft)" }}
+										style={{ backgroundColor: 'var(--color-source-misc-soft)' }}
 									/>
 								</div>
 							</div>

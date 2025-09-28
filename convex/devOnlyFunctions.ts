@@ -1,18 +1,18 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
-import { dangerousTestingEnabled, getEffectiveNow } from "./utils";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { v } from 'convex/values';
+import { api, internal } from './_generated/api';
+import { mutation, query } from './_generated/server';
+import { dangerousTestingEnabled, getEffectiveNow } from './utils';
 
 function isDangerousTestingEnabled() {
-	console.log("isDangerousTestingEnabled", process.env.DANGEROUS_TESTING);
+	console.log('isDangerousTestingEnabled', process.env.DANGEROUS_TESTING);
 	return dangerousTestingEnabled();
 }
 
 export const getDevDate = query({
 	args: {},
 	returns: v.union(v.number(), v.null()),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		if (!isDangerousTestingEnabled()) {
 			return null;
 		}
@@ -33,9 +33,9 @@ export const setDevDate = mutation({
 			return null;
 		}
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 		await ctx.db.patch(userId, { devDate: args.timestamp ?? undefined } as any);
 		return null;
 	},
@@ -61,9 +61,9 @@ export const stepDevDate = mutation({
 			return { devDate: Date.now() };
 		}
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 
 		const now = await getEffectiveNow(ctx);
 		const current = (user as any).devDate ?? now;
@@ -110,20 +110,20 @@ export const stepDevDate = mutation({
 				// Helper to sample a source by weight
 				function pickSource() {
 					const r = Math.random();
-					if (r < weights.manual) return "manual" as const;
-					if (r < weights.manual + weights.youtube) return "youtube" as const;
+					if (r < weights.manual) return 'manual' as const;
+					if (r < weights.manual + weights.youtube) return 'youtube' as const;
 					if (r < weights.manual + weights.youtube + weights.spotify)
-						return "spotify" as const;
-					return "anki" as const;
+						return 'spotify' as const;
+					return 'anki' as const;
 				}
 
 				// Infer userTargetLanguage for passing into addLanguageActivity
 				const userId = await getAuthUserId(ctx);
-				if (!userId) throw new Error("Unauthorized");
+				if (!userId) throw new Error('Unauthorized');
 				const utl = await ctx.db
-					.query("userTargetLanguages")
-					.withIndex("by_user", (q: any) => q.eq("userId", userId))
-					.order("desc")
+					.query('userTargetLanguages')
+					.withIndex('by_user', (q: any) => q.eq('userId', userId))
+					.order('desc')
 					.take(1);
 				const userTargetLanguageId = utl && utl[0]?._id;
 				const languageCode = utl && utl[0]?.languageCode;
@@ -133,13 +133,13 @@ export const stepDevDate = mutation({
 					const durationInMinutes =
 						Math.floor(Math.random() * (maxM - minM + 1)) + minM;
 					const title =
-						source === "anki"
-							? "Anki review"
-							: source === "youtube"
-								? "YouTube video"
-								: source === "spotify"
-									? "Spotify listening"
-									: "Manual entry";
+						source === 'anki'
+							? 'Anki review'
+							: source === 'youtube'
+								? 'YouTube video'
+								: source === 'spotify'
+									? 'Spotify listening'
+									: 'Manual entry';
 					await ctx.runMutation(
 						internal.userTargetLanguageActivityFunctions.addLanguageActivity,
 						{
@@ -148,17 +148,17 @@ export const stepDevDate = mutation({
 							occurredAt: next,
 							languageCode: languageCode as any,
 							contentCategories:
-								source === "anki"
-									? ["other"]
-									: source === "youtube"
-										? ["video"]
-										: source === "spotify"
-											? ["audio"]
-											: ["other"],
-							isManuallyTracked: source === "manual",
+								source === 'anki'
+									? ['other']
+									: source === 'youtube'
+										? ['video']
+										: source === 'spotify'
+											? ['audio']
+											: ['other'],
+							isManuallyTracked: source === 'manual',
 							userTargetLanguageId: userTargetLanguageId as any,
 							source,
-						} as any,
+						} as any
 					);
 				}
 			}
@@ -185,17 +185,17 @@ export const seedAtDevDate = mutation({
 			return { inserted: 0 };
 		}
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		const nowEffective = await getEffectiveNow(ctx);
 
 		// Infer current target language
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 		const utl = await ctx.db
-			.query("userTargetLanguages")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
-			.order("desc")
+			.query('userTargetLanguages')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.order('desc')
 			.take(1);
 		const userTargetLanguageId = utl && utl[0]?._id;
 		const languageCode = utl && utl[0]?.languageCode;
@@ -223,13 +223,13 @@ export const seedAtDevDate = mutation({
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
-			if (manualOnly) return "manual" as const;
+			if (manualOnly) return 'manual' as const;
 			const r = Math.random();
-			if (r < weights.manual) return "manual" as const;
-			if (r < weights.manual + weights.youtube) return "youtube" as const;
+			if (r < weights.manual) return 'manual' as const;
+			if (r < weights.manual + weights.youtube) return 'youtube' as const;
 			if (r < weights.manual + weights.youtube + weights.spotify)
-				return "spotify" as const;
-			return "anki" as const;
+				return 'spotify' as const;
+			return 'anki' as const;
 		}
 
 		let inserted = 0;
@@ -238,13 +238,13 @@ export const seedAtDevDate = mutation({
 			const durationInMinutes =
 				Math.floor(Math.random() * (maxM - minM + 1)) + minM;
 			const title =
-				source === "anki"
-					? "Anki review"
-					: source === "youtube"
-						? "YouTube video"
-						: source === "spotify"
-							? "Spotify listening"
-							: "Manual entry";
+				source === 'anki'
+					? 'Anki review'
+					: source === 'youtube'
+						? 'YouTube video'
+						: source === 'spotify'
+							? 'Spotify listening'
+							: 'Manual entry';
 			await ctx.runMutation(
 				internal.userTargetLanguageActivityFunctions.addLanguageActivity,
 				{
@@ -253,17 +253,17 @@ export const seedAtDevDate = mutation({
 					occurredAt: nowEffective,
 					languageCode: languageCode as any,
 					contentCategories:
-						source === "anki"
-							? ["other"]
-							: source === "youtube"
-								? ["video"]
-								: source === "spotify"
-									? ["audio"]
-									: ["other"],
-					isManuallyTracked: source === "manual",
+						source === 'anki'
+							? ['other']
+							: source === 'youtube'
+								? ['video']
+								: source === 'spotify'
+									? ['audio']
+									: ['other'],
+					isManuallyTracked: source === 'manual',
 					userTargetLanguageId: userTargetLanguageId as any,
 					source,
-				} as any,
+				} as any
 			);
 			inserted += 1;
 		}
@@ -289,17 +289,17 @@ export const seedToTargetAtDevDate = mutation({
 			return { inserted: 0, seededMinutes: 0 };
 		}
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		const nowEffective = await getEffectiveNow(ctx);
 
 		// Infer current target language
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 		const utl = await ctx.db
-			.query("userTargetLanguages")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
-			.order("desc")
+			.query('userTargetLanguages')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.order('desc')
 			.take(1);
 		const userTargetLanguageId = utl && utl[0]?._id;
 		const languageCode = utl && utl[0]?.languageCode;
@@ -328,13 +328,13 @@ export const seedToTargetAtDevDate = mutation({
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
-			if (manualOnly) return "manual" as const;
+			if (manualOnly) return 'manual' as const;
 			const r = Math.random();
-			if (r < weights.manual) return "manual" as const;
-			if (r < weights.manual + weights.youtube) return "youtube" as const;
+			if (r < weights.manual) return 'manual' as const;
+			if (r < weights.manual + weights.youtube) return 'youtube' as const;
 			if (r < weights.manual + weights.youtube + weights.spotify)
-				return "spotify" as const;
-			return "anki" as const;
+				return 'spotify' as const;
+			return 'anki' as const;
 		}
 
 		function randomInt(lo: number, hi: number) {
@@ -351,13 +351,13 @@ export const seedToTargetAtDevDate = mutation({
 			if (chunk <= 0) break;
 			const source = pickSource();
 			const title =
-				source === "anki"
-					? "Anki review"
-					: source === "youtube"
-						? "YouTube video"
-						: source === "spotify"
-							? "Spotify listening"
-							: "Manual entry";
+				source === 'anki'
+					? 'Anki review'
+					: source === 'youtube'
+						? 'YouTube video'
+						: source === 'spotify'
+							? 'Spotify listening'
+							: 'Manual entry';
 
 			await ctx.runMutation(
 				internal.userTargetLanguageActivityFunctions.addLanguageActivity,
@@ -367,17 +367,17 @@ export const seedToTargetAtDevDate = mutation({
 					occurredAt: nowEffective,
 					languageCode: languageCode as any,
 					contentCategories:
-						source === "anki"
-							? ["other"]
-							: source === "youtube"
-								? ["video"]
-								: source === "spotify"
-									? ["audio"]
-									: ["other"],
-					isManuallyTracked: source === "manual",
+						source === 'anki'
+							? ['other']
+							: source === 'youtube'
+								? ['video']
+								: source === 'spotify'
+									? ['audio']
+									: ['other'],
+					isManuallyTracked: source === 'manual',
 					userTargetLanguageId: userTargetLanguageId as any,
 					source,
-				} as any,
+				} as any
 			);
 
 			seededMinutes += chunk;
@@ -391,17 +391,17 @@ export const seedToTargetAtDevDate = mutation({
 export const resetMyDevState = mutation({
 	args: {},
 	returns: v.null(),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		if (!isDangerousTestingEnabled()) {
 			return null;
 		}
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 
 		// 1) Delete all language activities for the user
 		const activities = await ctx.db
-			.query("userTargetLanguageActivities")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userTargetLanguageActivities')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const a of activities) {
 			await ctx.db.delete(a._id);
@@ -409,8 +409,8 @@ export const resetMyDevState = mutation({
 
 		// 1b) Delete all content activities for the user
 		const contentActs = await ctx.db
-			.query("contentActivities")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('contentActivities')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const ev of contentActs) {
 			await ctx.db.delete(ev._id);
@@ -418,8 +418,8 @@ export const resetMyDevState = mutation({
 
 		// 2) Delete experience records for the user
 		const exps = await ctx.db
-			.query("userTargetLanguageExperienceLedgers")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userTargetLanguageExperienceLedgers')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const e of exps) {
 			await ctx.db.delete(e._id);
@@ -427,8 +427,8 @@ export const resetMyDevState = mutation({
 
 		// 2b) Delete streak day ledger entries
 		const dayLedger = await ctx.db
-			.query("userStreakDayLedgers")
-			.withIndex("by_user_and_occurred", (q: any) => q.eq("userId", userId))
+			.query('userStreakDayLedgers')
+			.withIndex('by_user_and_occurred', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const row of dayLedger) {
 			await ctx.db.delete(row._id);
@@ -436,8 +436,8 @@ export const resetMyDevState = mutation({
 
 		// 2c) Delete streak vacation ledger entries
 		const freezeLedger = await ctx.db
-			.query("userStreakVacationLedgers")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userStreakVacationLedgers')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const row of freezeLedger) {
 			await ctx.db.delete(row._id);
@@ -452,8 +452,8 @@ export const resetMyDevState = mutation({
 		} as any);
 
 		const utls = await ctx.db
-			.query("userTargetLanguages")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userTargetLanguages')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const utl of utls) {
 			await ctx.db.patch(utl._id, {
@@ -463,8 +463,8 @@ export const resetMyDevState = mutation({
 
 		// 4) Clear streakDays for the user
 		const days = await ctx.db
-			.query("userStreakDays")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('userStreakDays')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.collect();
 		for (const d of days) {
 			await ctx.db.delete(d._id);

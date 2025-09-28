@@ -1,15 +1,15 @@
-import type { MessageMap, MsgKey, Req, Res } from "./messages";
+import type { MessageMap, MsgKey, Req, Res } from './messages';
 
 type ContentHandler<K extends MsgKey> = (
-	req: MessageMap[K]["req"],
-	sender: chrome.runtime.MessageSender,
+	req: MessageMap[K]['req'],
+	sender: chrome.runtime.MessageSender
 ) => Res<K> | Promise<Res<K>>;
 
 const handlers: Partial<Record<MsgKey, ContentHandler<MsgKey>>> = {};
 
 export function onContent<K extends MsgKey>(
 	type: K,
-	handler: ContentHandler<K>,
+	handler: ContentHandler<K>
 ) {
 	handlers[type] = handler as unknown as ContentHandler<MsgKey>;
 }
@@ -30,15 +30,15 @@ chrome.runtime.onMessage.addListener(
 		})();
 
 		return true;
-	},
+	}
 );
 
 export function callBackground<K extends MsgKey>(
 	type: K,
-	payload: Omit<Req<K>, "type">,
+	payload: Omit<Req<K>, 'type'>
 ): Promise<Res<K>> {
 	return new Promise((resolve, reject) => {
-		chrome.runtime.sendMessage({ type, ...(payload as object) }, (resp) => {
+		chrome.runtime.sendMessage({ type, ...(payload as object) }, resp => {
 			const lastErr = chrome.runtime.lastError;
 			if (lastErr) return reject(new Error(lastErr.message));
 			if (resp?.error) return reject(new Error(resp.error));

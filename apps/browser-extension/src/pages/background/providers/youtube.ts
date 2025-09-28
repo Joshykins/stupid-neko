@@ -2,7 +2,7 @@ import type {
 	ContentActivityEvent,
 	ContentMetadata,
 	ContentHandler,
-} from "./types";
+} from './types';
 
 // YouTube content handler - runs in content script context
 let player: HTMLVideoElement | null = null;
@@ -24,21 +24,21 @@ let onPlaybackEvent: ((event: ContentActivityEvent) => void) | null = null;
 
 const getVideo = (): HTMLVideoElement | null => {
 	return document.querySelector(
-		"video.html5-main-video",
+		'video.html5-main-video'
 	) as HTMLVideoElement | null;
 };
 
 const getCurrentVideoId = (): string | undefined => {
 	try {
 		const url = new URL(location.href);
-		const vParam = url.searchParams.get("v");
+		const vParam = url.searchParams.get('v');
 		if (vParam) return vParam;
-		if (url.hostname.endsWith("youtu.be")) {
-			const seg = url.pathname.split("/").filter(Boolean)[0];
+		if (url.hostname.endsWith('youtu.be')) {
+			const seg = url.pathname.split('/').filter(Boolean)[0];
 			if (seg) return seg;
 		}
-		if (url.pathname.startsWith("/shorts/")) {
-			const seg = url.pathname.split("/").filter(Boolean)[1];
+		if (url.pathname.startsWith('/shorts/')) {
+			const seg = url.pathname.split('/').filter(Boolean)[1];
 			if (seg) return seg;
 		}
 	} catch {
@@ -48,17 +48,17 @@ const getCurrentVideoId = (): string | undefined => {
 };
 
 const getCurrentMetadata = (): ContentMetadata => {
-	const title = document.title.replace(/ - YouTube$/, "");
+	const title = document.title.replace(/ - YouTube$/, '');
 	const videoId = getCurrentVideoId();
 	return { title, videoId };
 };
 
-const emit = (event: "start" | "pause" | "end" | "progress"): void => {
+const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 	if (!onPlaybackEvent) return;
 
 	const meta = getCurrentMetadata();
 	const payload: ContentActivityEvent = {
-		source: "youtube",
+		source: 'youtube',
 		event,
 		url: location.href,
 		ts: Date.now(),
@@ -66,14 +66,14 @@ const emit = (event: "start" | "pause" | "end" | "progress"): void => {
 	};
 
 	// Add position/duration for progress events
-	if (event === "progress" && player) {
+	if (event === 'progress' && player) {
 		payload.position = Math.floor(player.currentTime);
 		payload.duration = Math.floor(player.duration || 0);
 		payload.rate = player.playbackRate;
 	}
 
 	try {
-		console.debug("[content][youtube] emit", payload);
+		console.debug('[content][youtube] emit', payload);
 	} catch {
 		// Ignore console errors
 	}
@@ -85,7 +85,7 @@ const attach = (p: HTMLVideoElement): void => {
 	const ensureStart = () => {
 		if (!isPlaying && !p.paused) {
 			isPlaying = true;
-			emit("start");
+			emit('start');
 		}
 	};
 
@@ -95,26 +95,26 @@ const attach = (p: HTMLVideoElement): void => {
 	onPause = () => {
 		if (isPlaying) {
 			isPlaying = false;
-			emit("pause");
+			emit('pause');
 		}
 	};
 	onEnded = () => {
 		if (isPlaying) {
 			isPlaying = false;
 		}
-		emit("end");
+		emit('end');
 	};
 
-	p.addEventListener("play", onPlay, { passive: true });
-	p.addEventListener("playing", onPlaying, { passive: true });
-	p.addEventListener("seeked", onSeeked, { passive: true });
-	p.addEventListener("pause", onPause, { passive: true });
-	p.addEventListener("ended", onEnded, { passive: true });
+	p.addEventListener('play', onPlay, { passive: true });
+	p.addEventListener('playing', onPlaying, { passive: true });
+	p.addEventListener('seeked', onSeeked, { passive: true });
+	p.addEventListener('pause', onPause, { passive: true });
+	p.addEventListener('ended', onEnded, { passive: true });
 
 	// Set up heartbeat for progress tracking
 	const heartbeat = () => {
 		if (!player || player.paused) return;
-		emit("progress");
+		emit('progress');
 	};
 
 	if (heartbeatTimer != null) {
@@ -126,19 +126,19 @@ const attach = (p: HTMLVideoElement): void => {
 const detach = (): void => {
 	if (player) {
 		if (onPlay) {
-			player.removeEventListener("play", onPlay);
+			player.removeEventListener('play', onPlay);
 		}
 		if (onPlaying) {
-			player.removeEventListener("playing", onPlaying);
+			player.removeEventListener('playing', onPlaying);
 		}
 		if (onSeeked) {
-			player.removeEventListener("seeked", onSeeked);
+			player.removeEventListener('seeked', onSeeked);
 		}
 		if (onPause) {
-			player.removeEventListener("pause", onPause);
+			player.removeEventListener('pause', onPause);
 		}
 		if (onEnded) {
-			player.removeEventListener("ended", onEnded);
+			player.removeEventListener('ended', onEnded);
 		}
 	}
 	player = null;
@@ -153,7 +153,7 @@ const watchForVideo = (): void => {
 	const currentId = getCurrentVideoId() ?? null;
 	if (currentId !== lastVideoId) {
 		try {
-			console.debug("[content][youtube] nav/videoId change", {
+			console.debug('[content][youtube] nav/videoId change', {
 				from: lastVideoId,
 				to: currentId,
 			});
@@ -162,7 +162,7 @@ const watchForVideo = (): void => {
 		}
 
 		if (isPlaying) {
-			emit("end");
+			emit('end');
 		}
 		isPlaying = false;
 		lastVideoId = currentId;
@@ -185,7 +185,7 @@ export const youtubeContentHandler: ContentHandler = {
 		watchForVideo();
 		watchInterval = window.setInterval(() => watchForVideo(), 1500);
 		onNavigate = () => watchForVideo();
-		document.addEventListener("yt-navigate-finish", onNavigate, true);
+		document.addEventListener('yt-navigate-finish', onNavigate, true);
 	},
 
 	stop: () => {
@@ -194,7 +194,7 @@ export const youtubeContentHandler: ContentHandler = {
 			watchInterval = null;
 		}
 		if (onNavigate) {
-			document.removeEventListener("yt-navigate-finish", onNavigate, true);
+			document.removeEventListener('yt-navigate-finish', onNavigate, true);
 			onNavigate = null;
 		}
 		detach();

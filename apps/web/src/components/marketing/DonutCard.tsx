@@ -1,11 +1,11 @@
-"use client";
-import * as React from "react";
+'use client';
+import * as React from 'react';
 
 export function DonutCard() {
 	// simple static donut using SVG to avoid extra deps
 	const total = 100;
 	const segments = [34, 26, 18, 22];
-	const colors = ["#84cc16", "#60a5fa", "#f59e0b", "#ef4444"]; // lime, blue, amber, red
+	const colors = ['#84cc16', '#60a5fa', '#f59e0b', '#ef4444']; // lime, blue, amber, red
 	const radius = 42;
 	const strokeWidth = 16;
 	const circumference = 2 * Math.PI * radius;

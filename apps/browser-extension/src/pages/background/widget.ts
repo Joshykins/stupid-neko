@@ -1,15 +1,15 @@
 // Widget state management for background script
 
-import { getMetaForUrl } from "../providers/registry";
+import { getMetaForUrl } from '../providers/registry';
 import type {
 	WidgetStateUpdate,
 	PlaybackEvent,
-} from "../../messaging/messages";
+} from '../../messaging/messages';
 
-const DEBUG_LOG_PREFIX = "[bg:widget]";
+const DEBUG_LOG_PREFIX = '[bg:widget]';
 
 // State
-let currentWidgetState: WidgetStateUpdate = { state: "idle" };
+let currentWidgetState: WidgetStateUpdate = { state: 'idle' };
 
 export function updateWidgetState(update: WidgetStateUpdate): void {
 	console.log(`${DEBUG_LOG_PREFIX} Updating widget state:`, update);
@@ -17,15 +17,15 @@ export function updateWidgetState(update: WidgetStateUpdate): void {
 	console.log(`${DEBUG_LOG_PREFIX} New widget state:`, currentWidgetState);
 
 	// Send state update to all tabs
-	chrome.tabs.query({}, (tabs) => {
+	chrome.tabs.query({}, tabs => {
 		console.log(
-			`${DEBUG_LOG_PREFIX} Sending widget state to ${tabs.length} tabs`,
+			`${DEBUG_LOG_PREFIX} Sending widget state to ${tabs.length} tabs`
 		);
-		tabs.forEach((tab) => {
+		tabs.forEach(tab => {
 			if (tab.id) {
 				chrome.tabs
 					.sendMessage(tab.id, {
-						type: "WIDGET_STATE_UPDATE",
+						type: 'WIDGET_STATE_UPDATE',
 						payload: currentWidgetState,
 					})
 					.catch(() => {
@@ -38,24 +38,24 @@ export function updateWidgetState(update: WidgetStateUpdate): void {
 
 export async function updateWidgetStateForEvent(
 	evt: PlaybackEvent,
-	tabId: number,
+	tabId: number
 ): Promise<void> {
 	const meta = getMetaForUrl(evt.url);
 	const providerName = meta.id;
 	const domain = new URL(evt.url).hostname;
 
 	// Import tabStates to check consent
-	const { tabStates } = await import("./content-activity-router");
+	const { tabStates } = await import('./content-activity-router');
 	const tabState = tabStates[tabId];
 
 	// Update state based on event type
 	switch (evt.event) {
-		case "start": {
-			if (providerName === "default") {
+		case 'start': {
+			if (providerName === 'default') {
 				// For default provider, check if we have consent
 				if (tabState?.hasConsent) {
 					updateWidgetState({
-						state: "default-tracking",
+						state: 'default-tracking',
 						provider: providerName,
 						domain,
 						startTime: Date.now(),
@@ -67,7 +67,7 @@ export async function updateWidgetStateForEvent(
 				} else {
 					// No consent yet, show idle state
 					updateWidgetState({
-						state: "idle",
+						state: 'idle',
 						provider: providerName,
 						domain,
 						metadata: {
@@ -79,9 +79,9 @@ export async function updateWidgetStateForEvent(
 			} else {
 				// Non-default providers (like YouTube) work as before
 				const stateKey =
-					providerName === "youtube"
-						? "recording-youtube"
-						: "recording-default";
+					providerName === 'youtube'
+						? 'recording-youtube'
+						: 'recording-default';
 				updateWidgetState({
 					state: stateKey,
 					provider: providerName,
@@ -95,17 +95,17 @@ export async function updateWidgetStateForEvent(
 			break;
 		}
 
-		case "end":
+		case 'end':
 			updateWidgetState({
-				state: "idle",
+				state: 'idle',
 			});
 			break;
 
-		case "progress":
+		case 'progress':
 			// Keep current state but update metadata if needed
 			if (
-				currentWidgetState.state.startsWith("recording-") ||
-				currentWidgetState.state === "default-tracking"
+				currentWidgetState.state.startsWith('recording-') ||
+				currentWidgetState.state === 'default-tracking'
 			) {
 				updateWidgetState({
 					state: currentWidgetState.state,
@@ -122,16 +122,16 @@ export async function updateWidgetStateForEvent(
 
 export function initializeWidgetState(): void {
 	updateWidgetState({
-		state: "idle",
+		state: 'idle',
 	});
 }
 
 export async function handleConsentResponse(
 	payload: Record<string, unknown> | undefined,
-	tabId: number,
+	tabId: number
 ): Promise<void> {
 	const consent = payload?.consent as boolean;
-	if (typeof consent !== "boolean") return;
+	if (typeof consent !== 'boolean') return;
 
 	// Get current tab URL to determine domain
 	const tab = await chrome.tabs.get(tabId);
@@ -140,14 +140,14 @@ export async function handleConsentResponse(
 	const domain = new URL(tab.url).hostname;
 
 	// Import functions to update consent
-	const { updateConsentForDomain } = await import("./content-activity-router");
+	const { updateConsentForDomain } = await import('./content-activity-router');
 	updateConsentForDomain(tabId, domain, consent);
 
 	if (consent) {
 		// Start tracking with consent
 		updateWidgetState({
-			state: "default-tracking",
-			provider: "default",
+			state: 'default-tracking',
+			provider: 'default',
 			domain,
 			startTime: Date.now(),
 			metadata: {
@@ -158,7 +158,7 @@ export async function handleConsentResponse(
 	} else {
 		// Return to idle
 		updateWidgetState({
-			state: "idle",
+			state: 'idle',
 		});
 	}
 }
@@ -166,7 +166,7 @@ export async function handleConsentResponse(
 export function handleStopRecording(_tabId: number): void {
 	// Stop recording and return to idle
 	updateWidgetState({
-		state: "idle",
+		state: 'idle',
 	});
 
 	// Send end event if there's an active recording
@@ -177,7 +177,7 @@ export function handleStopRecording(_tabId: number): void {
 export function handleRetry(): void {
 	// Reset to idle state
 	updateWidgetState({
-		state: "idle",
+		state: 'idle',
 	});
 }
 
@@ -193,13 +193,13 @@ export async function startTrackingFromPopup(tabId: number): Promise<void> {
 	const domain = new URL(tab.url).hostname;
 
 	// Import functions to update consent
-	const { updateConsentForDomain } = await import("./content-activity-router");
+	const { updateConsentForDomain } = await import('./content-activity-router');
 	updateConsentForDomain(tabId, domain, true);
 
 	// Start tracking with consent
 	updateWidgetState({
-		state: "default-tracking",
-		provider: "default",
+		state: 'default-tracking',
+		provider: 'default',
 		domain,
 		startTime: Date.now(),
 		metadata: {
@@ -212,7 +212,7 @@ export async function startTrackingFromPopup(tabId: number): Promise<void> {
 export async function handleLanguageDetection(
 	tabId: number,
 	detectedLanguage: string,
-	targetLanguage?: string,
+	targetLanguage?: string
 ): Promise<void> {
 	// Get current tab URL to determine domain
 	const tab = await chrome.tabs.get(tabId);
@@ -226,8 +226,8 @@ export async function handleLanguageDetection(
 		detectedLanguage.startsWith(targetLanguage.toLowerCase())
 	) {
 		updateWidgetState({
-			state: "prompt-user-for-track",
-			provider: "default",
+			state: 'prompt-user-for-track',
+			provider: 'default',
 			domain,
 			detectedLanguage,
 			metadata: {

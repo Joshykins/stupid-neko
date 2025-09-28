@@ -1,1 +1,1 @@
-import "./pages/background/index.ts";
+import './pages/background/index.ts';

@@ -1,10 +1,10 @@
 // This file is used to register handlers for messages from the content script
 
-import type { MsgKey, Req, Res, MessageMap } from "./messages";
+import type { MsgKey, Req, Res, MessageMap } from './messages';
 
 type Handler<K extends MsgKey> = (
-	req: MessageMap[K]["req"],
-	sender: chrome.runtime.MessageSender,
+	req: MessageMap[K]['req'],
+	sender: chrome.runtime.MessageSender
 ) => Res<K> | Promise<Res<K>>;
 
 // Registry of handlers keyed by message type
@@ -30,23 +30,23 @@ chrome.runtime.onMessage.addListener(
 				sendResponse(res);
 			} catch (err) {
 				// You can standardize error envelopes if you like
-				sendResponse({ error: String(err ?? "Unknown error") });
+				sendResponse({ error: String(err ?? 'Unknown error') });
 			}
 		})();
 
 		// Return true to keep the message channel open for async response
 		return true;
-	},
+	}
 );
 
 // (Optional) wrapper for sending to a specific tab (BG → content)
 export function sendToTab<K extends MsgKey>(
 	tabId: number,
 	type: K,
-	payload: Omit<Req<K>, "type">,
+	payload: Omit<Req<K>, 'type'>
 ): Promise<Res<K>> {
 	return new Promise((resolve, reject) => {
-		chrome.tabs.sendMessage(tabId, { type, ...(payload as object) }, (resp) => {
+		chrome.tabs.sendMessage(tabId, { type, ...(payload as object) }, resp => {
 			const lastErr = chrome.runtime.lastError;
 			if (lastErr) return reject(new Error(lastErr.message));
 			if (resp?.error) return reject(new Error(resp.error));

@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useForm } from "@tanstack/react-form";
-import { useQuery } from "convex/react";
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useForm } from '@tanstack/react-form';
+import { useQuery } from 'convex/react';
 import {
 	ArrowBigLeft,
 	ArrowBigLeftDash,
 	ArrowLeft,
 	Loader2,
 	Sparkles,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../../../../../convex/_generated/api";
-import { UnreleasedBanner } from "../../../components/marketing/UnreleasedBanner";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
-import { Label } from "../../../components/ui/label";
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '../../../../../../convex/_generated/api';
+import { UnreleasedBanner } from '../../../components/marketing/UnreleasedBanner';
+import { Badge } from '../../../components/ui/badge';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
 
 export default function SignInPage() {
 	const router = useRouter();
@@ -28,19 +28,19 @@ export default function SignInPage() {
 	const [lastUsedProvider, setLastUsedProvider] = useState<string | null>(null);
 	// Surface an OAuth account-not-found message if redirected back
 	useEffect(() => {
-		if (typeof window === "undefined") return;
+		if (typeof window === 'undefined') return;
 		const url = new URL(window.location.href);
-		const err = url.searchParams.get("oauthError");
+		const err = url.searchParams.get('oauthError');
 		if (err) {
-			url.searchParams.delete("oauthError");
-			window.history.replaceState({}, "", url.toString());
-			if (err === "no_account") {
+			url.searchParams.delete('oauthError');
+			window.history.replaceState({}, '', url.toString());
+			if (err === 'no_account') {
 				setErrorMessage(
-					"No account exists for this provider. Please create an account first.",
+					'No account exists for this provider. Please create an account first.'
 				);
-			} else if (err === "invalid_code") {
+			} else if (err === 'invalid_code') {
 				setErrorMessage(
-					"Your pre-release code was invalid or already used. Please enter a valid code and try again.",
+					'Your pre-release code was invalid or already used. Please enter a valid code and try again.'
 				);
 			}
 		}
@@ -49,15 +49,15 @@ export default function SignInPage() {
 	// Load last used auth provider from localStorage
 	useEffect(() => {
 		try {
-			if (typeof window !== "undefined") {
-				const saved = window.localStorage.getItem("lastAuthProvider");
+			if (typeof window !== 'undefined') {
+				const saved = window.localStorage.getItem('lastAuthProvider');
 				if (saved) setLastUsedProvider(saved);
 			}
-		} catch { }
+		} catch {}
 	}, []);
 
-	const [preReleaseCode, setPreReleaseCode] = useState("");
-	const [debouncedCode, setDebouncedCode] = useState("");
+	const [preReleaseCode, setPreReleaseCode] = useState('');
+	const [debouncedCode, setDebouncedCode] = useState('');
 	const [isValidating, setIsValidating] = useState(false);
 	useEffect(() => {
 		const t = setTimeout(() => setDebouncedCode(preReleaseCode), 1000);
@@ -85,24 +85,24 @@ export default function SignInPage() {
 		if (validation !== undefined) setIsValidating(false);
 	}, [validation, debouncedCode]);
 
-	const form = useForm<{ email: string; password: string; }>({
+	const form = useForm<{ email: string; password: string }>({
 		defaultValues: {
-			email: "",
-			password: "",
+			email: '',
+			password: '',
 		},
 		onSubmit: async () => {
 			setErrorMessage(
-				"Email/password sign-in is no longer supported. Please use Google or Discord.",
+				'Email/password sign-in is no longer supported. Please use Google or Discord.'
 			);
 		},
 	});
 
 	const oauthProviders = useMemo(
 		() => [
-			{ name: "Discord", strategy: "oauth_discord" as const },
-			{ name: "Google", strategy: "oauth_google" as const },
+			{ name: 'Discord', strategy: 'oauth_discord' as const },
+			{ name: 'Google', strategy: 'oauth_google' as const },
 		],
-		[],
+		[]
 	);
 
 	return (
@@ -117,7 +117,7 @@ export default function SignInPage() {
 						<div className="relative p-6 ">
 							<div className="absolute left-0 -top-4 -translate-y-[100%] ">
 								<Link href="/">
-									<Button variant={"default"} size={"sm"}>
+									<Button variant={'default'} size={'sm'}>
 										<ArrowBigLeftDash />
 										Back
 									</Button>
@@ -159,31 +159,31 @@ export default function SignInPage() {
 											id="code"
 											placeholder="XXXX-XXXX-XXXX"
 											value={preReleaseCode}
-											onChange={(e) => {
+											onChange={e => {
 												const raw = e.target.value.toUpperCase();
-												const only = raw.replace(/[^A-Z0-9]/g, "");
+												const only = raw.replace(/[^A-Z0-9]/g, '');
 												const a = only.slice(0, 4);
 												const b = only.slice(4, 8);
 												const c = only.slice(8, 12);
 												const parts = [a, b, c].filter(Boolean);
-												setPreReleaseCode(parts.join("-"));
+												setPreReleaseCode(parts.join('-'));
 											}}
-											onPaste={(e) => {
+											onPaste={e => {
 												try {
 													const text = e.clipboardData
-														.getData("text")
+														.getData('text')
 														.toUpperCase();
 													if (text) {
 														e.preventDefault();
-														const only = text.replace(/[^A-Z0-9]/g, "");
+														const only = text.replace(/[^A-Z0-9]/g, '');
 														const a = only.slice(0, 4);
 														const b = only.slice(4, 8);
 														const c = only.slice(8, 12);
 														const parts = [a, b, c].filter(Boolean);
-														const formatted = parts.join("-");
+														const formatted = parts.join('-');
 														setPreReleaseCode(formatted);
 													}
-												} catch { }
+												} catch {}
 											}}
 											className="uppercase tracking-widest pr-8"
 										/>
@@ -197,7 +197,7 @@ export default function SignInPage() {
 										validation &&
 										validation.valid === false && (
 											<p className="text-sm text-red-500">
-												{validation.reason ?? "Invalid code"}
+												{validation.reason ?? 'Invalid code'}
 											</p>
 										)}
 								</div>
@@ -221,37 +221,37 @@ export default function SignInPage() {
 							<Button
 								type="button"
 								variant="neutral"
-								size={"cta"}
+								size={'cta'}
 								className="relative w-full bg-[#5865F2] text-white"
 								disabled={!codeIsValid}
 								onClick={async () => {
 									try {
 										if (!codeIsValid) {
-											setErrorMessage("Enter a valid pre-release code");
+											setErrorMessage('Enter a valid pre-release code');
 											return;
 										}
 										try {
-											if (typeof window !== "undefined") {
+											if (typeof window !== 'undefined') {
 												window.localStorage.setItem(
-													"preReleaseCode",
-													preReleaseCode.trim(),
+													'preReleaseCode',
+													preReleaseCode.trim()
 												);
 												window.localStorage.setItem(
-													"lastAuthProvider",
-													"discord",
+													'lastAuthProvider',
+													'discord'
 												);
-												setLastUsedProvider("discord");
+												setLastUsedProvider('discord');
 											}
-										} catch { }
-										await signIn("discord", { redirectTo: "/get-started" });
+										} catch {}
+										await signIn('discord', { redirectTo: '/get-started' });
 									} catch (err: any) {
 										setErrorMessage(
-											err?.errors?.[0]?.message || "OAuth failed",
+											err?.errors?.[0]?.message || 'OAuth failed'
 										);
 									}
 								}}
 							>
-								{lastUsedProvider === "discord" && (
+								{lastUsedProvider === 'discord' && (
 									<Badge variant="dark" className="absolute -top-2 -right-2">
 										Last used
 									</Badge>
@@ -271,37 +271,37 @@ export default function SignInPage() {
 							<Button
 								type="button"
 								variant="neutral"
-								size={"cta"}
+								size={'cta'}
 								className="relative w-full bg-white text-black"
 								disabled={!codeIsValid}
 								onClick={async () => {
 									try {
 										if (!codeIsValid) {
-											setErrorMessage("Enter a valid pre-release code");
+											setErrorMessage('Enter a valid pre-release code');
 											return;
 										}
 										try {
-											if (typeof window !== "undefined") {
+											if (typeof window !== 'undefined') {
 												window.localStorage.setItem(
-													"preReleaseCode",
-													preReleaseCode.trim(),
+													'preReleaseCode',
+													preReleaseCode.trim()
 												);
 												window.localStorage.setItem(
-													"lastAuthProvider",
-													"google",
+													'lastAuthProvider',
+													'google'
 												);
-												setLastUsedProvider("google");
+												setLastUsedProvider('google');
 											}
-										} catch { }
-										await signIn("google", { redirectTo: "/get-started" });
+										} catch {}
+										await signIn('google', { redirectTo: '/get-started' });
 									} catch (err: any) {
 										setErrorMessage(
-											err?.errors?.[0]?.message || "OAuth failed",
+											err?.errors?.[0]?.message || 'OAuth failed'
 										);
 									}
 								}}
 							>
-								{lastUsedProvider === "google" && (
+								{lastUsedProvider === 'google' && (
 									<Badge variant="dark" className="absolute -top-2 -right-2">
 										Last used
 									</Badge>

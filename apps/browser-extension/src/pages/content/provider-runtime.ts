@@ -1,6 +1,6 @@
-import { onContent } from "../../messaging/messagesContentRouter";
-import type { ContentActivityEvent } from "../background/providers/types";
-import { loadContent } from "../providers/registry";
+import { onContent } from '../../messaging/messagesContentRouter';
+import type { ContentActivityEvent } from '../background/providers/types';
+import { loadContent } from '../providers/registry';
 
 // Minimal content-side runtime to activate/deactivate providers by id
 
@@ -11,7 +11,7 @@ type ProviderContent = {
 
 let active: { id: string; api: ProviderContent } | null = null;
 
-onContent("ACTIVATE_PROVIDER", async ({ providerId, targetLanguage }) => {
+onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 	try {
 		if (active?.id === providerId) return {};
 		if (active) {
@@ -21,8 +21,8 @@ onContent("ACTIVATE_PROVIDER", async ({ providerId, targetLanguage }) => {
 			active = null;
 		}
 
-		const key = Object.keys(loadContent).find((k) =>
-			k.includes(`/${providerId}/`),
+		const key = Object.keys(loadContent).find(k =>
+			k.includes(`/${providerId}/`)
 		);
 		if (!key)
 			return { error: `Provider content not found: ${providerId}` } as any;
@@ -41,7 +41,7 @@ onContent("ACTIVATE_PROVIDER", async ({ providerId, targetLanguage }) => {
 	}
 });
 
-onContent("DEACTIVATE_PROVIDER", async () => {
+onContent('DEACTIVATE_PROVIDER', async () => {
 	if (active) {
 		try {
 			active.api.stop();

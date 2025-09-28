@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Card } from "./ui/card";
+import Link from 'next/link';
+import { Card } from './ui/card';
 
 export function Footer() {
 	const year = new Date().getFullYear();

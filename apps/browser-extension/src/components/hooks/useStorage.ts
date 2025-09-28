@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-type StorageKeys = "integrationId" | "widgetEnabled";
+type StorageKeys = 'integrationId' | 'widgetEnabled';
 
 export function useStorage<T>(key: StorageKeys, defaultValue: T) {
 	const [value, setValue] = useState<T>(defaultValue);
@@ -9,7 +9,7 @@ export function useStorage<T>(key: StorageKeys, defaultValue: T) {
 	useEffect(() => {
 		const loadValue = async () => {
 			try {
-				chrome.storage.sync.get([key], (items) => {
+				chrome.storage.sync.get([key], items => {
 					const storedValue = items[key] as T | undefined;
 					setValue(storedValue !== undefined ? storedValue : defaultValue);
 					setLoading(false);

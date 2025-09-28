@@ -5,7 +5,8 @@
 	"scripts": {
 		"dev": "pnpm -w exec convex dev",
 		"build": "echo 'Convex has no build step'",
-		"start": "pnpm -w exec convex dev"
+		"start": "pnpm -w exec convex dev",
+		"lint": "echo 'No files to lint in backend package'"
 	},
 	"devDependencies": {
 		"convex": "^1.26.0"

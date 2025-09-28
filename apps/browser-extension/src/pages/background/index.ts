@@ -1,16 +1,16 @@
 // Background script entry point
 
-console.log("background script loaded");
+console.log('background script loaded');
 
 // Import modules
-import { invalidateAuthCache } from "./auth";
+import { invalidateAuthCache } from './auth';
 import {
 	handleTabActivated,
 	handleTabRemoved,
 	handleTabUpdated,
-} from "./content-activity-router";
-import { registerMessageHandlers } from "./message-handlers";
-import { initializeWidgetState } from "./widget";
+} from './content-activity-router';
+import { registerMessageHandlers } from './message-handlers';
+import { initializeWidgetState } from './widget';
 
 // Initialize background script modules
 
@@ -18,11 +18,11 @@ import { initializeWidgetState } from "./widget";
 registerMessageHandlers();
 
 // Set up event listeners
-chrome.tabs.onRemoved.addListener((tabId) => {
+chrome.tabs.onRemoved.addListener(tabId => {
 	handleTabRemoved(tabId);
 });
 
-chrome.tabs.onActivated.addListener((activeInfo) => {
+chrome.tabs.onActivated.addListener(activeInfo => {
 	handleTabActivated(activeInfo.tabId);
 });
 
@@ -32,7 +32,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 // When the Integration ID changes, invalidate cached auth state
 chrome.storage.onChanged.addListener((changes, area) => {
-	if (area === "sync" && changes && Object.hasOwn(changes, "integrationId")) {
+	if (area === 'sync' && changes && Object.hasOwn(changes, 'integrationId')) {
 		invalidateAuthCache();
 	}
 });

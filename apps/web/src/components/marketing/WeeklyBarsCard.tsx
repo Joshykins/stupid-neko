@@ -1,17 +1,17 @@
-"use client";
-import { useQuery } from "convex/react";
-import * as React from "react";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
-import { BarChart3 } from "lucide-react";
-import { api } from "../../../../../convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+'use client';
+import { useQuery } from 'convex/react';
+import * as React from 'react';
+import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import { BarChart3 } from 'lucide-react';
+import { api } from '../../../../../convex/_generated/api';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import {
 	ChartContainer,
 	ChartLegend,
 	ChartLegendContent,
 	ChartTooltip,
 	ChartTooltipContent,
-} from "../ui/chart";
+} from '../ui/chart';
 
 export function WeeklyBarsCard() {
 	const formatMinutes = (mins: number) => {
@@ -29,7 +29,7 @@ export function WeeklyBarsCard() {
 				<text
 					dy={12}
 					textAnchor="middle"
-					style={{ fill: "var(--color-main-foreground)" }}
+					style={{ fill: 'var(--color-main-foreground)' }}
 					className="font-bold"
 				>
 					{payload?.value}
@@ -38,25 +38,25 @@ export function WeeklyBarsCard() {
 		);
 	};
 	const chartConfig = {
-		youtube: { label: "YouTube", color: "var(--color-source-youtube-soft)" },
-		spotify: { label: "Spotify", color: "var(--color-source-spotify-soft)" },
-		anki: { label: "Anki", color: "var(--color-source-anki-soft)" },
-		misc: { label: "Misc", color: "var(--color-source-misc-soft)" },
+		youtube: { label: 'YouTube', color: 'var(--color-source-youtube-soft)' },
+		spotify: { label: 'Spotify', color: 'var(--color-source-spotify-soft)' },
+		anki: { label: 'Anki', color: 'var(--color-source-anki-soft)' },
+		misc: { label: 'Misc', color: 'var(--color-source-misc-soft)' },
 	} as const;
 
 	// Real data when authenticated, else fallback to demo
 	const weekly = useQuery(
 		api.userTargetLanguageActivityFunctions.getWeeklySourceDistribution,
-		{},
+		{}
 	);
 	const demoData = [
-		{ day: "Mon", youtube: 60, spotify: 35, anki: 20, misc: 10 },
-		{ day: "Tue", youtube: 40, spotify: 28, anki: 26, misc: 12 },
-		{ day: "Wed", youtube: 30, spotify: 22, anki: 18, misc: 8 },
-		{ day: "Thu", youtube: 55, spotify: 26, anki: 24, misc: 10 },
-		{ day: "Fri", youtube: 42, spotify: 25, anki: 20, misc: 9 },
-		{ day: "Sat", youtube: 24, spotify: 14, anki: 16, misc: 6 },
-		{ day: "Sun", youtube: 36, spotify: 20, anki: 18, misc: 7 },
+		{ day: 'Mon', youtube: 60, spotify: 35, anki: 20, misc: 10 },
+		{ day: 'Tue', youtube: 40, spotify: 28, anki: 26, misc: 12 },
+		{ day: 'Wed', youtube: 30, spotify: 22, anki: 18, misc: 8 },
+		{ day: 'Thu', youtube: 55, spotify: 26, anki: 24, misc: 10 },
+		{ day: 'Fri', youtube: 42, spotify: 25, anki: 20, misc: 9 },
+		{ day: 'Sat', youtube: 24, spotify: 14, anki: 16, misc: 6 },
+		{ day: 'Sun', youtube: 36, spotify: 20, anki: 18, misc: 7 },
 	];
 	const data = React.useMemo(() => {
 		if (weekly && weekly.length === 7) return weekly;
@@ -65,7 +65,7 @@ export function WeeklyBarsCard() {
 
 	// Compute totals and prepare placeholder values for zero days
 	const { prepared, maxTotal } = React.useMemo(() => {
-		const withTotals = data.map((d) => {
+		const withTotals = data.map(d => {
 			const total =
 				(Number((d as any).youtube) || 0) +
 				(Number((d as any).spotify) || 0) +
@@ -163,7 +163,7 @@ export function WeeklyBarsCard() {
 							content={(props: any) => {
 								const payload =
 									props?.payload?.filter(
-										(p: any) => p?.dataKey !== "__placeholder",
+										(p: any) => p?.dataKey !== '__placeholder'
 									) ?? [];
 								return (
 									<ChartTooltipContent
@@ -175,7 +175,7 @@ export function WeeklyBarsCard() {
 											name: string,
 											item: any,
 											index: number,
-											payloadItem: any,
+											payloadItem: any
 										) => {
 											const label = (chartConfig as any)[name]?.label || name;
 											const color = (payloadItem?.fill ??

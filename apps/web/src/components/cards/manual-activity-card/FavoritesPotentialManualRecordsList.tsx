@@ -1,26 +1,30 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery } from "convex/react";
-import { ExternalLink, Star } from "lucide-react";
-import Image from "next/image";
-import * as React from "react";
-import { toast } from "sonner";
-import { api } from "../../../../../../convex/_generated/api";
-import { Button } from "../../ui/button";
-import { ScrollArea } from "../../ui/scroll-area";
+import { useMutation, useQuery } from 'convex/react';
+import { ExternalLink, Star } from 'lucide-react';
+import Image from 'next/image';
+import * as React from 'react';
+import { toast } from 'sonner';
+import { api } from '../../../../../../convex/_generated/api';
+import { Button } from '../../ui/button';
+import { ScrollArea } from '../../ui/scroll-area';
 
-export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFavoriteAdded?: () => void; }) => {
+export const FavoritesPotentialManualRecordsList = ({
+	onFavoriteAdded,
+}: {
+	onFavoriteAdded?: () => void;
+}) => {
 	const [cursor, setCursor] = React.useState<number | undefined>(undefined);
 	const recentManuals = useQuery(
 		api.userTargetLanguageFavoriteActivityFunctions
 			.listManualActivitiesWithFavoriteMatch,
-		{ limit: 8, cursorOccurredAt: cursor },
+		{ limit: 8, cursorOccurredAt: cursor }
 	);
 	const setFavorite = useMutation(
-		api.userTargetLanguageFavoriteActivityFunctions.addFavoriteFromActivity,
+		api.userTargetLanguageFavoriteActivityFunctions.addFavoriteFromActivity
 	);
 	const deleteFavorite = useMutation(
-		api.userTargetLanguageFavoriteActivityFunctions.deleteFavorite,
+		api.userTargetLanguageFavoriteActivityFunctions.deleteFavorite
 	);
 	const [historyCursorStack, setHistoryCursorStack] = React.useState<
 		Array<number | undefined>
@@ -64,7 +68,7 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 					)}
 					{recentManuals && recentManuals.page?.length > 0 && (
 						<ul className="space-y-2">
-							{recentManuals.page.map((r) => (
+							{recentManuals.page.map(r => (
 								<li
 									key={r._id}
 									className="flex items-center justify-between gap-3 p-2 rounded-base border-2 border-border bg-secondary-background"
@@ -78,7 +82,7 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 													rel="noreferrer"
 													className="font-bold truncate underline decoration-main text-background hover:text-background/80"
 												>
-													{r.title ?? "(untitled)"}
+													{r.title ?? '(untitled)'}
 												</a>
 												<a
 													href={r.externalUrl}
@@ -92,14 +96,14 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 											</span>
 										) : (
 											<div className="font-bold truncate text-background">
-												{r.title ?? "(untitled)"}
+												{r.title ?? '(untitled)'}
 											</div>
 										)}
 										<div className="text-xs text-background/70 flex items-center gap-2">
 											<span>
 												{Math.max(
 													0,
-													Math.round((r.durationInSeconds ?? 0) / 60),
+													Math.round((r.durationInSeconds ?? 0) / 60)
 												)}
 												m
 											</span>
@@ -117,35 +121,41 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 										type="button"
 										size="icon"
 										onClick={async () => {
-											const isCurrentlyFavorite = !!(r as any).matchedFavoriteId;
+											const isCurrentlyFavorite = !!(r as any)
+												.matchedFavoriteId;
 											try {
 												if (isCurrentlyFavorite) {
 													// Remove from favorites
 													await deleteFavorite({
 														favoriteId: (r as any).matchedFavoriteId,
 													});
-													toast.success("Removed from favorites");
+													toast.success('Removed from favorites');
 												} else {
 													// Add to favorites
 													await setFavorite({
 														activityId: (r as any)._id,
 														isFavorite: true,
 													});
-													toast.success("Added to favorites!");
+													toast.success('Added to favorites!');
 													onFavoriteAdded?.();
 												}
 											} catch {
-												toast.error("Failed to update favorite");
+												toast.error('Failed to update favorite');
 											}
 										}}
 										className="p-1 bg-secondary-background"
-										aria-label={(r).matchedFavoriteId ? "Remove from favorites" : "Add to favorites"}
+										aria-label={
+											r.matchedFavoriteId
+												? 'Remove from favorites'
+												: 'Add to favorites'
+										}
 									>
 										<Star
-											className={`!size-5 transition-colors ${(r).matchedFavoriteId
-												? "fill-yellow-300 stroke-border"
-												: "stroke-background/60"
-												}`}
+											className={`!size-5 transition-colors ${
+												r.matchedFavoriteId
+													? 'fill-yellow-300 stroke-border'
+													: 'stroke-background/60'
+											}`}
 										/>
 									</Button>
 								</li>
@@ -161,7 +171,7 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 						<Button
 							variant="neutral"
 							onClick={() => {
-								setHistoryCursorStack((stack) => {
+								setHistoryCursorStack(stack => {
 									if (stack.length === 0) return stack;
 									const next = [...stack];
 									const prev = next.pop();
@@ -176,12 +186,11 @@ export const FavoritesPotentialManualRecordsList = ({ onFavoriteAdded }: { onFav
 						<Button
 							variant="neutral"
 							onClick={() => {
-								setHistoryCursorStack((stack) => [...stack, cursor]);
+								setHistoryCursorStack(stack => [...stack, cursor]);
 								setCursor((recentManuals as any).continueCursor);
 							}}
 							disabled={
-								Boolean(recentManuals) &&
-								Boolean((recentManuals as any).isDone)
+								Boolean(recentManuals) && Boolean((recentManuals as any).isDone)
 							}
 						>
 							Load more

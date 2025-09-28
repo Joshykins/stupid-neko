@@ -1,6 +1,6 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
 import {
 	action,
 	httpAction,
@@ -8,11 +8,11 @@ import {
 	internalQuery,
 	mutation,
 	query,
-} from "./_generated/server";
+} from './_generated/server';
 
 // Utilities
 function encodeQuery(
-	params: Record<string, string | number | undefined>,
+	params: Record<string, string | number | undefined>
 ): string {
 	const search = new URLSearchParams();
 	for (const [k, v] of Object.entries(params)) {
@@ -31,8 +31,8 @@ function generateState(): string {
 			const arr = new Uint8Array(16);
 			cryptoObj.getRandomValues(arr);
 			return Array.from(arr)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+				.map(b => b.toString(16).padStart(2, '0'))
+				.join('');
 		}
 	} catch {}
 	// Fallback: time + random
@@ -42,7 +42,7 @@ function generateState(): string {
 function getRedirectUri(): string {
 	const explicit = process.env.SPOTIFY_REDIRECT_URL;
 	if (explicit && explicit.trim()) return explicit.trim();
-	const convexBase = (process.env.CONVEX_SITE_URL || "").replace(/\/$/, "");
+	const convexBase = (process.env.CONVEX_SITE_URL || '').replace(/\/$/, '');
 
 	return `${convexBase}/api/spotify/callback`;
 }
@@ -55,25 +55,25 @@ export const startAuth = mutation({
 	returns: v.object({ url: v.string(), state: v.string() }),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const state = generateState();
-		await ctx.db.insert("spotifyAuthStates", {
+		await ctx.db.insert('spotifyAuthStates', {
 			state,
 			userId,
 			createdAt: Date.now(),
 			redirectTo: args.redirectTo,
 		});
 		const clientId = process.env.SPOTIFY_CLIENT_ID as string | undefined;
-		if (!clientId) throw new Error("Missing SPOTIFY_CLIENT_ID");
+		if (!clientId) throw new Error('Missing SPOTIFY_CLIENT_ID');
 		const redirectUri = getRedirectUri();
 		const scope = [
-			"user-read-currently-playing",
-			"user-read-playback-state",
-			"user-read-recently-played",
-		].join(" ");
+			'user-read-currently-playing',
+			'user-read-playback-state',
+			'user-read-recently-played',
+		].join(' ');
 		const url = `https://accounts.spotify.com/authorize?${encodeQuery({
 			client_id: clientId,
-			response_type: "code",
+			response_type: 'code',
 			redirect_uri: redirectUri,
 			scope,
 			state,
@@ -88,18 +88,18 @@ export const getAuthStateByState = internalQuery({
 	args: { state: v.string() },
 	returns: v.union(
 		v.object({
-			_id: v.id("spotifyAuthStates"),
+			_id: v.id('spotifyAuthStates'),
 			state: v.string(),
-			userId: v.id("users"),
+			userId: v.id('users'),
 			createdAt: v.number(),
 			redirectTo: v.optional(v.string()),
 		}),
-		v.null(),
+		v.null()
 	),
 	handler: async (ctx, args) => {
 		const row = await ctx.db
-			.query("spotifyAuthStates")
-			.withIndex("by_state", (q: any) => q.eq("state", args.state))
+			.query('spotifyAuthStates')
+			.withIndex('by_state', (q: any) => q.eq('state', args.state))
 			.unique();
 		if (!row) return null;
 		return {
@@ -113,7 +113,7 @@ export const getAuthStateByState = internalQuery({
 });
 
 export const deleteAuthState = internalMutation({
-	args: { id: v.id("spotifyAuthStates") },
+	args: { id: v.id('spotifyAuthStates') },
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		await ctx.db.delete(args.id);
@@ -123,7 +123,7 @@ export const deleteAuthState = internalMutation({
 
 export const upsertSpotifyAccount = internalMutation({
 	args: {
-		userId: v.id("users"),
+		userId: v.id('users'),
 		spotifyUserId: v.optional(v.string()),
 		displayName: v.optional(v.string()),
 		accessToken: v.string(),
@@ -135,8 +135,8 @@ export const upsertSpotifyAccount = internalMutation({
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const existing = await ctx.db
-			.query("spotifyAccounts")
-			.withIndex("by_user", (q: any) => q.eq("userId", args.userId))
+			.query('spotifyAccounts')
+			.withIndex('by_user', (q: any) => q.eq('userId', args.userId))
 			.unique();
 		if (existing) {
 			await ctx.db.patch(existing._id, {
@@ -147,11 +147,11 @@ export const upsertSpotifyAccount = internalMutation({
 				scope: args.scope,
 				spotifyUserId: args.spotifyUserId,
 				displayName: args.displayName,
-				status: "connected",
+				status: 'connected',
 				updatedAt: Date.now(),
 			} as any);
 		} else {
-			await ctx.db.insert("spotifyAccounts", {
+			await ctx.db.insert('spotifyAccounts', {
 				userId: args.userId,
 				spotifyUserId: args.spotifyUserId,
 				displayName: args.displayName,
@@ -160,7 +160,7 @@ export const upsertSpotifyAccount = internalMutation({
 				expiresAt: args.expiresAt,
 				tokenType: args.tokenType,
 				scope: args.scope,
-				status: "connected",
+				status: 'connected',
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			} as any);
@@ -177,12 +177,12 @@ export const getStatus = query({
 		connected: v.boolean(),
 		displayName: v.optional(v.string()),
 	}),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx).catch(() => null as any);
 		if (!userId) return { connected: false } as const;
 		const acct = await ctx.db
-			.query("spotifyAccounts")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('spotifyAccounts')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.unique();
 		return { connected: !!acct, displayName: acct?.displayName } as const;
 	},
@@ -191,12 +191,12 @@ export const getStatus = query({
 export const disconnect = mutation({
 	args: {},
 	returns: v.object({ ok: v.boolean() }),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Unauthorized");
+		if (!userId) throw new Error('Unauthorized');
 		const acct = await ctx.db
-			.query("spotifyAccounts")
-			.withIndex("by_user", (q: any) => q.eq("userId", userId))
+			.query('spotifyAccounts')
+			.withIndex('by_user', (q: any) => q.eq('userId', userId))
 			.unique();
 		if (acct) {
 			await ctx.db.delete(acct._id);
@@ -208,28 +208,28 @@ export const disconnect = mutation({
 // refreshToken moved to convex/spotifyActions.ts (Node runtime)
 
 export const getAccountByUser = internalQuery({
-	args: { userId: v.id("users") },
+	args: { userId: v.id('users') },
 	returns: v.union(
 		v.object({
-			_id: v.id("spotifyAccounts"),
-			userId: v.id("users"),
+			_id: v.id('spotifyAccounts'),
+			userId: v.id('users'),
 			accessToken: v.string(),
 			refreshToken: v.string(),
 			expiresAt: v.number(),
 		}),
-		v.null(),
+		v.null()
 	),
 	handler: async (ctx, args) => {
 		return await ctx.db
-			.query("spotifyAccounts")
-			.withIndex("by_user", (q: any) => q.eq("userId", args.userId))
+			.query('spotifyAccounts')
+			.withIndex('by_user', (q: any) => q.eq('userId', args.userId))
 			.unique();
 	},
 });
 
 export const updateAccessToken = internalMutation({
 	args: {
-		id: v.id("spotifyAccounts"),
+		id: v.id('spotifyAccounts'),
 		accessToken: v.string(),
 		expiresAt: v.number(),
 	},

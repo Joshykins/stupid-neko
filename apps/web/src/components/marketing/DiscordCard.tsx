@@ -1,8 +1,8 @@
-"use client";
-import Link from "next/link";
-import * as React from "react";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+'use client';
+import Link from 'next/link';
+import * as React from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 export function DiscordCard({ className }: { className?: string }) {
 	return (

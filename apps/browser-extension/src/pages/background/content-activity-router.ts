@@ -1,12 +1,12 @@
-import { convex, getIntegrationId } from "./auth";
-import type { ContentActivityEvent } from "./providers/types";
-import type { PlaybackEvent } from "../../messaging/messages";
-import { tryCatch } from "../../../../../lib/tryCatch";
-import { api } from "../../../../../convex/_generated/api";
-import { getMetaForUrl } from "../providers/registry";
-import { sendToTab } from "../../messaging/messagesBackgroundRouter";
+import { convex, getIntegrationId } from './auth';
+import type { ContentActivityEvent } from './providers/types';
+import type { PlaybackEvent } from '../../messaging/messages';
+import { tryCatch } from '../../../../../lib/tryCatch';
+import { api } from '../../../../../convex/_generated/api';
+import { getMetaForUrl } from '../providers/registry';
+import { sendToTab } from '../../messaging/messagesBackgroundRouter';
 
-const DEBUG_LOG_PREFIX = "[bg:content-router]";
+const DEBUG_LOG_PREFIX = '[bg:content-router]';
 
 // Types
 export type TabPlaybackState = {
@@ -48,14 +48,14 @@ function deriveContentKey(evt: PlaybackEvent): string | undefined {
 }
 
 export async function postContentActivityFromPlayback(
-	evt: PlaybackEvent,
+	evt: PlaybackEvent
 ): Promise<ContentActivityResult | null> {
 	if (!convex) return null;
 
 	const integrationId = await getIntegrationId();
 	if (!integrationId) return null;
 
-	const activityType = evt.event === "progress" ? "heartbeat" : evt.event;
+	const activityType = evt.event === 'progress' ? 'heartbeat' : evt.event;
 	const contentKey = deriveContentKey(evt);
 
 	if (!contentKey) {
@@ -73,8 +73,8 @@ export async function postContentActivityFromPlayback(
 				contentKey,
 				url: evt.url,
 				occurredAt: evt.ts,
-			},
-		),
+			}
+		)
 	);
 
 	if (error) {
@@ -92,7 +92,7 @@ export async function postContentActivityFromPlayback(
 
 export function cacheContentLabel(
 	result: ContentActivityResult,
-	contentKey: string,
+	contentKey: string
 ): void {
 	const key = result.contentKey || contentKey;
 	if (key && result.contentLabel) {
@@ -116,12 +116,12 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	let newState: TabPlaybackState;
 
 	// Handle domain changes for default provider
-	if (domainChanged && providerName === "default" && prev.isPlaying) {
+	if (domainChanged && providerName === 'default' && prev.isPlaying) {
 		// Stop current session and emit end event
 		if (prev.lastEvent) {
 			const endEvt: PlaybackEvent = {
 				...prev.lastEvent,
-				event: "end",
+				event: 'end',
 				ts: Date.now(),
 			};
 			postContentActivityFromPlayback(endEvt);
@@ -130,31 +130,31 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 		// Restart the provider for the new domain
 		setTimeout(async () => {
 			try {
-				await sendToTab(tabId, "DEACTIVATE_PROVIDER", {});
+				await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {});
 
 				// Get target language if we have consent for this domain
 				let targetLanguage: string | undefined;
 				if (prev.consentByDomain?.[currentDomain]) {
-					const { getAuthState } = await import("./auth");
+					const { getAuthState } = await import('./auth');
 					const authState = await getAuthState();
 					targetLanguage = authState.me?.languageCode;
 				}
 
-				await sendToTab(tabId, "ACTIVATE_PROVIDER", {
+				await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
 					providerId: providerName,
 					targetLanguage,
 				});
 			} catch (error) {
 				console.warn(
 					`${DEBUG_LOG_PREFIX} failed to restart provider on domain change:`,
-					error,
+					error
 				);
 			}
 		}, 100);
 	}
 
 	switch (payload.event) {
-		case "start":
+		case 'start':
 			newState = {
 				lastEvent: payload,
 				isPlaying: true,
@@ -167,8 +167,8 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				hasConsent: prev.consentByDomain?.[currentDomain] || false,
 			};
 			break;
-		case "pause":
-		case "end":
+		case 'pause':
+		case 'end':
 			newState = {
 				...prev,
 				lastEvent: payload,
@@ -176,7 +176,7 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				currentDomain,
 			};
 			break;
-		case "progress":
+		case 'progress':
 			newState = {
 				...prev,
 				lastEvent: payload,
@@ -192,7 +192,7 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	if (contentChanged) {
 		newState.lastContentKey = nextKey;
 		newState.currentProvider = providerName;
-		if (payload.event !== "start") {
+		if (payload.event !== 'start') {
 			newState.allowPost = undefined;
 		}
 	}
@@ -202,25 +202,25 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 
 export async function handleContentActivityPosting(
 	tabId: number,
-	payload: PlaybackEvent,
+	payload: PlaybackEvent
 ): Promise<void> {
 	const state = tabStates[tabId];
 	const meta = getMetaForUrl(payload.url);
-	const isDefaultProvider = meta.id === "default";
+	const isDefaultProvider = meta.id === 'default';
 
 	// For default provider, check consent first
 	if (isDefaultProvider && !state?.hasConsent) {
 		console.debug(
-			`${DEBUG_LOG_PREFIX} default provider without consent - skipping post`,
+			`${DEBUG_LOG_PREFIX} default provider without consent - skipping post`
 		);
 		return;
 	}
 
-	if (payload.event === "start" || state?.allowPost === undefined) {
+	if (payload.event === 'start' || state?.allowPost === undefined) {
 		console.debug(`${DEBUG_LOG_PREFIX} probing start -> backend detection`);
 
 		const { data: result } = await tryCatch(
-			postContentActivityFromPlayback(payload),
+			postContentActivityFromPlayback(payload)
 		);
 
 		if (!tabStates[tabId] || !result) return;
@@ -236,28 +236,28 @@ export async function handleContentActivityPosting(
 
 export function updateAllowPostFromResult(
 	tabId: number,
-	result: ContentActivityResult,
+	result: ContentActivityResult
 ): void {
 	if (!tabStates[tabId]) return;
 
 	if (result.saved) {
 		tabStates[tabId].allowPost = true;
 		console.debug(`${DEBUG_LOG_PREFIX} backend says saved -> allowPost=true`);
-	} else if (result.reason === "not_target_language") {
+	} else if (result.reason === 'not_target_language') {
 		tabStates[tabId].allowPost = false;
 		console.debug(
-			`${DEBUG_LOG_PREFIX} backend says not target -> allowPost=false`,
+			`${DEBUG_LOG_PREFIX} backend says not target -> allowPost=false`
 		);
 	} else if (result.isWaitingOnLabeling) {
 		tabStates[tabId].allowPost = true; // keep posting while labeling processes
 		console.debug(
-			`${DEBUG_LOG_PREFIX} backend waiting on labeling -> allowPost=true`,
+			`${DEBUG_LOG_PREFIX} backend waiting on labeling -> allowPost=true`
 		);
 	} else {
 		// default conservative: do not block
 		tabStates[tabId].allowPost = true;
 		console.debug(
-			`${DEBUG_LOG_PREFIX} backend unknown result -> allowPost=true`,
+			`${DEBUG_LOG_PREFIX} backend unknown result -> allowPost=true`
 		);
 	}
 }
@@ -265,7 +265,7 @@ export function updateAllowPostFromResult(
 export function updateConsentForDomain(
 	tabId: number,
 	domain: string,
-	hasConsent: boolean,
+	hasConsent: boolean
 ): void {
 	const state = tabStates[tabId];
 	if (state) {
@@ -291,7 +291,7 @@ export function handleTabRemoved(tabId: number): void {
 	if (state?.isPlaying && state?.lastEvent) {
 		const endEvt: PlaybackEvent = {
 			...state.lastEvent,
-			event: "end",
+			event: 'end',
 			ts: Date.now(),
 		};
 
@@ -310,7 +310,7 @@ export function handleTabRemoved(tabId: number): void {
  */
 export function handleLanguageDetection(
 	tabId: number,
-	event: ContentActivityEvent,
+	event: ContentActivityEvent
 ): void {
 	const state = tabStates[tabId];
 	if (!state) return;
@@ -331,10 +331,10 @@ export function handleLanguageDetection(
  */
 export async function handleContentActivityEvent(
 	tabId: number,
-	event: ContentActivityEvent,
+	event: ContentActivityEvent
 ): Promise<void> {
 	// Handle language detection events separately
-	if (event.event === "language-detected") {
+	if (event.event === 'language-detected') {
 		handleLanguageDetection(tabId, event);
 		return;
 	}
@@ -363,22 +363,22 @@ export async function handleContentActivityEvent(
  */
 export async function handleUrlChange(
 	tabId: number,
-	url: string,
+	url: string
 ): Promise<void> {
 	try {
 		const meta = getMetaForUrl(url);
 
 		// Get user's target language from auth state
-		const { getAuthState } = await import("./auth");
+		const { getAuthState } = await import('./auth');
 		const authState = await getAuthState();
 		const targetLanguage = authState.me?.languageCode;
 
-		await sendToTab(tabId, "ACTIVATE_PROVIDER", {
+		await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
 			providerId: meta.id,
 			targetLanguage,
 		});
 		console.debug(
-			`${DEBUG_LOG_PREFIX} activated provider: ${meta.id} for URL: ${url}`,
+			`${DEBUG_LOG_PREFIX} activated provider: ${meta.id} for URL: ${url}`
 		);
 	} catch (error) {
 		console.warn(`${DEBUG_LOG_PREFIX} failed to handle URL change:`, error);
@@ -404,7 +404,7 @@ export async function handleTabActivated(tabId: number): Promise<void> {
  */
 export async function handleTabUpdated(
 	tabId: number,
-	changeInfo: { url?: string },
+	changeInfo: { url?: string }
 ): Promise<void> {
 	if (changeInfo.url) {
 		await handleUrlChange(tabId, changeInfo.url);

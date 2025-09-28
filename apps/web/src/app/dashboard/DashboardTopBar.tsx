@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import { BookOpen } from "lucide-react";
-import * as React from "react";
-import { api } from "../../../../../convex/_generated/api";
-import LanguageFlagSVG from "../../components/LanguageFlagSVG";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { COMMON_LANGUAGES } from "../../../../../lib/languages";
+import { useQuery } from 'convex/react';
+import { BookOpen } from 'lucide-react';
+import * as React from 'react';
+import { api } from '../../../../../convex/_generated/api';
+import LanguageFlagSVG from '../../components/LanguageFlagSVG';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { COMMON_LANGUAGES } from '../../../../../lib/languages';
 
 export const DashboardTopBar = () => {
 	const me = useQuery(api.userFunctions.me);
 
-	const targetLanguage = me?.languageCode ?? "en";
+	const targetLanguage = me?.languageCode ?? 'en';
 	const targetLanguageLabel =
-		COMMON_LANGUAGES.find((l) => l.code === targetLanguage)?.label ?? "English";
+		COMMON_LANGUAGES.find(l => l.code === targetLanguage)?.label ?? 'English';
 	return (
 		<div className="p-4">
 			<div className="flex gap-10 pl-20 items-center">
 				{/* Track Activity button moved into the manual tile */}
-				<Button variant={"neutral"} className="overflow-hidden">
+				<Button variant={'neutral'} className="overflow-hidden">
 					<LanguageFlagSVG language={targetLanguage} className="!size-6" />
 					Learning {targetLanguageLabel}
 				</Button>

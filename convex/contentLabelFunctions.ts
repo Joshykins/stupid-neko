@@ -1,24 +1,24 @@
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import { internalMutation, internalQuery } from './_generated/server';
 import {
 	contentSourceValidator,
 	languageCodeValidator,
 	mediaTypeValidator,
-} from "./schema";
+} from './schema';
 
 export const getByContentKey = internalQuery({
 	args: { contentKey: v.string() },
 	returns: v.union(
 		v.null(),
 		v.object({
-			_id: v.id("contentLabels"),
+			_id: v.id('contentLabels'),
 			contentKey: v.string(),
 			stage: v.union(
-				v.literal("queued"),
-				v.literal("processing"),
-				v.literal("completed"),
-				v.literal("failed"),
+				v.literal('queued'),
+				v.literal('processing'),
+				v.literal('completed'),
+				v.literal('failed')
 			),
 			contentSource: contentSourceValidator,
 			contentUrl: v.optional(v.string()),
@@ -31,13 +31,13 @@ export const getByContentKey = internalQuery({
 			fullDurationInMs: v.optional(v.number()),
 			contentLanguageCode: v.optional(languageCodeValidator),
 			languageEvidence: v.optional(v.array(v.string())),
-		}),
+		})
 	),
 	handler: async (ctx, args) => {
 		const label = await (ctx.db as any)
-			.query("contentLabels")
-			.withIndex("by_content_key", (q: any) =>
-				q.eq("contentKey", args.contentKey),
+			.query('contentLabels')
+			.withIndex('by_content_key', (q: any) =>
+				q.eq('contentKey', args.contentKey)
 			)
 			.unique();
 		if (!label) return null;
@@ -69,25 +69,25 @@ export const getOrEnqueue = internalMutation({
 		contentUrl: v.optional(v.string()),
 	}),
 	returns: v.object({
-		contentLabelId: v.id("contentLabels"),
+		contentLabelId: v.id('contentLabels'),
 		contentKey: v.string(),
 		stage: v.union(
-			v.literal("queued"),
-			v.literal("processing"),
-			v.literal("completed"),
-			v.literal("failed"),
+			v.literal('queued'),
+			v.literal('processing'),
+			v.literal('completed'),
+			v.literal('failed')
 		),
 		existed: v.boolean(),
 	}),
 	handler: async (ctx, args) => {
 		const existing = await ctx.db
-			.query("contentLabels")
-			.withIndex("by_content_key", (q: any) =>
-				q.eq("contentKey", args.contentKey),
+			.query('contentLabels')
+			.withIndex('by_content_key', (q: any) =>
+				q.eq('contentKey', args.contentKey)
 			)
 			.unique();
 		if (existing) {
-			console.log("[contentLabeling] existing", {
+			console.log('[contentLabeling] existing', {
 				contentKey: args.contentKey,
 				id: existing._id,
 				stage: existing.stage,
@@ -100,9 +100,9 @@ export const getOrEnqueue = internalMutation({
 			};
 		}
 		const now = Date.now();
-		const contentLabelId = await ctx.db.insert("contentLabels", {
+		const contentLabelId = await ctx.db.insert('contentLabels', {
 			contentKey: args.contentKey,
-			stage: "queued",
+			stage: 'queued',
 			contentSource: args.contentSource as any,
 			contentUrl: args.contentUrl,
 			attempts: 0,
@@ -115,16 +115,16 @@ export const getOrEnqueue = internalMutation({
 			internal.contentLabelActions.processOneContentLabel,
 			{
 				contentLabelId,
-			},
+			}
 		);
-		console.log("[contentLabeling] enqueued", {
+		console.log('[contentLabeling] enqueued', {
 			contentKey: args.contentKey,
 			contentLabelId,
 		});
 		return {
 			contentLabelId,
 			contentKey: args.contentKey,
-			stage: "queued" as const,
+			stage: 'queued' as const,
 			existed: false,
 		};
 	},
@@ -132,11 +132,11 @@ export const getOrEnqueue = internalMutation({
 
 // Base: mark processing
 export const markProcessing = internalMutation({
-	args: v.object({ contentLabelId: v.id("contentLabels") }),
+	args: v.object({ contentLabelId: v.id('contentLabels') }),
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.contentLabelId, {
-			stage: "processing",
+			stage: 'processing',
 			updatedAt: Date.now(),
 		} as any);
 		return null;
@@ -146,7 +146,7 @@ export const markProcessing = internalMutation({
 // Base: complete with patch
 export const completeWithPatch = internalMutation({
 	args: v.object({
-		contentLabelId: v.id("contentLabels"),
+		contentLabelId: v.id('contentLabels'),
 		patch: v.object({
 			// Normalized metadata (from source APIs)
 			contentMediaType: v.optional(mediaTypeValidator), // "audio" | "video" | "text"
@@ -178,7 +178,7 @@ export const completeWithPatch = internalMutation({
 					hasDirectSubs: v.optional(v.boolean()),
 					codeSwitching: v.optional(v.number()), // 0..1
 					recommendedLearnerLevels: v.optional(v.array(v.string())), // ["A2","B1"]
-				}),
+				})
 			),
 		}),
 	}),
@@ -187,7 +187,7 @@ export const completeWithPatch = internalMutation({
 		const now = Date.now();
 		await ctx.db.patch(args.contentLabelId, {
 			...args.patch,
-			stage: "completed",
+			stage: 'completed',
 			processedAt: now,
 			updatedAt: now,
 		});
@@ -205,7 +205,7 @@ export const completeWithPatch = internalMutation({
 					contentLanguageCode,
 					cursor: null,
 					limit: 500,
-				} as any,
+				} as any
 			);
 		}
 		return null;
@@ -223,9 +223,9 @@ export const cleanActivitiesForLabel = internalMutation({
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const page = await ctx.db
-			.query("contentActivities")
-			.withIndex("by_content_key", (q: any) =>
-				q.eq("contentKey", args.contentKey),
+			.query('contentActivities')
+			.withIndex('by_content_key', (q: any) =>
+				q.eq('contentKey', args.contentKey)
 			)
 			.paginate({
 				numItems: Math.max(1, Math.min(1000, args.limit ?? 500)),
@@ -248,7 +248,7 @@ export const cleanActivitiesForLabel = internalMutation({
 			const target = await ctx.db.get(targetId);
 			userIdToLanguage.set(
 				userId,
-				(target as any)?.languageCode as string | undefined,
+				(target as any)?.languageCode as string | undefined
 			);
 		}
 
@@ -270,7 +270,7 @@ export const cleanActivitiesForLabel = internalMutation({
 					contentLanguageCode: args.contentLanguageCode,
 					cursor: page.continueCursor,
 					limit: args.limit ?? 500,
-				} as any,
+				} as any
 			);
 		}
 
@@ -280,11 +280,11 @@ export const cleanActivitiesForLabel = internalMutation({
 
 // Base: mark failed
 export const markFailed = internalMutation({
-	args: v.object({ contentLabelId: v.id("contentLabels"), error: v.string() }),
+	args: v.object({ contentLabelId: v.id('contentLabels'), error: v.string() }),
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.contentLabelId, {
-			stage: "failed",
+			stage: 'failed',
 			lastError: args.error,
 			updatedAt: Date.now(),
 		} as any);
@@ -294,15 +294,15 @@ export const markFailed = internalMutation({
 
 // Base: read minimal label details (usable from actions)
 export const getLabelBasics = internalQuery({
-	args: v.object({ contentLabelId: v.id("contentLabels") }),
+	args: v.object({ contentLabelId: v.id('contentLabels') }),
 	returns: v.object({
-		_id: v.id("contentLabels"),
+		_id: v.id('contentLabels'),
 		contentKey: v.optional(v.string()),
 		contentUrl: v.optional(v.string()),
 	}),
 	handler: async (ctx, args) => {
 		const doc = await ctx.db.get(args.contentLabelId);
-		if (!doc) throw new Error("contentLabel not found");
+		if (!doc) throw new Error('contentLabel not found');
 		return {
 			_id: doc._id,
 			contentKey: (doc as any).contentKey,

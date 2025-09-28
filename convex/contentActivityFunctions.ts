@@ -1,22 +1,22 @@
 // Content Activities are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
 
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
-import { contentSourceValidator } from "./schema";
-import { dangerousTestingEnabled, getEffectiveNow } from "./utils";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import { internalMutation } from './_generated/server';
+import { contentSourceValidator } from './schema';
+import { dangerousTestingEnabled, getEffectiveNow } from './utils';
 
 export const recordContentActivity = internalMutation({
 	args: {
-		userId: v.id("users"),
+		userId: v.id('users'),
 		source: contentSourceValidator,
 		activityType: v.union(
-			v.literal("heartbeat"),
-			v.literal("start"),
-			v.literal("pause"),
-			v.literal("end"),
+			v.literal('heartbeat'),
+			v.literal('start'),
+			v.literal('pause'),
+			v.literal('end')
 		),
 		// Required: provide a contentKey like "youtube:VIDEO_ID"
 		contentKey: v.string(),
@@ -27,21 +27,21 @@ export const recordContentActivity = internalMutation({
 	returns: v.object({
 		ok: v.boolean(),
 		saved: v.boolean(),
-		contentActivityId: v.optional(v.id("contentActivities")),
-		contentLabelId: v.optional(v.id("contentLabels")),
+		contentActivityId: v.optional(v.id('contentActivities')),
+		contentLabelId: v.optional(v.id('contentLabels')),
 		isWaitingOnLabeling: v.optional(v.boolean()),
 		reason: v.optional(v.string()),
 		contentKey: v.optional(v.string()),
 	}),
 	handler: async (
 		ctx,
-		args,
+		args
 	): Promise<
 		| {
 				ok: true;
 				saved: boolean;
-				contentActivityId?: Id<"contentActivities">;
-				contentLabelId?: Id<"contentLabels">;
+				contentActivityId?: Id<'contentActivities'>;
+				contentLabelId?: Id<'contentLabels'>;
 				isWaitingOnLabeling?: boolean;
 				reason?: string;
 				contentKey?: string;
@@ -51,19 +51,19 @@ export const recordContentActivity = internalMutation({
 				saved: false;
 				reason: string;
 				contentKey?: string;
-				contentLabelId?: Id<"contentLabels">;
+				contentLabelId?: Id<'contentLabels'>;
 		  }
 	> => {
 		const userId = args.userId;
 
 		// Load user and their current target language as required by the app
 		const user = await ctx.db.get(userId);
-		if (!user) throw new Error("User not found");
+		if (!user) throw new Error('User not found');
 		const currentTargetLanguageId = user.currentTargetLanguageId as
-			| Id<"userTargetLanguages">
+			| Id<'userTargetLanguages'>
 			| undefined;
 		if (!currentTargetLanguageId)
-			throw new Error("Current target language not found");
+			throw new Error('Current target language not found');
 
 		const contentKey = args.contentKey;
 
@@ -71,15 +71,15 @@ export const recordContentActivity = internalMutation({
 
 		// Inspect existing content label
 		const label = await ctx.db
-			.query("contentLabels")
-			.withIndex("by_content_key", (q: any) =>
-				q.eq("contentKey", contentKey as string),
+			.query('contentLabels')
+			.withIndex('by_content_key', (q: any) =>
+				q.eq('contentKey', contentKey as string)
 			)
 			.unique();
 
 		// If no label exists, enqueue and record the activity as waiting on labeling
 		if (!label) {
-			const contentActivityId = await ctx.db.insert("contentActivities", {
+			const contentActivityId = await ctx.db.insert('contentActivities', {
 				userId,
 				contentKey,
 				activityType: args.activityType,
@@ -87,9 +87,9 @@ export const recordContentActivity = internalMutation({
 				isWaitingOnLabeling: true,
 			});
 			const enqueue: {
-				contentLabelId: Id<"contentLabels">;
+				contentLabelId: Id<'contentLabels'>;
 				contentKey: string;
-				stage: "queued" | "processing" | "completed" | "failed";
+				stage: 'queued' | 'processing' | 'completed' | 'failed';
 				existed: boolean;
 			} = await ctx.runMutation(internal.contentLabelFunctions.getOrEnqueue, {
 				contentKey,
@@ -107,8 +107,8 @@ export const recordContentActivity = internalMutation({
 		}
 
 		// If label exists but isn't completed or lacks language, record as waiting
-		if (label.stage !== "completed" || !label.contentLanguageCode) {
-			const contentActivityId = await ctx.db.insert("contentActivities", {
+		if (label.stage !== 'completed' || !label.contentLanguageCode) {
+			const contentActivityId = await ctx.db.insert('contentActivities', {
 				userId,
 				contentKey,
 				activityType: args.activityType,
@@ -128,19 +128,19 @@ export const recordContentActivity = internalMutation({
 		// Otherwise, filter by user's target language
 		const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
 		if (!currentTargetLanguage)
-			throw new Error("Current target language not found");
+			throw new Error('Current target language not found');
 		if (currentTargetLanguage.languageCode !== label.contentLanguageCode) {
 			return {
 				ok: true,
 				saved: false,
-				reason: "not_target_language",
+				reason: 'not_target_language',
 				contentLabelId: label._id,
 				contentKey,
 			} as const;
 		}
 
 		// Label matches target language, record activity normally
-		const contentActivityId = await ctx.db.insert("contentActivities", {
+		const contentActivityId = await ctx.db.insert('contentActivities', {
 			userId,
 			contentKey,
 			activityType: args.activityType,

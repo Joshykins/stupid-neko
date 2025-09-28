@@ -14,7 +14,8 @@
 		"build:firefox": "vite build --config vite.config.firefox.ts",
 		"dev": "nodemon --config nodemon.chrome.json",
 		"dev:chrome": "nodemon --config nodemon.chrome.json",
-		"dev:firefox": "nodemon --config nodemon.firefox.json"
+		"dev:firefox": "nodemon --config nodemon.firefox.json",
+		"lint": "eslint ."
 	},
 	"type": "module",
 	"dependencies": {

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Authenticated, useMutation, useQuery } from "convex/react";
-import dayjs from "dayjs";
+import { Authenticated, useMutation, useQuery } from 'convex/react';
+import dayjs from 'dayjs';
 import {
 	ArrowRightSquare,
 	ClockAlert,
@@ -9,17 +9,17 @@ import {
 	SlidersHorizontal,
 	Sprout,
 	X,
-} from "lucide-react";
-import { useState } from "react";
-import { api } from "../../../../../convex/_generated/api";
-import { Button } from "../ui/button";
-import { Card } from "../ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Slider } from "../ui/slider";
+} from 'lucide-react';
+import { useState } from 'react';
+import { api } from '../../../../../convex/_generated/api';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Slider } from '../ui/slider';
 // Removed numeric inputs in favor of simple presets
 
 export const TestingComponent = () => {
-	const isEnabled = process.env.NEXT_PUBLIC_DANGEROUS_TESTING === "enabled";
+	const isEnabled = process.env.NEXT_PUBLIC_DANGEROUS_TESTING === 'enabled';
 	const devDate = useQuery(api.devOnlyFunctions.getDevDate, {});
 	const stepDevDate = useMutation(api.devOnlyFunctions.stepDevDate);
 	const seedToTarget = useMutation(api.devOnlyFunctions.seedToTargetAtDevDate);
@@ -84,7 +84,7 @@ export const TestingComponent = () => {
 												<Slider
 													mainColor="var(--color-source-misc)"
 													value={[manualProb]}
-													onValueChange={(v) => setManualProb(v[0] ?? 0)}
+													onValueChange={v => setManualProb(v[0] ?? 0)}
 												/>
 											</div>
 											<div className="flex flex-col gap-1">
@@ -94,7 +94,7 @@ export const TestingComponent = () => {
 												<Slider
 													mainColor="var(--color-source-youtube)"
 													value={[youtubeProb]}
-													onValueChange={(v) => setYoutubeProb(v[0] ?? 0)}
+													onValueChange={v => setYoutubeProb(v[0] ?? 0)}
 												/>
 											</div>
 											<div className="flex flex-col gap-1">
@@ -104,7 +104,7 @@ export const TestingComponent = () => {
 												<Slider
 													mainColor="var(--color-source-spotify)"
 													value={[spotifyProb]}
-													onValueChange={(v) => setSpotifyProb(v[0] ?? 0)}
+													onValueChange={v => setSpotifyProb(v[0] ?? 0)}
 												/>
 											</div>
 											<div className="flex flex-col gap-1">
@@ -114,7 +114,7 @@ export const TestingComponent = () => {
 												<Slider
 													mainColor="var(--color-source-anki)"
 													value={[ankiProb]}
-													onValueChange={(v) => setAnkiProb(v[0] ?? 0)}
+													onValueChange={v => setAnkiProb(v[0] ?? 0)}
 												/>
 											</div>
 											<div className="flex flex-col gap-2 pt-2">
@@ -126,7 +126,7 @@ export const TestingComponent = () => {
 													min={10}
 													max={480}
 													step={5}
-													onValueChange={(v) => setTargetMinutes(v[0] ?? 60)}
+													onValueChange={v => setTargetMinutes(v[0] ?? 60)}
 												/>
 											</div>
 										</div>
@@ -136,12 +136,12 @@ export const TestingComponent = () => {
 									<div className="flex w-full items-center justify-between gap-2">
 										<div className="flex items-center gap-2">
 											<Button
-												variant={"destructive"}
+												variant={'destructive'}
 												className="bg-red-400 rounded-full"
 												title="Danger: Reset local dev state"
 												onClick={async () => {
 													const ok = window.confirm(
-														"This will delete all tracking data, experience, streaks, and reset the day to today. Proceed?",
+														'This will delete all tracking data, experience, streaks, and reset the day to today. Proceed?'
 													);
 													if (!ok) return;
 													await reset({});
@@ -151,17 +151,17 @@ export const TestingComponent = () => {
 											</Button>
 											<div className="px-3 py-1 rounded-md text-black bg-white/70 shadow-sm">
 												<p className="text-sm font-medium whitespace-nowrap">
-													{(devDate && dayjs(devDate).format("MMM DD, YYYY")) ||
-														"No-Date"}
+													{(devDate && dayjs(devDate).format('MMM DD, YYYY')) ||
+														'No-Date'}
 												</p>
 											</div>
 										</div>
 										<div className="flex items-center gap-2">
 											<Button
-												variant={"neutral"}
+												variant={'neutral'}
 												size="sm"
 												aria-label="Toggle probabilities"
-												onClick={() => setShowSettings((s) => !s)}
+												onClick={() => setShowSettings(s => !s)}
 											>
 												<SlidersHorizontal className="h-4 w-4" />
 											</Button>
@@ -170,7 +170,7 @@ export const TestingComponent = () => {
 
 									<div className="flex w-full items-center gap-3">
 										<Button
-											variant={"neutral"}
+											variant={'neutral'}
 											onClick={async () => {
 												await stepDevDate({ days: 1 });
 											}}
@@ -179,7 +179,7 @@ export const TestingComponent = () => {
 										</Button>
 										<div className="flex-1" />
 										<Button
-											variant={"devOnly"}
+											variant={'devOnly'}
 											className="gap-1"
 											onClick={async () => {
 												await seedToTarget({

@@ -1,9 +1,9 @@
-import { crx, type ManifestV3Export } from "@crxjs/vite-plugin";
-import { resolve } from "path";
-import { defineConfig, mergeConfig } from "vite";
-import baseConfig, { baseBuildOptions, baseManifest } from "./vite.config.base";
+import { crx, type ManifestV3Export } from '@crxjs/vite-plugin';
+import { resolve } from 'path';
+import { defineConfig, mergeConfig } from 'vite';
+import baseConfig, { baseBuildOptions, baseManifest } from './vite.config.base';
 
-const outDir = resolve(__dirname, "dist_chrome");
+const outDir = resolve(__dirname, 'dist_chrome');
 
 export default mergeConfig(
 	baseConfig,
@@ -13,17 +13,17 @@ export default mergeConfig(
 				manifest: {
 					...baseManifest,
 					background: {
-						service_worker: "src/pages/background/index.ts",
-						type: "module",
+						service_worker: 'src/pages/background/index.ts',
+						type: 'module',
 					},
 					web_accessible_resources: [
 						{
-							resources: ["icon-128.png", "icon-32.png", "fonts/*"],
-							matches: ["<all_urls>"],
+							resources: ['icon-128.png', 'icon-32.png', 'fonts/*'],
+							matches: ['<all_urls>'],
 						},
 					],
 				} as ManifestV3Export,
-				browser: "chrome",
+				browser: 'chrome',
 				contentScripts: {
 					injectCss: true,
 				},
@@ -33,5 +33,5 @@ export default mergeConfig(
 			...baseBuildOptions,
 			outDir,
 		},
-	}),
+	})
 );

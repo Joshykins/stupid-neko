@@ -1,17 +1,17 @@
-"use client";
-import { useMutation, useQuery } from "convex/react";
-import { AnimatePresence, motion } from "framer-motion";
-import { RotateCw } from "lucide-react";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
-import { calculateStreakBonusPercent } from "../../../../../../lib/streakBonus";
-import { useCountUp } from "../../../lib/useCountUp";
-import { Badge } from "../../ui/badge";
-import { Button } from "../../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
-import HeatmapProgress from "../../ui/heatmap-progress";
-import StreakDisplayGrid from "./StreakDisplayGrid";
-import StreakDisplayWeek from "./StreakDisplayWeek";
+'use client';
+import { useMutation, useQuery } from 'convex/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { RotateCw } from 'lucide-react';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
+import { calculateStreakBonusPercent } from '../../../../../../lib/streakBonus';
+import { useCountUp } from '../../../lib/useCountUp';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import HeatmapProgress from '../../ui/heatmap-progress';
+import StreakDisplayGrid from './StreakDisplayGrid';
+import StreakDisplayWeek from './StreakDisplayWeek';
 
 type Props = {
 	title?: string;
@@ -19,7 +19,6 @@ type Props = {
 	values?: Array<number>;
 	liveVersion?: boolean;
 };
-
 
 function createSeededRng(seedInput: number): () => number {
 	let seed = seedInput % 2147483647;
@@ -41,16 +40,16 @@ function hashStringToSeed(label: string): number {
 }
 
 export default function StreakDisplayCard({
-	title = "Daily Streak",
+	title = 'Daily Streak',
 	days = 365,
 	values,
 	liveVersion = false,
 }: Props) {
 	const streakData = useQuery(
 		api.userStreakFunctions.getStreakDataForHeatmap,
-		liveVersion ? { days } : "skip",
+		liveVersion ? { days } : 'skip'
 	);
-	const me = useQuery(api.userFunctions.me, liveVersion ? {} : "skip");
+	const me = useQuery(api.userFunctions.me, liveVersion ? {} : 'skip');
 	const updateMode = useMutation(api.userFunctions.updateStreakDisplayCardMode);
 
 	// Generate rich mock data for marketing (non-live) view
@@ -77,7 +76,7 @@ export default function StreakDisplayCard({
 		const maxStreak = Math.max(minStreak + 10, Math.floor(days * 0.35));
 		const targetStreak = Math.min(
 			total,
-			Math.floor(minStreak + rng() * (maxStreak - minStreak + 1)),
+			Math.floor(minStreak + rng() * (maxStreak - minStreak + 1))
 		);
 
 		// Ensure trailing streak days are credited (intensity > 0 or vacation)
@@ -174,56 +173,61 @@ export default function StreakDisplayCard({
 		const d = new Date();
 		d.setHours(0, 0, 0, 0);
 		d.setDate(
-			d.getDate() - ((streakData?.totalDays ?? mock?.totalDays ?? days) - 1),
+			d.getDate() - ((streakData?.totalDays ?? mock?.totalDays ?? days) - 1)
 		);
 		return d;
 	}, [streakData?.totalDays, mock?.totalDays, days]);
 
-	const [mode, setMode] = React.useState<"grid" | "week">("grid");
+	const [mode, setMode] = React.useState<'grid' | 'week'>('grid');
 	React.useEffect(() => {
 		if (!liveVersion) return;
 		const stored = me?.streakDisplayMode;
-		if (stored === "grid" || stored === "week") setMode(stored);
+		if (stored === 'grid' || stored === 'week') setMode(stored);
 	}, [me?.streakDisplayMode, liveVersion]);
 
 	const saveMode = React.useCallback(
-		async (next: "grid" | "week") => {
+		async (next: 'grid' | 'week') => {
 			setMode(next);
 			if (!liveVersion) return;
 			if (!me) return;
 			try {
 				await updateMode({ mode: next });
-			} catch { }
+			} catch {}
 		},
-		[updateMode, liveVersion, me],
+		[updateMode, liveVersion, me]
 	);
 
 	// Heatmap configuration
 	const heatmapConfig = [
-		{ // Level 0 - Background
-			backgroundColor: "var(--color-heatmap-bg)",
+		{
+			// Level 0 - Background
+			backgroundColor: 'var(--color-heatmap-bg)',
 			opacity: 1,
 		},
-		{ // Level 1 - Low activity
-			backgroundColor: "var(--color-heatmap-1)",
+		{
+			// Level 1 - Low activity
+			backgroundColor: 'var(--color-heatmap-1)',
 			opacity: 1,
 		},
-		{ // Level 2 - Medium activity
-			backgroundColor: "var(--color-heatmap-2)",
+		{
+			// Level 2 - Medium activity
+			backgroundColor: 'var(--color-heatmap-2)',
 			opacity: 1,
 		},
-		{ // Level 3 - High activity
-			backgroundColor: "var(--color-heatmap-3)",
+		{
+			// Level 3 - High activity
+			backgroundColor: 'var(--color-heatmap-3)',
 			opacity: 1,
 		},
-		{ // Level 4 - Maximum activity
-			backgroundColor: "var(--color-heatmap-4)",
+		{
+			// Level 4 - Maximum activity
+			backgroundColor: 'var(--color-heatmap-4)',
 			opacity: 1,
 		},
 	] as const;
 
 	const vacationConfig = {
-		backgroundColor: "var(--color-vacation, #10B981)",
+		backgroundColor: 'var(--color-vacation, #10B981)',
 		opacity: 0.9,
 	} as const;
 
@@ -237,7 +241,7 @@ export default function StreakDisplayCard({
 		x: number;
 		y: number;
 		label: string;
-	}>({ visible: false, x: 0, y: 0, label: "" });
+	}>({ visible: false, x: 0, y: 0, label: '' });
 	const tooltipRef = React.useRef<HTMLDivElement | null>(null);
 	const [tooltipSize, setTooltipSize] = React.useState<{
 		w: number;
@@ -249,7 +253,7 @@ export default function StreakDisplayCard({
 	React.useEffect(() => {
 		if (!containerRef.current) return;
 		const el = containerRef.current;
-		const ro = new ResizeObserver((entries) => {
+		const ro = new ResizeObserver(entries => {
 			for (const entry of entries) {
 				setContainerWidth(entry.contentRect.width);
 				setContainerHeight(entry.contentRect.height);
@@ -268,15 +272,16 @@ export default function StreakDisplayCard({
 				h: tooltipRef.current.offsetHeight,
 			};
 			setTooltipSize(prevSize =>
-				prevSize.w !== newSize.w || prevSize.h !== newSize.h ? newSize : prevSize
+				prevSize.w !== newSize.w || prevSize.h !== newSize.h
+					? newSize
+					: prevSize
 			);
 		}
 	}, [tooltip.visible]);
 
 	const totalDaysEffective = streakData?.totalDays ?? mock?.totalDays ?? days;
-	const activityCounts = (streakData?.activityCounts ?? mock?.activityCounts) as
-		| number[]
-		| undefined;
+	const activityCounts = (streakData?.activityCounts ??
+		mock?.activityCounts) as number[] | undefined;
 	const vacationFlags = (streakData?.vacationFlags ?? mock?.vacationFlags) as
 		| boolean[]
 		| undefined;
@@ -286,8 +291,8 @@ export default function StreakDisplayCard({
 		const day = new Date(startDate);
 		day.setDate(day.getDate() + absoluteIndex);
 		const dateLabel = day.toLocaleDateString(undefined, {
-			month: "short",
-			day: "numeric",
+			month: 'short',
+			day: 'numeric',
 		});
 
 		const minutesLearned =
@@ -298,33 +303,33 @@ export default function StreakDisplayCard({
 		const mins = Math.max(0, Math.floor(minutesLearned % 60));
 		const timePart =
 			minutesLearned > 0
-				? ` • ${hours}:${mins.toString().padStart(2, "0")}`
-				: "";
+				? ` • ${hours}:${mins.toString().padStart(2, '0')}`
+				: '';
 
 		const isVacation = Boolean(
 			vacationFlags &&
-			vacationFlags.length === totalDaysEffective &&
-			vacationFlags[absoluteIndex],
+				vacationFlags.length === totalDaysEffective &&
+				vacationFlags[absoluteIndex]
 		);
-		const vacationSuffix = isVacation ? " • Vacation" : "";
+		const vacationSuffix = isVacation ? ' • Vacation' : '';
 
 		const label = `${dateLabel}${timePart}${vacationSuffix}`;
-		setTooltip((t) => ({ ...t, visible: true, label }));
+		setTooltip(t => ({ ...t, visible: true, label }));
 	};
 	const onMove = (ev: React.MouseEvent<HTMLDivElement>) => {
 		const rect = containerRef.current?.getBoundingClientRect();
 		if (!rect) return;
-		setTooltip((t) =>
+		setTooltip(t =>
 			t.visible
 				? {
-					...t,
-					x: ev.clientX - rect.left + 12,
-					y: ev.clientY - rect.top + 12,
-				}
-				: t,
+						...t,
+						x: ev.clientX - rect.left + 12,
+						y: ev.clientY - rect.top + 12,
+					}
+				: t
 		);
 	};
-	const onLeave = () => setTooltip({ visible: false, x: 0, y: 0, label: "" });
+	const onLeave = () => setTooltip({ visible: false, x: 0, y: 0, label: '' });
 
 	// Use real or mock current streak and bonus percent
 	const currentStreak = liveVersion
@@ -349,7 +354,12 @@ export default function StreakDisplayCard({
 					<div className="flex items-center gap-2">
 						{title}
 						<span className="inline-flex items-center gap-1 text-lg font-black">
-							<svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true">
+							<svg
+								width="16"
+								height="18"
+								viewBox="0 0 16 18"
+								aria-hidden="true"
+							>
 								<title>Flame icon</title>
 								<path
 									d="M8 1 C10 4 5 6 8 9 C10 11 12 9 12 7 C14 9 15 11 15 13 C15 15.761 12.761 18 10 18 H6 C3.239 18 1 15.761 1 13 C1 9 4 6 6 4 C6.5 3.5 7.5 2.5 8 1 Z"
@@ -371,7 +381,7 @@ export default function StreakDisplayCard({
 							size="icon"
 							variant="neutral"
 							className="h-7 w-7 p-0 flex items-center justify-center"
-							onClick={() => saveMode(mode === "grid" ? "week" : "grid")}
+							onClick={() => saveMode(mode === 'grid' ? 'week' : 'grid')}
 							aria-label="Swap streak view"
 							title="Swap streak view"
 						>
@@ -384,14 +394,14 @@ export default function StreakDisplayCard({
 			<CardContent className="px-4">
 				<div
 					ref={containerRef}
-					className={`w-full rounded-md overflow-hidden border-2 border-black ${mode === "grid" ? "bg-heatmap-bg" : "bg-foreground"} relative`}
+					className={`w-full rounded-md overflow-hidden border-2 border-black ${mode === 'grid' ? 'bg-heatmap-bg' : 'bg-foreground'} relative`}
 					onMouseMove={onMove}
 					onMouseLeave={onLeave}
 					role="img"
 					aria-label="Activity heatmap with interactive tooltips"
 				>
 					<AnimatePresence mode="wait">
-						{mode === "grid" && (
+						{mode === 'grid' && (
 							<motion.div
 								key="grid"
 								initial={{ opacity: 0, y: 8 }}
@@ -413,7 +423,7 @@ export default function StreakDisplayCard({
 								/>
 							</motion.div>
 						)}
-						{mode === "week" && (
+						{mode === 'week' && (
 							<motion.div
 								key="week"
 								initial={{ opacity: 0, y: 8 }}
@@ -445,15 +455,15 @@ export default function StreakDisplayCard({
 									8,
 									Math.min(
 										tooltip.x,
-										Math.max(8, containerWidth - tooltipSize.w - 8),
-									),
+										Math.max(8, containerWidth - tooltipSize.w - 8)
+									)
 								),
 								top: Math.max(
 									8,
 									Math.min(
 										tooltip.y,
-										Math.max(8, containerHeight - tooltipSize.h - 8),
-									),
+										Math.max(8, containerHeight - tooltipSize.h - 8)
+									)
 								),
 							}}
 						>

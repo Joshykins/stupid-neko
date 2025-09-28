@@ -1,11 +1,11 @@
-"use client";
-import Image from "next/image";
-import { cn } from "../../lib/utils";
-import { Card } from "../ui/card";
+'use client';
+import Image from 'next/image';
+import { cn } from '../../lib/utils';
+import { Card } from '../ui/card';
 
 export default function AppStoreCard({ className }: { className?: string }) {
 	return (
-		<div className={cn("flex gap-3", className)}>
+		<div className={cn('flex gap-3', className)}>
 			{/* <a
                 href="https://apps.apple.com/app/idXXXXXXXXX"
                 target="_blank"

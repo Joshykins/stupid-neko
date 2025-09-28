@@ -1,8 +1,8 @@
 // Removed Clerk provider in favor of Convex Auth
-import { Slot } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import React from "react";
-import ConvexClientProvider from "../components/ConvexClientProvider";
+import { Slot } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import React from 'react';
+import ConvexClientProvider from '../components/ConvexClientProvider';
 
 const tokenCache = {
 	async getToken(key: string) {

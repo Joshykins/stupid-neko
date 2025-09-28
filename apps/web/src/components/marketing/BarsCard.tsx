@@ -1,9 +1,9 @@
-"use client";
-import * as React from "react";
+'use client';
+import * as React from 'react';
 
 export function BarsCard() {
 	const bars = [4, 7, 3, 9, 5, 2, 6];
-	const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+	const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 	const max = Math.max(...bars) || 1;
 	return (
 		<section className="bg-background border-2 border-black rounded-xl p-4 shadow-md">

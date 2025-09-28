@@ -1,5 +1,5 @@
-"use client";
-import { useMutation } from "convex/react";
+'use client';
+import { useMutation } from 'convex/react';
 import {
 	ArrowLeft,
 	Briefcase,
@@ -16,23 +16,23 @@ import {
 	Tv,
 	Users,
 	Youtube,
-} from "lucide-react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
-import type { LanguageCode } from "../../../../../../convex/schema";
+} from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
+import type { LanguageCode } from '../../../../../../convex/schema';
 import {
 	type StepDef,
 	Stepper,
 	type StepRenderProps,
-} from "../../../components/get-started/Stepper";
-import LanguageFlagSVG from "../../../components/LanguageFlagSVG";
-import { Button } from "../../../components/ui/button";
-import { Card } from "../../../components/ui/card";
-import { Progress } from "../../../components/ui/progress";
-import { ScrollArea } from "../../../components/ui/scroll-area";
-import { COMMON_LANGUAGES } from "../../../../../../lib/languages";
+} from '../../../components/get-started/Stepper';
+import LanguageFlagSVG from '../../../components/LanguageFlagSVG';
+import { Button } from '../../../components/ui/button';
+import { Card } from '../../../components/ui/card';
+import { Progress } from '../../../components/ui/progress';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import { COMMON_LANGUAGES } from '../../../../../../lib/languages';
 
 type State = {
 	language?: LanguageCode;
@@ -45,31 +45,31 @@ type State = {
 };
 
 const howHeard = [
-	"News/article/blog",
-	"YouTube",
-	"TV/streaming",
-	"LinkedIn",
-	"Facebook/Instagram",
-	"TikTok",
-	"Friends/family",
-	"Google Search",
-	"Other",
+	'News/article/blog',
+	'YouTube',
+	'TV/streaming',
+	'LinkedIn',
+	'Facebook/Instagram',
+	'TikTok',
+	'Friends/family',
+	'Google Search',
+	'Other',
 ] as const;
 const reasons = [
-	"Connect with people",
-	"Just for fun",
-	"Boost my career",
-	"Spend time productively",
-	"Support my education",
-	"Prepare for travel",
-	"Other",
+	'Connect with people',
+	'Just for fun',
+	'Boost my career',
+	'Spend time productively',
+	'Support my education',
+	'Prepare for travel',
+	'Other',
 ] as const;
 const levels = [
-	"I’m new to the language",
-	"I know some common words",
-	"I can have basic conversations",
-	"I can talk about various topics",
-	"I can discuss most topics in detail",
+	'I’m new to the language',
+	'I know some common words',
+	'I can have basic conversations',
+	'I can talk about various topics',
+	'I can discuss most topics in detail',
 ] as const;
 
 const GettingStartedHeader = ({
@@ -86,7 +86,7 @@ const GettingStartedHeader = ({
 		<Card className="p-0">
 			<div className="flex gap-4 p-2 items-center">
 				<Button onClick={back}>
-					<ArrowLeft className="stroke-3" />{" "}
+					<ArrowLeft className="stroke-3" />{' '}
 				</Button>
 				<Progress value={progress} />
 			</div>
@@ -116,12 +116,12 @@ function LanguageStep({ state, setState }: StepRenderProps<State>) {
 		<>
 			<div className="mx-auto p-4">
 				<div className="flex flex-col gap-6">
-					{languages.map((l) => (
+					{languages.map(l => (
 						<Button
 							className="justify-start flex items-center gap-4 py-8"
-							size={"cta"}
+							size={'cta'}
 							key={l.code}
-							variant={state.language === l.code ? "default" : "neutral"}
+							variant={state.language === l.code ? 'default' : 'neutral'}
 							disabled={!l.supported}
 							onClick={() =>
 								setState((s: State) => ({ ...s, language: l.code }))
@@ -139,55 +139,55 @@ function LanguageStep({ state, setState }: StepRenderProps<State>) {
 
 function HeardStep({ state, setState }: StepRenderProps<State>) {
 	const adorn = (label: string) => {
-		const base = "inline-flex items-center justify-center size-7 rounded-md";
-		const map: Record<string, { node: React.ReactNode; className: string; }> = {
-			"News/article/blog": {
+		const base = 'inline-flex items-center justify-center size-7 rounded-md';
+		const map: Record<string, { node: React.ReactNode; className: string }> = {
+			'News/article/blog': {
 				node: <Newspaper className="size-4" />,
-				className: "text-amber-700 bg-amber-100",
+				className: 'text-amber-700 bg-amber-100',
 			},
 			YouTube: {
 				node: <Youtube className="size-4" />,
-				className: "text-red-700 bg-red-100",
+				className: 'text-red-700 bg-red-100',
 			},
-			"TV/streaming": {
+			'TV/streaming': {
 				node: <Tv className="size-4" />,
-				className: "text-indigo-700 bg-indigo-100",
+				className: 'text-indigo-700 bg-indigo-100',
 			},
 			LinkedIn: {
 				node: <Linkedin className="size-4" />,
-				className: "text-blue-700 bg-blue-100",
+				className: 'text-blue-700 bg-blue-100',
 			},
-			"Facebook/Instagram": {
+			'Facebook/Instagram': {
 				node: <Instagram className="size-4" />,
-				className: "text-pink-700 bg-pink-100",
+				className: 'text-pink-700 bg-pink-100',
 			},
 			TikTok: {
 				node: <Music2 className="size-4" />,
-				className: "text-fuchsia-700 bg-fuchsia-100",
+				className: 'text-fuchsia-700 bg-fuchsia-100',
 			},
-			"Friends/family": {
+			'Friends/family': {
 				node: <Users className="size-4" />,
-				className: "text-emerald-700 bg-emerald-100",
+				className: 'text-emerald-700 bg-emerald-100',
 			},
-			"Google Search": {
+			'Google Search': {
 				node: <Search className="size-4" />,
-				className: "text-green-700 bg-green-100",
+				className: 'text-green-700 bg-green-100',
 			},
 			Other: {
 				node: <HelpCircle className="size-4" />,
-				className: "text-slate-700 bg-slate-100",
+				className: 'text-slate-700 bg-slate-100',
 			},
 		};
-		const entry = map[label] ?? map["Other"];
+		const entry = map[label] ?? map['Other'];
 		return <span className={`${base} ${entry.className}`}>{entry.node}</span>;
 	};
 	return (
 		<div className="mx-auto w-full max-w-3xl py-8 md:py-12">
 			<div className={`grid grid-cols-1 md:grid-cols-2 gap-3 px-3`}>
-				{howHeard.map((o) => (
+				{howHeard.map(o => (
 					<Button
 						key={o}
-						variant={state.heardFrom === o ? "default" : "neutral"}
+						variant={state.heardFrom === o ? 'default' : 'neutral'}
 						className="h-auto p-4 justify-start text-left flex items-center gap-3 "
 						onClick={() => setState((s: State) => ({ ...s, heardFrom: o }))}
 					>
@@ -202,47 +202,47 @@ function HeardStep({ state, setState }: StepRenderProps<State>) {
 
 function ReasonStep({ state, setState }: StepRenderProps<State>) {
 	const adorn = (label: string) => {
-		const base = "inline-flex items-center justify-center size-7 rounded-md";
-		const map: Record<string, { node: React.ReactNode; className: string; }> = {
-			"Connect with people": {
+		const base = 'inline-flex items-center justify-center size-7 rounded-md';
+		const map: Record<string, { node: React.ReactNode; className: string }> = {
+			'Connect with people': {
 				node: <Users className="size-4" />,
-				className: "text-emerald-700 bg-emerald-100",
+				className: 'text-emerald-700 bg-emerald-100',
 			},
-			"Just for fun": {
+			'Just for fun': {
 				node: <Smile className="size-4" />,
-				className: "text-yellow-700 bg-yellow-100",
+				className: 'text-yellow-700 bg-yellow-100',
 			},
-			"Boost my career": {
+			'Boost my career': {
 				node: <Briefcase className="size-4" />,
-				className: "text-blue-700 bg-blue-100",
+				className: 'text-blue-700 bg-blue-100',
 			},
-			"Spend time productively": {
+			'Spend time productively': {
 				node: <Clock className="size-4" />,
-				className: "text-violet-700 bg-violet-100",
+				className: 'text-violet-700 bg-violet-100',
 			},
-			"Support my education": {
+			'Support my education': {
 				node: <GraduationCap className="size-4" />,
-				className: "text-indigo-700 bg-indigo-100",
+				className: 'text-indigo-700 bg-indigo-100',
 			},
-			"Prepare for travel": {
+			'Prepare for travel': {
 				node: <Plane className="size-4" />,
-				className: "text-orange-700 bg-orange-100",
+				className: 'text-orange-700 bg-orange-100',
 			},
 			Other: {
 				node: <HelpCircle className="size-4" />,
-				className: "text-slate-700 bg-slate-100",
+				className: 'text-slate-700 bg-slate-100',
 			},
 		};
-		const entry = map[label] ?? map["Other"];
+		const entry = map[label] ?? map['Other'];
 		return <span className={`${base} ${entry.className}`}>{entry.node}</span>;
 	};
 	return (
 		<div className="mx-auto w-full max-w-3xl py-8 md:py-12">
 			<div className={`grid grid-cols-1 md:grid-cols-2 gap-3 px-3`}>
-				{reasons.map((o) => (
+				{reasons.map(o => (
 					<Button
 						key={o}
-						variant={state.reason === o ? "default" : "neutral"}
+						variant={state.reason === o ? 'default' : 'neutral'}
 						className="h-auto p-4 justify-start text-left flex items-center gap-3 "
 						onClick={() => setState((s: State) => ({ ...s, reason: o }))}
 					>
@@ -256,14 +256,14 @@ function ReasonStep({ state, setState }: StepRenderProps<State>) {
 }
 
 function LevelStep({ state, setState }: StepRenderProps<State>) {
-	const WifiBars = ({ filled }: { filled: number; }) => {
+	const WifiBars = ({ filled }: { filled: number }) => {
 		const bars = [0, 1, 2, 3];
 		return (
 			<span className="inline-flex items-end gap-0.5 bg-foreground/80 rounded-md p-1">
-				{bars.map((b) => (
+				{bars.map(b => (
 					<span
 						key={b}
-						className={`w-1.5 rounded-sm ${b === 0 ? "h-1.5" : b === 1 ? "h-2.5" : b === 2 ? "h-3.5" : "h-4.5"} ${b < filled ? "bg-accent" : "bg-border/30"}`}
+						className={`w-1.5 rounded-sm ${b === 0 ? 'h-1.5' : b === 1 ? 'h-2.5' : b === 2 ? 'h-3.5' : 'h-4.5'} ${b < filled ? 'bg-accent' : 'bg-border/30'}`}
 					/>
 				))}
 			</span>
@@ -275,7 +275,7 @@ function LevelStep({ state, setState }: StepRenderProps<State>) {
 				{levels.map((o, idx) => (
 					<Button
 						key={o}
-						variant={state.level === o ? "default" : "neutral"}
+						variant={state.level === o ? 'default' : 'neutral'}
 						className="h-auto p-4 justify-start text-left flex items-center gap-3 "
 						onClick={() => setState((s: State) => ({ ...s, level: o }))}
 					>
@@ -293,34 +293,34 @@ function LevelStep({ state, setState }: StepRenderProps<State>) {
 export default function GetStartedClient() {
 	const steps: Array<StepDef<State>> = [
 		{
-			id: "language",
-			title: "I want learn...",
-			subtitle: "Pick the language you want to have automatically tracked.",
-			render: (p) => <LanguageStep {...p} />,
+			id: 'language',
+			title: 'I want learn...',
+			subtitle: 'Pick the language you want to have automatically tracked.',
+			render: p => <LanguageStep {...p} />,
 		},
 		{
-			id: "heard",
-			title: "How did you hear about us?",
-			subtitle: "Tell us where you found Stupid Neko.",
-			render: (p) => <HeardStep {...p} />,
+			id: 'heard',
+			title: 'How did you hear about us?',
+			subtitle: 'Tell us where you found Stupid Neko.',
+			render: p => <HeardStep {...p} />,
 		},
 		{
-			id: "reason",
-			title: "Why are you learning?",
-			subtitle: "Help us tailor your experience to your goals.",
-			render: (p) => <ReasonStep {...p} />,
+			id: 'reason',
+			title: 'Why are you learning?',
+			subtitle: 'Help us tailor your experience to your goals.',
+			render: p => <ReasonStep {...p} />,
 		},
 		{
-			id: "level",
-			title: "What is your current level?",
+			id: 'level',
+			title: 'What is your current level?',
 			subtitle:
-				"Tell us your current proficiency to help us better your experience.",
-			render: (p) => <LevelStep {...p} />,
+				'Tell us your current proficiency to help us better your experience.',
+			render: p => <LevelStep {...p} />,
 		},
 	];
 
 	const completeOnboarding = useMutation(
-		api.onboardingFunctions.completeOnboarding,
+		api.onboardingFunctions.completeOnboarding
 	);
 	const router = useRouter();
 
@@ -332,12 +332,12 @@ export default function GetStartedClient() {
 	} | null>(null);
 	const handleStepChange = React.useCallback(
 		(i: number) => setCurrentIndex(i),
-		[],
+		[]
 	);
 	const handleControlsChange = React.useCallback(
-		(c: { next: () => void; back: () => void; goTo: (i: number) => void; }) =>
+		(c: { next: () => void; back: () => void; goTo: (i: number) => void }) =>
 			setControls(c),
-		[],
+		[]
 	);
 	const [currentState, setCurrentState] = React.useState<State>({});
 	const handleStateChange = React.useCallback((s: State) => {
@@ -349,8 +349,8 @@ export default function GetStartedClient() {
 				reason: s.reason,
 				level: s.level,
 			};
-			if (typeof window !== "undefined") {
-				window.localStorage.setItem("onboardingState", JSON.stringify(payload));
+			if (typeof window !== 'undefined') {
+				window.localStorage.setItem('onboardingState', JSON.stringify(payload));
 			}
 		} catch {
 			// ignore
@@ -359,17 +359,17 @@ export default function GetStartedClient() {
 	const currentStep = steps[currentIndex];
 	const stepIsComplete = React.useMemo(() => {
 		switch (currentStep?.id) {
-			case "language":
+			case 'language':
 				return Boolean(currentState.language);
-			case "heard":
+			case 'heard':
 				return Boolean(currentState.heardFrom);
-			case "reason":
+			case 'reason':
 				return Boolean(currentState.reason);
-			case "level":
+			case 'level':
 				return Boolean(currentState.level);
-			case "create-account": {
-				const email = currentState.email ?? "";
-				const password = currentState.password ?? "";
+			case 'create-account': {
+				const email = currentState.email ?? '';
+				const password = currentState.password ?? '';
 				const ok = /.+@.+\..+/.test(email) && password.length >= 8;
 				return ok;
 			}
@@ -378,15 +378,13 @@ export default function GetStartedClient() {
 		}
 	}, [currentStep?.id, currentState]);
 	const selectedLanguageLabel = React.useMemo(() => {
-		const found = COMMON_LANGUAGES.find(
-			(l) => l.code === currentState.language,
-		);
-		return found?.label ?? "language";
+		const found = COMMON_LANGUAGES.find(l => l.code === currentState.language);
+		return found?.label ?? 'language';
 	}, [currentState.language]);
 	const computedTitle =
-		currentStep?.id === "level" ? (
+		currentStep?.id === 'level' ? (
 			<>
-				What is your current{" "}
+				What is your current{' '}
 				<span className="font-semibold">{selectedLanguageLabel}</span> level?
 			</>
 		) : (
@@ -397,27 +395,27 @@ export default function GetStartedClient() {
 
 	React.useEffect(() => {
 		try {
-			if (typeof window === "undefined") return;
-			const stored = window.localStorage.getItem("preReleaseCode");
+			if (typeof window === 'undefined') return;
+			const stored = window.localStorage.getItem('preReleaseCode');
 			if (!stored) return;
 			void (async () => {
 				try {
 					const res = await redeem({ code: stored });
 					if (!res.success) {
-						if (typeof document !== "undefined") {
+						if (typeof document !== 'undefined') {
 							document.cookie = `onboarding=true; path=/; max-age=${60 * 60 * 24 * 365}`;
 						}
-						router.replace("/sign-in?oauthError=invalid_code");
+						router.replace('/sign-in?oauthError=invalid_code');
 					}
 				} catch {
-					router.replace("/sign-in?oauthError=invalid_code");
+					router.replace('/sign-in?oauthError=invalid_code');
 				} finally {
 					try {
-						window.localStorage.removeItem("preReleaseCode");
-					} catch { }
+						window.localStorage.removeItem('preReleaseCode');
+					} catch {}
 				}
 			})();
-		} catch { }
+		} catch {}
 	}, [redeem, router]);
 
 	const handleComplete = React.useCallback(async () => {
@@ -429,10 +427,10 @@ export default function GetStartedClient() {
 				qualifierFormLearningReason: currentState.reason ?? undefined,
 				qualifierFormCurrentLevel: currentState.level ?? undefined,
 			});
-			if (typeof document !== "undefined") {
+			if (typeof document !== 'undefined') {
 				document.cookie = `onboarding=false; path=/; max-age=${60 * 60 * 24 * 365}`;
 			}
-			router.replace("/dashboard");
+			router.replace('/dashboard');
 		} catch (e) {
 			// no-op
 		}
@@ -446,7 +444,7 @@ export default function GetStartedClient() {
 	]);
 
 	React.useEffect(() => {
-		const isLast = currentStep?.id === "level";
+		const isLast = currentStep?.id === 'level';
 		if (isLast && stepIsComplete) {
 			// Auto-complete when last step validated and user clicks Continue
 		}
@@ -466,10 +464,10 @@ export default function GetStartedClient() {
 						<div className="flex flex-col items-start"></div>
 						<div className="flex-1">
 							<h2 className="text-2xl px-4 pt-4 pb-2 font-semibold">
-								{computedTitle ?? "Title goes here"}
+								{computedTitle ?? 'Title goes here'}
 							</h2>
 							<p className="text-sm text-muted-foreground pb-4 px-4">
-								{currentStep?.subtitle ?? "Subtitle goes here"}
+								{currentStep?.subtitle ?? 'Subtitle goes here'}
 							</p>
 						</div>
 						<Image
@@ -497,7 +495,7 @@ export default function GetStartedClient() {
 					<div className="w-full h-[1px] bg-border" />
 					<GettingStartedFooter
 						next={() => {
-							const isLast = currentStep?.id === "level";
+							const isLast = currentStep?.id === 'level';
 							if (isLast && stepIsComplete) {
 								void handleComplete();
 							} else {

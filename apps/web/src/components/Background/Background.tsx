@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import {
 	cubicBezier,
 	motion,
@@ -6,11 +6,11 @@ import {
 	useScroll,
 	useSpring,
 	useTransform,
-} from "framer-motion";
-import Image from "next/image";
-import BackgroundBirds from "./BackgroundBirds";
-import BackgroundClouds from "./BackgroundClouds";
-import { BackgroundSVGs } from "./BackgroundSVGs";
+} from 'framer-motion';
+import Image from 'next/image';
+import BackgroundBirds from './BackgroundBirds';
+import BackgroundClouds from './BackgroundClouds';
+import { BackgroundSVGs } from './BackgroundSVGs';
 
 // Subtle parallax background with a gentle initial slide-up on mount
 export const Background = () => {
@@ -39,7 +39,7 @@ export const Background = () => {
 				className="relative h-full w-full"
 				style={{
 					y: prefersReducedMotion ? 0 : parallaxY,
-					willChange: "transform",
+					willChange: 'transform',
 				}}
 				initial={initial}
 				animate={animate}
@@ -52,7 +52,7 @@ export const Background = () => {
 					alt="Decorative mountain background"
 					fill
 					priority
-					style={{ objectFit: "cover" }}
+					style={{ objectFit: 'cover' }}
 				/>
 			</motion.div>
 		</motion.div>

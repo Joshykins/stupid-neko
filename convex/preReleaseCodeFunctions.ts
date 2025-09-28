@@ -1,11 +1,11 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { getAuthUserId } from '@convex-dev/auth/server';
+import { v } from 'convex/values';
+import { internalMutation, mutation, query } from './_generated/server';
 
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
 function randomChars(n: number): string {
-	let out = "";
+	let out = '';
 	for (let i = 0; i < n; i++) {
 		const idx = Math.floor(Math.random() * ALPHABET.length);
 		out += ALPHABET[idx];
@@ -17,12 +17,12 @@ function normalizeCode(input: string): {
 	formatted: string;
 	normalized: string;
 } {
-	const letters = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
+	const letters = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
 	const a = letters.slice(0, 4);
 	const b = letters.slice(4, 8);
 	const c = letters.slice(8, 12);
 	const parts = [a, b, c].filter(Boolean);
-	const formatted = parts.join("-");
+	const formatted = parts.join('-');
 	return { formatted, normalized: letters.slice(0, 12) };
 }
 
@@ -37,13 +37,11 @@ export const validateCode = query({
 	handler: async (ctx, args) => {
 		const { formatted, normalized } = normalizeCode(args.code);
 		const found = await ctx.db
-			.query("preReleaseCodes")
-			.withIndex("by_normalized_code", (q) =>
-				q.eq("normalizedCode", normalized),
-			)
+			.query('preReleaseCodes')
+			.withIndex('by_normalized_code', q => q.eq('normalizedCode', normalized))
 			.unique();
 		if (!found) {
-			return { valid: false, reason: "Code not found", formatted } as const;
+			return { valid: false, reason: 'Code not found', formatted } as const;
 		}
 		// Allow used codes to proceed to OAuth; ownership is enforced in redeem().
 		// This lets the original owner re-login with their code while others will be rejected later.
@@ -56,7 +54,7 @@ export const redeem = mutation({
 	returns: v.object({ success: v.boolean(), reason: v.optional(v.string()) }),
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
-		if (!userId) return { success: false, reason: "Unauthorized" } as const;
+		if (!userId) return { success: false, reason: 'Unauthorized' } as const;
 
 		const { normalized } = normalizeCode(args.code);
 		// Ensure the authenticated user's document exists. In dev, sessions can
@@ -65,17 +63,15 @@ export const redeem = mutation({
 		if (!user) {
 			return {
 				success: false,
-				reason: "User not found. Please sign out and sign in again.",
+				reason: 'User not found. Please sign out and sign in again.',
 			} as const;
 		}
 		const found = await ctx.db
-			.query("preReleaseCodes")
-			.withIndex("by_normalized_code", (q) =>
-				q.eq("normalizedCode", normalized),
-			)
+			.query('preReleaseCodes')
+			.withIndex('by_normalized_code', q => q.eq('normalizedCode', normalized))
 			.unique();
 		if (!found) {
-			return { success: false, reason: "Code not found" } as const;
+			return { success: false, reason: 'Code not found' } as const;
 		}
 		if (found.used) {
 			// If the code was already used by this same user, allow idempotent success
@@ -87,7 +83,7 @@ export const redeem = mutation({
 			// Otherwise, reject: code belongs to another user
 			return {
 				success: false,
-				reason: "Code belongs to another user",
+				reason: 'Code belongs to another user',
 			} as const;
 		}
 
@@ -108,7 +104,7 @@ export const createPreReleaseAccessCode = internalMutation({
 	returns: v.array(v.string()),
 	handler: async (ctx, args) => {
 		if (!args.message) {
-			throw new Error("Message is required");
+			throw new Error('Message is required');
 		}
 		const created: Array<string> = [];
 		const length = 12;
@@ -120,17 +116,17 @@ export const createPreReleaseAccessCode = internalMutation({
 			const a = letters.slice(0, 4);
 			const b = letters.slice(4, 8);
 			const c = letters.slice(8, 12);
-			code = [a, b, c].filter(Boolean).join("-");
+			code = [a, b, c].filter(Boolean).join('-');
 			const { normalized } = normalizeCode(code);
 			const existing = await ctx.db
-				.query("preReleaseCodes")
-				.withIndex("by_normalized_code", (q) =>
-					q.eq("normalizedCode", normalized),
+				.query('preReleaseCodes')
+				.withIndex('by_normalized_code', q =>
+					q.eq('normalizedCode', normalized)
 				)
 				.unique();
 			if (!existing) break;
 		}
-		await ctx.db.insert("preReleaseCodes", {
+		await ctx.db.insert('preReleaseCodes', {
 			code,
 			normalizedCode: normalizeCode(code).normalized,
 			message: args.message,
@@ -147,7 +143,7 @@ export const createPreReleaseAccessCode = internalMutation({
 export const getAccessStatus = query({
 	args: {},
 	returns: v.object({ granted: v.boolean() }),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return { granted: false } as const;
 		const user = await ctx.db.get(userId);

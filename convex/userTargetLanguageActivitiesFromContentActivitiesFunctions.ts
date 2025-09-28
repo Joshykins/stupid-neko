@@ -1,18 +1,18 @@
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
-import { internalMutation } from "./_generated/server";
-import type { LanguageCode, MediaType } from "./schema";
-import { dangerousTestingEnabled } from "./utils";
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import type { Doc, Id } from './_generated/dataModel';
+import { internalMutation } from './_generated/server';
+import type { LanguageCode, MediaType } from './schema';
+import { dangerousTestingEnabled } from './utils';
 
-type ActivityType = "heartbeat" | "start" | "pause" | "end";
+type ActivityType = 'heartbeat' | 'start' | 'pause' | 'end';
 
 type Session = {
-	userId: Id<"users">;
+	userId: Id<'users'>;
 	contentKey: string;
 	startMs: number;
 	endMs: number;
-	eventIds: Array<Id<"contentActivities">>;
+	eventIds: Array<Id<'contentActivities'>>;
 };
 
 const GAP_MS = 2 * 60 * 1000; // 2 minutes gap splits sessions
@@ -27,18 +27,18 @@ export const translateBatch = internalMutation({
 
 		// Pull a batch of content activities, oldest first to preserve ordering
 		const candidates = await ctx.db
-			.query("contentActivities")
-			.order("asc")
+			.query('contentActivities')
+			.order('asc')
 			.take(limit);
 
 		// Filter to those ready to translate
-		const ready = candidates.filter((row) => !row.translated);
+		const ready = candidates.filter(row => !row.translated);
 		if (ready.length === 0) {
 			return { processed: 0, createdActivities: 0 } as const;
 		}
 
 		// Group by userId + contentKey
-		const keyToEvents: Map<string, Array<Doc<"contentActivities">>> = new Map();
+		const keyToEvents: Map<string, Array<Doc<'contentActivities'>>> = new Map();
 		for (const row of ready) {
 			const key = `${row.userId}:${row.contentKey}`;
 			if (!keyToEvents.has(key)) keyToEvents.set(key, []);
@@ -52,7 +52,7 @@ export const translateBatch = internalMutation({
 			// Sort by occurredAt (fallback to _creationTime)
 			events.sort(
 				(a, b) =>
-					(a.occurredAt ?? a._creationTime) - (b.occurredAt ?? b._creationTime),
+					(a.occurredAt ?? a._creationTime) - (b.occurredAt ?? b._creationTime)
 			);
 
 			const sessions: Array<Session> = [];
@@ -64,7 +64,7 @@ export const translateBatch = internalMutation({
 				const type: ActivityType = event.activityType;
 
 				if (!current) {
-					if (type === "start" || type === "heartbeat") {
+					if (type === 'start' || type === 'heartbeat') {
 						current = {
 							userId: event.userId,
 							contentKey: event.contentKey,
@@ -87,7 +87,7 @@ export const translateBatch = internalMutation({
 					}
 
 					if (!current) {
-						if (type === "start" || type === "heartbeat") {
+						if (type === 'start' || type === 'heartbeat') {
 							current = {
 								userId: event.userId,
 								contentKey: event.contentKey,
@@ -103,11 +103,11 @@ export const translateBatch = internalMutation({
 					}
 
 					// Extend session
-					if (type === "heartbeat" || type === "start") {
+					if (type === 'heartbeat' || type === 'start') {
 						current.endMs = timeStamp;
 						current.eventIds.push(event._id);
 						lastTimeStamp = timeStamp;
-					} else if (type === "pause" || type === "end") {
+					} else if (type === 'pause' || type === 'end') {
 						current.endMs = timeStamp;
 						current.eventIds.push(event._id);
 						sessions.push(current);
@@ -134,20 +134,20 @@ export const translateBatch = internalMutation({
 					const user = await ctx.db.get(current.userId);
 					if (user) {
 						const userTargetLanguageId = user.currentTargetLanguageId as
-							| Id<"userTargetLanguages">
+							| Id<'userTargetLanguages'>
 							| undefined;
 						if (userTargetLanguageId) {
 							const label = await ctx.db
-								.query("contentLabels")
-								.withIndex("by_content_key", (q: any) =>
-									q.eq("contentKey", current.contentKey),
+								.query('contentLabels')
+								.withIndex('by_content_key', (q: any) =>
+									q.eq('contentKey', current.contentKey)
 								)
 								.unique();
 
 							// If no label or not completed, mark waiting and skip creating in-progress
 							if (
 								!label ||
-								label.stage !== "completed" ||
+								label.stage !== 'completed' ||
 								!label.contentLanguageCode
 							) {
 								for (const evId of current.eventIds) {
@@ -167,7 +167,7 @@ export const translateBatch = internalMutation({
 								} else {
 									const devDate: number | undefined = user.devDate;
 									const startMsEffective: number =
-										dangerousTestingEnabled() && typeof devDate === "number"
+										dangerousTestingEnabled() && typeof devDate === 'number'
 											? devDate
 											: current.startMs;
 									const title: string = label?.title ?? current.contentKey;
@@ -176,12 +176,12 @@ export const translateBatch = internalMutation({
 
 									// Upsert in-progress record by (userId, state, contentKey)
 									const existing = await ctx.db
-										.query("userTargetLanguageActivities")
-										.withIndex("by_user_state_and_content_key", (q: any) =>
+										.query('userTargetLanguageActivities')
+										.withIndex('by_user_state_and_content_key', (q: any) =>
 											q
-												.eq("userId", current.userId)
-												.eq("state", "in-progress")
-												.eq("contentKey", current.contentKey),
+												.eq('userId', current.userId)
+												.eq('state', 'in-progress')
+												.eq('contentKey', current.contentKey)
 										)
 										.unique();
 
@@ -193,12 +193,12 @@ export const translateBatch = internalMutation({
 											occurredAt: startMsEffective,
 										});
 									} else {
-										await ctx.db.insert("userTargetLanguageActivities", {
+										await ctx.db.insert('userTargetLanguageActivities', {
 											userId: current.userId,
 											userTargetLanguageId,
 											languageCode,
 											contentKey: current.contentKey,
-											state: "in-progress",
+											state: 'in-progress',
 											title,
 											isManuallyTracked: false,
 											durationInMs: Math.max(0, Math.round(durationMs)),
@@ -232,7 +232,7 @@ export const translateBatch = internalMutation({
 				}
 
 				const userTargetLanguageId = user.currentTargetLanguageId as
-					| Id<"userTargetLanguages">
+					| Id<'userTargetLanguages'>
 					| undefined;
 				if (!userTargetLanguageId) {
 					// Mark processed to avoid hot loop; skip creating activity
@@ -248,16 +248,16 @@ export const translateBatch = internalMutation({
 
 				// Fetch label for metadata
 				const label = await ctx.db
-					.query("contentLabels")
-					.withIndex("by_content_key", (q: any) =>
-						q.eq("contentKey", s.contentKey),
+					.query('contentLabels')
+					.withIndex('by_content_key', (q: any) =>
+						q.eq('contentKey', s.contentKey)
 					)
 					.unique();
 
 				// If no label or not completed, we cannot determine language yet
 				if (
 					!label ||
-					label.stage !== "completed" ||
+					label.stage !== 'completed' ||
 					!label.contentLanguageCode
 				) {
 					// Still waiting on labeling; skip for now (leave events as-is)
@@ -282,25 +282,25 @@ export const translateBatch = internalMutation({
 				const durationInMinutes = Math.max(1, Math.round(durationMs / 60000));
 				const devDate: number | undefined = user.devDate;
 				const startMsEffective: number =
-					dangerousTestingEnabled() && typeof devDate === "number"
+					dangerousTestingEnabled() && typeof devDate === 'number'
 						? devDate
 						: s.startMs;
 
 				try {
 					// If an in-progress exists for this contentKey, patch to completed; else insert completed
 					const existing = await ctx.db
-						.query("userTargetLanguageActivities")
-						.withIndex("by_user_state_and_content_key", (q: any) =>
+						.query('userTargetLanguageActivities')
+						.withIndex('by_user_state_and_content_key', (q: any) =>
 							q
-								.eq("userId", s.userId)
-								.eq("state", "in-progress")
-								.eq("contentKey", s.contentKey),
+								.eq('userId', s.userId)
+								.eq('state', 'in-progress')
+								.eq('contentKey', s.contentKey)
 						)
 						.unique();
 
 					if (existing) {
 						await ctx.db.patch(existing._id, {
-							state: "completed",
+							state: 'completed',
 							durationInMs: Math.max(0, Math.round(s.endMs - s.startMs)),
 							languageCode,
 							title,
@@ -314,7 +314,7 @@ export const translateBatch = internalMutation({
 								{
 									userId: s.userId,
 									occurredAt: occurredAtForStreak,
-								},
+								}
 							);
 						} catch (err) {
 							// No-op: streak credit failures shouldn't block XP awarding
@@ -336,9 +336,9 @@ export const translateBatch = internalMutation({
 										languageCode,
 										isManuallyTracked: false,
 										durationInMinutes,
-									},
+									}
 								),
-							},
+							}
 						);
 					} else {
 						await ctx.runMutation(
@@ -356,7 +356,7 @@ export const translateBatch = internalMutation({
 									? [contentMediaType]
 									: undefined,
 								isManuallyTracked: false,
-							},
+							}
 						);
 						createdActivities += 1;
 					}

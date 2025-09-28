@@ -95,11 +95,11 @@ export type ApplyExperienceResult = {
  * compute level progression details. Does not perform any I/O.
  */
 export function applyExperience(
-	args: ApplyExperienceInput,
+	args: ApplyExperienceInput
 ): ApplyExperienceResult {
 	const previousTotal = Math.max(
 		0,
-		Math.floor(args.currentTotalExperience || 0),
+		Math.floor(args.currentTotalExperience || 0)
 	);
 	const delta = Math.floor(args.deltaExperience || 0);
 

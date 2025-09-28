@@ -1,13 +1,13 @@
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuthActions } from '@convex-dev/auth/react';
 import {
 	Authenticated,
 	Unauthenticated,
 	useMutation,
 	useQuery,
-} from "convex/react";
-import React from "react";
-import { Button, FlatList, Text, View } from "react-native";
-import { api } from "../../../convex/_generated/api";
+} from 'convex/react';
+import React from 'react';
+import { Button, FlatList, Text, View } from 'react-native';
+import { api } from '../../../convex/_generated/api';
 
 function HomeSignedIn() {
 	const { signOut } = useAuthActions();
@@ -19,15 +19,15 @@ function HomeSignedIn() {
 	React.useEffect(() => {
 		if (result) {
 			// For mobile, try to detect timezone using available APIs
-			let currentTimezone = "UTC"; // Default fallback
+			let currentTimezone = 'UTC'; // Default fallback
 
 			// Check if Intl.DateTimeFormat is available (works on newer React Native versions)
-			if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+			if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
 				try {
 					currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 				} catch (e) {
 					// Fallback to UTC if timezone detection fails
-					currentTimezone = "UTC";
+					currentTimezone = 'UTC';
 				}
 			}
 
@@ -46,12 +46,12 @@ function HomeSignedIn() {
 		<View
 			style={{
 				flex: 1,
-				alignItems: "center",
-				justifyContent: "center",
+				alignItems: 'center',
+				justifyContent: 'center',
 				gap: 16,
 			}}
 		>
-			<Text style={{ fontSize: 20, fontWeight: "600" }}>
+			<Text style={{ fontSize: 20, fontWeight: '600' }}>
 				Welcome to Stupid Neko
 			</Text>
 			{/* <Text style={{ fontSize: 14, color: "#666" }}>
@@ -81,17 +81,17 @@ function HomeSignedOut() {
 	const { signIn } = useAuthActions();
 	const onSignIn = async () => {
 		try {
-			await signIn("discord");
+			await signIn('discord');
 		} catch (e) {
-			console.warn("SSO error", e);
+			console.warn('SSO error', e);
 		}
 	};
 	return (
 		<View
 			style={{
 				flex: 1,
-				alignItems: "center",
-				justifyContent: "center",
+				alignItems: 'center',
+				justifyContent: 'center',
 				gap: 16,
 			}}
 		>

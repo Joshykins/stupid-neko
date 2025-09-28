@@ -1,13 +1,13 @@
 // Authentication management for background script
 
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../../convex/_generated/api";
-import { tryCatch } from "../../../../../lib/tryCatch";
-import type { AuthMe } from "../../messaging/messages";
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '../../../../../convex/_generated/api';
+import { tryCatch } from '../../../../../lib/tryCatch';
+import type { AuthMe } from '../../messaging/messages';
 
 // Constants
 const AUTH_CACHE_DURATION_MS = 60_000;
-const DEBUG_LOG_PREFIX = "[bg:auth]";
+const DEBUG_LOG_PREFIX = '[bg:auth]';
 
 // Types
 export type AuthState = {
@@ -28,7 +28,7 @@ let lastAuthState: AuthCache = {
 
 // Environment helpers
 function getEnv(
-	name: "CONVEX_URL" | "CONVEX_SITE_URL" | "SITE_URL",
+	name: 'CONVEX_URL' | 'CONVEX_SITE_URL' | 'SITE_URL'
 ): string | undefined {
 	const globalThisObj = globalThis as Record<string, unknown>;
 	const importMeta = import.meta as unknown as Record<string, unknown>;
@@ -36,11 +36,11 @@ function getEnv(
 	// Prefer compile-time injected constants if available
 	const buildTimeValue = (() => {
 		switch (name) {
-			case "CONVEX_URL":
+			case 'CONVEX_URL':
 				return import.meta.env.VITE_CONVEX_URL as string | undefined;
-			case "CONVEX_SITE_URL":
+			case 'CONVEX_SITE_URL':
 				return import.meta.env.VITE_CONVEX_SITE_URL;
-			case "SITE_URL":
+			case 'SITE_URL':
 				return import.meta.env.VITE_SITE_URL;
 			default:
 				return undefined;
@@ -62,7 +62,7 @@ function getEnv(
 }
 
 // Convex HTTP client initialization
-const CONVEX_URL = getEnv("CONVEX_URL") || getEnv("CONVEX_SITE_URL");
+const CONVEX_URL = getEnv('CONVEX_URL') || getEnv('CONVEX_SITE_URL');
 export const convex = CONVEX_URL
 	? new ConvexHttpClient(CONVEX_URL, {
 			// Allow using .convex.site host during development if needed
@@ -73,23 +73,23 @@ export const convex = CONVEX_URL
 // Integration ID storage helpers
 export async function getIntegrationId(): Promise<string | null> {
 	const { data: storageData, error: storageError } = await tryCatch(
-		new Promise<Record<string, unknown>>((resolve) => {
-			chrome.storage.sync.get(["integrationId"], (items) => {
+		new Promise<Record<string, unknown>>(resolve => {
+			chrome.storage.sync.get(['integrationId'], items => {
 				resolve(items || {});
 			});
-		}),
+		})
 	);
 
 	if (storageError || !storageData) {
 		console.warn(
 			`${DEBUG_LOG_PREFIX} failed to get integration ID:`,
-			storageError,
+			storageError
 		);
 		return null;
 	}
 
 	const integrationId = storageData.integrationId;
-	if (typeof integrationId === "string") {
+	if (typeof integrationId === 'string') {
 		const trimmed = integrationId.trim();
 		return trimmed || null;
 	}
@@ -110,7 +110,7 @@ export async function fetchMe(): Promise<AuthState> {
 	const { data: me, error: meError } = await tryCatch(
 		convex.query(api.browserExtensionFunctions.meFromIntegration, {
 			integrationId,
-		}),
+		})
 	);
 
 	console.log(`${DEBUG_LOG_PREFIX} fetchMe - meFromIntegration result:`, {
@@ -121,7 +121,7 @@ export async function fetchMe(): Promise<AuthState> {
 	if (meError || !me) {
 		console.log(
 			`${DEBUG_LOG_PREFIX} fetchMe - authentication failed:`,
-			meError,
+			meError
 		);
 		return { isAuthed: false, me: null };
 	}
@@ -133,15 +133,15 @@ export async function fetchMe(): Promise<AuthState> {
 			api.browserExtensionFunctions.markIntegrationKeyAsUsedFromExtension,
 			{
 				integrationId,
-			},
-		),
+			}
+		)
 	);
 
 	// Ignore markError - this is best effort
 	if (markError) {
 		console.warn(
 			`${DEBUG_LOG_PREFIX} failed to mark integration key as used:`,
-			markError,
+			markError
 		);
 	}
 
@@ -197,7 +197,7 @@ export async function refreshAuth(): Promise<{
 
 export function invalidateAuthCache(): void {
 	console.log(
-		`${DEBUG_LOG_PREFIX} integration ID changed, invalidating auth cache`,
+		`${DEBUG_LOG_PREFIX} integration ID changed, invalidating auth cache`
 	);
 	lastAuthState = { value: null, fetchedAt: null };
 }

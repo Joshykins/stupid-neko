@@ -1,8 +1,8 @@
-"use client";
-import { useQuery } from "convex/react";
-import { motion } from "framer-motion";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
+'use client';
+import { useQuery } from 'convex/react';
+import { motion } from 'framer-motion';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
 
 type Props = {
 	title: string;
@@ -48,7 +48,7 @@ export default function StreakDisplayWeek({
 }: Props) {
 	const streakData = useQuery(
 		api.userStreakFunctions.getStreakDataForHeatmap,
-		liveVersion ? { days } : "skip",
+		liveVersion ? { days } : 'skip'
 	);
 	const effectiveTotalDays = streakData?.totalDays ?? totalDays ?? days;
 	const renderValues = React.useMemo(() => {
@@ -81,18 +81,16 @@ export default function StreakDisplayWeek({
 					? 1
 					: 0;
 		const isVacation = liveVersion
-			? Boolean(
-				streakData?.vacationFlags?.[absoluteIndex],
-			)
+			? Boolean(streakData?.vacationFlags?.[absoluteIndex])
 			: Boolean(vacationFlags?.[absoluteIndex]);
 		items.push({ absoluteIndex, intensity, minutes, isVacation });
 	}
 
-	const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+	const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 	const startDate = new Date(
-		today.getTime() - (effectiveTotalDays - 1) * 24 * 60 * 60 * 1000,
+		today.getTime() - (effectiveTotalDays - 1) * 24 * 60 * 60 * 1000
 	);
 
 	return (
@@ -100,7 +98,7 @@ export default function StreakDisplayWeek({
 			<div className="grid grid-cols-7 gap-2 sm:gap-3">
 				{items.map((it, i) => {
 					const seed = hashStringToSeed(
-						`${title}-week-${effectiveTotalDays}-${i}`,
+						`${title}-week-${effectiveTotalDays}-${i}`
 					);
 					const rng = createSeededRng(seed);
 					const delay = 0.1 + rng() * 0.6;
@@ -108,16 +106,16 @@ export default function StreakDisplayWeek({
 						it.minutes > 0 || it.intensity > 0 || it.isVacation;
 					const isVacation = it.isVacation;
 					const baseStyle: React.CSSProperties = isVacation
-						? { backgroundColor: "var(--color-vacation, #10B981)" }
+						? { backgroundColor: 'var(--color-vacation, #10B981)' }
 						: hasActivity
 							? { ...intensityStyle(Math.max(1, Math.min(4, it.intensity))) }
-							: { backgroundColor: "var(--color-heatmap-bg)" };
+							: { backgroundColor: 'var(--color-heatmap-bg)' };
 					const gradientOverlay: React.CSSProperties =
 						hasActivity && !isVacation
 							? {
-								backgroundImage:
-									"linear-gradient(180deg, rgba(255,255,255,0.35), rgba(0,0,0,0.06))",
-							}
+									backgroundImage:
+										'linear-gradient(180deg, rgba(255,255,255,0.35), rgba(0,0,0,0.06))',
+								}
 							: {};
 
 					const dayDate = new Date(startDate);

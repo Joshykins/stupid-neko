@@ -1,12 +1,12 @@
 import type {
 	WidgetState,
 	WidgetStateUpdate,
-} from "../pages/background/providers/types";
-import { onContent } from "../messaging/messagesContentRouter";
-import { callBackground } from "../messaging/messagesContentRouter";
+} from '../pages/background/providers/types';
+import { onContent } from '../messaging/messagesContentRouter';
+import { callBackground } from '../messaging/messagesContentRouter';
 
 export class WidgetStateManager {
-	private currentState: WidgetState = { state: "idle" };
+	private currentState: WidgetState = { state: 'idle' };
 	private listeners: Set<(state: WidgetState) => void> = new Set();
 
 	constructor() {
@@ -14,10 +14,10 @@ export class WidgetStateManager {
 	}
 
 	private init(): void {
-		console.log("[WidgetStateManager] Initializing...");
+		console.log('[WidgetStateManager] Initializing...');
 		// Listen for state updates from background script using new messaging pattern
-		onContent("WIDGET_STATE_UPDATE", ({ payload }) => {
-			console.log("[WidgetStateManager] Received state update:", payload);
+		onContent('WIDGET_STATE_UPDATE', ({ payload }) => {
+			console.log('[WidgetStateManager] Received state update:', payload);
 			this.updateState(payload);
 			return {};
 		});
@@ -33,11 +33,11 @@ export class WidgetStateManager {
 		};
 
 		// Notify all listeners
-		this.listeners.forEach((listener) => {
+		this.listeners.forEach(listener => {
 			try {
 				listener(this.currentState);
 			} catch (error) {
-				console.warn("Widget state listener error:", error);
+				console.warn('Widget state listener error:', error);
 			}
 		});
 	}
@@ -65,8 +65,8 @@ export class WidgetStateManager {
 	 * Send action to background script (e.g., user consent response)
 	 */
 	sendAction(action: string, payload?: Record<string, unknown>): void {
-		callBackground("WIDGET_ACTION", { action, payload }).catch((error) => {
-			console.error("Failed to send widget action:", error);
+		callBackground('WIDGET_ACTION', { action, payload }).catch(error => {
+			console.error('Failed to send widget action:', error);
 		});
 	}
 }

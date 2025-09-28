@@ -1,11 +1,11 @@
-"use node";
+'use node';
 
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { internalAction } from "./_generated/server";
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import { internalAction } from './_generated/server';
 
 function getRedirectUri(): string {
-	const convexBase = (process.env.CONVEX_SITE_URL || "").replace(/\/$/, "");
+	const convexBase = (process.env.CONVEX_SITE_URL || '').replace(/\/$/, '');
 
 	return `${convexBase}/api/spotify/callback`;
 }
@@ -19,9 +19,9 @@ export const finishAuth = internalAction({
 	handler: async (ctx, args) => {
 		const row = await ctx.runQuery(
 			internal.spotifyFunctions.getAuthStateByState,
-			{ state: args.state },
+			{ state: args.state }
 		);
-		if (!row) throw new Error("Invalid state");
+		if (!row) throw new Error('Invalid state');
 		const userId = row.userId as any;
 		const clientId = process.env.SPOTIFY_CLIENT_ID as string | undefined;
 		const clientSecret = process.env.SPOTIFY_CLIENT_SECRET as
@@ -29,25 +29,25 @@ export const finishAuth = internalAction({
 			| undefined;
 		const redirectUri = getRedirectUri();
 		if (!clientId || !clientSecret)
-			throw new Error("Missing Spotify client credentials");
+			throw new Error('Missing Spotify client credentials');
 		const body = new URLSearchParams({
-			grant_type: "authorization_code",
+			grant_type: 'authorization_code',
 			code: args.code,
 			redirect_uri: redirectUri,
 		});
-		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-		const resp = await fetch("https://accounts.spotify.com/api/token", {
-			method: "POST",
+		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+		const resp = await fetch('https://accounts.spotify.com/api/token', {
+			method: 'POST',
 			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
+				'Content-Type': 'application/x-www-form-urlencoded',
 				Authorization: `Basic ${basic}`,
 			},
 			body,
 		});
 		if (!resp.ok) {
-			const errText = await resp.text().catch(() => "");
+			const errText = await resp.text().catch(() => '');
 			throw new Error(
-				`Spotify token exchange failed: ${resp.status} ${errText}`,
+				`Spotify token exchange failed: ${resp.status} ${errText}`
 			);
 		}
 		const json = (await resp.json()) as any;
@@ -63,7 +63,7 @@ export const finishAuth = internalAction({
 		let spotifyUserId: string | undefined;
 		let displayName: string | undefined;
 		try {
-			const meResp = await fetch("https://api.spotify.com/v1/me", {
+			const meResp = await fetch('https://api.spotify.com/v1/me', {
 				headers: { Authorization: `Bearer ${accessToken}` },
 			});
 			if (meResp.ok) {
@@ -93,12 +93,12 @@ export const finishAuth = internalAction({
 });
 
 export const refreshToken = internalAction({
-	args: { userId: v.id("users") },
+	args: { userId: v.id('users') },
 	returns: v.object({ ok: v.boolean() }),
 	handler: async (ctx, args) => {
 		const acct = await ctx.runQuery(
 			internal.spotifyFunctions.getAccountByUser,
-			{ userId: args.userId },
+			{ userId: args.userId }
 		);
 		if (!acct) return { ok: true } as const;
 		if ((acct.expiresAt as number) > Date.now() + 60_000)
@@ -109,14 +109,14 @@ export const refreshToken = internalAction({
 			| undefined;
 		if (!clientId || !clientSecret) return { ok: true } as const;
 		const body = new URLSearchParams({
-			grant_type: "refresh_token",
-			refresh_token: (acct.refreshToken as string) || "",
+			grant_type: 'refresh_token',
+			refresh_token: (acct.refreshToken as string) || '',
 		});
-		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-		const resp = await fetch("https://accounts.spotify.com/api/token", {
-			method: "POST",
+		const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+		const resp = await fetch('https://accounts.spotify.com/api/token', {
+			method: 'POST',
 			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
+				'Content-Type': 'application/x-www-form-urlencoded',
 				Authorization: `Basic ${basic}`,
 			},
 			body,

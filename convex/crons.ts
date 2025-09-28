@@ -1,7 +1,7 @@
-import { cronJobs } from "convex/server";
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { internalAction } from "./_generated/server";
+import { cronJobs } from 'convex/server';
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import { internalAction } from './_generated/server';
 
 const crons = cronJobs();
 
@@ -9,18 +9,18 @@ const crons = cronJobs();
 export const tick = internalAction({
 	args: {},
 	returns: v.null(),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		await ctx.runMutation(
 			internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
 				.translateBatch,
 			{
 				limit: 500,
-			},
+			}
 		);
 		// Nudge all users once per tick (bounded)
 		const users = await ctx.runQuery(
 			internal.userFunctions.listAllUsersForCron,
-			{},
+			{}
 		);
 		const now = Date.now();
 		for (const u of users.slice(0, 100)) {
@@ -37,10 +37,10 @@ export const tick = internalAction({
 export const hourlyNudge = internalAction({
 	args: {},
 	returns: v.null(),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const users = await ctx.runQuery(
 			internal.userFunctions.listAllUsersForCron,
-			{},
+			{}
 		);
 		// Small batches to keep within action time; rely on hourly cadence for coverage
 		const batch = users.slice(0, 250);
@@ -56,17 +56,17 @@ export const hourlyNudge = internalAction({
 });
 
 crons.interval(
-	"translate content activities",
+	'translate content activities',
 	{ seconds: 30 },
 	internal.crons.tick,
-	{},
+	{}
 );
 
 crons.interval(
-	"hourly streak nudge",
+	'hourly streak nudge',
 	{ hours: 1 },
 	internal.crons.hourlyNudge,
-	{},
+	{}
 );
 
 export default crons;

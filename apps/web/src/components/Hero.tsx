@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import type * as React from "react";
-import LanguageFlagSVG from "./LanguageFlagSVG";
-import AppStoreCard from "./marketing/AppStoreCard";
-import { UnreleasedBanner } from "./marketing/UnreleasedBanner";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import Image from 'next/image';
+import Link from 'next/link';
+import type * as React from 'react';
+import LanguageFlagSVG from './LanguageFlagSVG';
+import AppStoreCard from './marketing/AppStoreCard';
+import { UnreleasedBanner } from './marketing/UnreleasedBanner';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
 
 function SakuraBranch({
 	className,
@@ -137,10 +137,10 @@ export function Hero() {
 								</div>
 
 								<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
-									Do you want to{" "}
+									Do you want to{' '}
 									<span className="underline decoration-4 decoration-main ">
 										Auto-<i>nya</i>-tically
-									</span>{" "}
+									</span>{' '}
 									track your Progress?
 								</h1>
 								<p className="text-base md:text-lg font-medium text-muted-foreground max-w-prose pt-4">

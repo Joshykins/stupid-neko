@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import { Info } from "lucide-react";
-import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { xpForNextLevel } from "../../../../lib/levelAndExperienceCalculations/levelAndExperienceCalculator";
-import { Button } from "./ui/button";
-import {
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "./ui/chart";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Info } from 'lucide-react';
+import * as React from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { xpForNextLevel } from '../../../../lib/levelAndExperienceCalculations/levelAndExperienceCalculator';
+import { Button } from './ui/button';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 type BucketPoint = {
 	bucketIndex: number;
@@ -37,7 +33,7 @@ function detectCostCutoff(maxScanLevel: number = 200): number {
 
 function bucketizeLevels(
 	bucketSize: number,
-	uptoLevel: number,
+	uptoLevel: number
 ): Array<BucketPoint> {
 	const buckets: Array<BucketPoint> = [];
 	let bucketIndex = 1;
@@ -76,17 +72,17 @@ export default function LevelExperienceInfo({
 	// Determine the cutoff where per-level XP cost flattens
 	const cutoffLevel = React.useMemo(
 		() => detectCostCutoff(Math.max(120, maxLevel)),
-		[maxLevel],
+		[maxLevel]
 	);
 	// Bucket into ranges of 10 levels by default
 	const bucketSize = 10;
 	const bucketedData = React.useMemo(
 		() => bucketizeLevels(bucketSize, Math.min(maxLevel, cutoffLevel)),
-		[maxLevel, cutoffLevel],
+		[maxLevel, cutoffLevel]
 	);
 	const flatCostAfterCutoff = React.useMemo(
 		() => xpForNextLevel(cutoffLevel),
-		[cutoffLevel],
+		[cutoffLevel]
 	);
 	const dataWithTail = React.useMemo(() => {
 		const base = bucketedData;
@@ -108,7 +104,7 @@ export default function LevelExperienceInfo({
 			<PopoverTrigger asChild>
 				<Button
 					size="icon"
-					variant={"neutral"}
+					variant={'neutral'}
 					className="h-7 w-7 p-0 flex items-center justify-center"
 					aria-label="Level/XP info"
 				>
@@ -129,8 +125,8 @@ export default function LevelExperienceInfo({
 					<ChartContainer
 						config={{
 							cost: {
-								label: "XP to Next Level",
-								color: "var(--color-experience)",
+								label: 'XP to Next Level',
+								color: 'var(--color-experience)',
 							},
 						}}
 						className="aspect-[4/3] rounded-base border-2 border-border px-2 pt-2"
@@ -158,50 +154,47 @@ export default function LevelExperienceInfo({
 								tickLine={false}
 								axisLine={false}
 								width={40}
-								tickFormatter={(v) =>
-									typeof v === "number" ? v.toLocaleString() : String(v)
+								tickFormatter={v =>
+									typeof v === 'number' ? v.toLocaleString() : String(v)
 								}
 							/>
 							<ChartTooltip
-								content={
-									(props: {
-										active?: boolean;
-										payload?: Array<{ payload: BucketPoint; }>;
-										label?: string;
-									}) => (
-										<ChartTooltipContent
-											{...props}
-											labelFormatter={() => ""}
-											formatter={(
-												_value: number,
-												_name: string,
-												_item: { payload: BucketPoint; },
-												_index: number,
-												payload: BucketPoint,
-											) => {
-												return (
-													<div className="flex w-full flex-col gap-0.5">
-														<div className="font-medium">
-															{payload.isFlatTail
-																? `Levels ${cutoffLevel}+`
-																: `Levels ${payload.rangeStart}-${payload.rangeEnd}`}
-														</div>
-														<div className="text-muted-foreground">
-															Avg cost:{" "}
-															{Math.round(payload.avgDeltaXp).toLocaleString()}
-														</div>
-														<div className="text-muted-foreground">
-															Range:{" "}
-															{Math.round(payload.minDeltaXp).toLocaleString()}{" "}
-															–{" "}
-															{Math.round(payload.maxDeltaXp).toLocaleString()}
-														</div>
+								content={(props: {
+									active?: boolean;
+									payload?: Array<{ payload: BucketPoint }>;
+									label?: string;
+								}) => (
+									<ChartTooltipContent
+										{...props}
+										labelFormatter={() => ''}
+										formatter={(
+											_value: number,
+											_name: string,
+											_item: { payload: BucketPoint },
+											_index: number,
+											payload: BucketPoint
+										) => {
+											return (
+												<div className="flex w-full flex-col gap-0.5">
+													<div className="font-medium">
+														{payload.isFlatTail
+															? `Levels ${cutoffLevel}+`
+															: `Levels ${payload.rangeStart}-${payload.rangeEnd}`}
 													</div>
-												);
-											}}
-										/>
-									)
-								}
+													<div className="text-muted-foreground">
+														Avg cost:{' '}
+														{Math.round(payload.avgDeltaXp).toLocaleString()}
+													</div>
+													<div className="text-muted-foreground">
+														Range:{' '}
+														{Math.round(payload.minDeltaXp).toLocaleString()} –{' '}
+														{Math.round(payload.maxDeltaXp).toLocaleString()}
+													</div>
+												</div>
+											);
+										}}
+									/>
+								)}
 							/>
 							<Area
 								type="monotone"

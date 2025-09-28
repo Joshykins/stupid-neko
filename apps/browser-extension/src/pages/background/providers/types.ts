@@ -1,6 +1,6 @@
 // Base interfaces for the new content provider system
 
-import type { ContentSource } from "../../../../../../convex/schema";
+import type { ContentSource } from '../../../../../../convex/schema';
 
 export interface ContentMetadata {
 	title?: string;
@@ -14,7 +14,7 @@ export interface ContentMetadata {
 
 export interface ContentActivityEvent {
 	source: ContentSource;
-	event: "start" | "pause" | "end" | "progress" | "language-detected";
+	event: 'start' | 'pause' | 'end' | 'progress' | 'language-detected';
 	url: string;
 	ts: number;
 	position?: number;
@@ -54,7 +54,7 @@ export interface ContentProvider {
 	 */
 	extractMetadata(
 		url: string,
-		document?: Document,
+		document?: Document
 	): Promise<ContentMetadata | null>;
 
 	/**
@@ -63,7 +63,7 @@ export interface ContentProvider {
 	detectTargetLanguage(
 		url: string,
 		document?: Document,
-		targetLanguage?: string,
+		targetLanguage?: string
 	): Promise<boolean>;
 
 	/**
@@ -107,12 +107,12 @@ export interface ContentProvider {
  * Provider event types for type safety
  */
 export type ProviderEventType =
-	| "playback_start"
-	| "playback_pause"
-	| "playback_end"
-	| "playback_progress"
-	| "content_change"
-	| "navigation";
+	| 'playback_start'
+	| 'playback_pause'
+	| 'playback_end'
+	| 'playback_progress'
+	| 'content_change'
+	| 'navigation';
 
 export interface ProviderEvent {
 	type: ProviderEventType;
@@ -132,13 +132,13 @@ export interface ProviderEventHandlers {
 // Widget state management
 export interface WidgetState {
 	state:
-		| "idle"
-		| "awaiting-consent"
-		| "recording-youtube"
-		| "recording-default"
-		| "default-tracking"
-		| "prompt-user-for-track"
-		| "error";
+		| 'idle'
+		| 'awaiting-consent'
+		| 'recording-youtube'
+		| 'recording-default'
+		| 'default-tracking'
+		| 'prompt-user-for-track'
+		| 'error';
 	provider?: string;
 	domain?: string;
 	metadata?: ContentMetadata;
@@ -148,7 +148,7 @@ export interface WidgetState {
 }
 
 export interface WidgetStateUpdate {
-	state: WidgetState["state"];
+	state: WidgetState['state'];
 	provider?: string;
 	domain?: string;
 	metadata?: ContentMetadata;

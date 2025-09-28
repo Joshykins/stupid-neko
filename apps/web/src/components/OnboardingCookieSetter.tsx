@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import { useEffect } from "react";
-import { api } from "../../../../convex/_generated/api";
+import { useQuery } from 'convex/react';
+import { useEffect } from 'react';
+import { api } from '../../../../convex/_generated/api';
 
 export default function OnboardingCookieSetter() {
 	const needsOnboarding = useQuery(api.onboardingFunctions.needsOnboarding, {});

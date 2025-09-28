@@ -1,7 +1,7 @@
-import type { FunctionReturnType } from "convex/server";
-import { useEffect, useState } from "react";
-import type { api } from "../../../../../convex/_generated/api";
-import { callBackground } from "../../messaging/messagesContentRouter";
+import type { FunctionReturnType } from 'convex/server';
+import { useEffect, useState } from 'react';
+import type { api } from '../../../../../convex/_generated/api';
+import { callBackground } from '../../messaging/messagesContentRouter';
 
 // Infer types from Convex functions
 type MeFromIntegration = FunctionReturnType<
@@ -30,7 +30,7 @@ export function useAuth(): AuthState {
 
 		const requestAuth = async () => {
 			try {
-				const response = await callBackground("GET_AUTH_STATE", {});
+				const response = await callBackground('GET_AUTH_STATE', {});
 				if (!mounted) return;
 
 				const me: AuthMe | null = response.me
@@ -44,7 +44,7 @@ export function useAuth(): AuthState {
 				});
 			} catch (e: unknown) {
 				if (!mounted) return;
-				const errorMessage = e instanceof Error ? e.message : "failed";
+				const errorMessage = e instanceof Error ? e.message : 'failed';
 				setState({
 					isAuthed: false,
 					me: null,
@@ -60,14 +60,14 @@ export function useAuth(): AuthState {
 		// Re-fetch when integrationId changes in storage
 		const onStorageChange = (
 			changes: { [key: string]: chrome.storage.StorageChange },
-			area: string,
+			area: string
 		) => {
 			if (
-				area === "sync" &&
+				area === 'sync' &&
 				changes &&
-				Object.hasOwn(changes, "integrationId")
+				Object.hasOwn(changes, 'integrationId')
 			) {
-				setState((s) => ({ ...s, loading: true }));
+				setState(s => ({ ...s, loading: true }));
 				requestAuth();
 			}
 		};

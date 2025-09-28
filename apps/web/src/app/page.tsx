@@ -1,16 +1,16 @@
-"use server";
+'use server';
 
-import StreakDisplayCard from "../components/cards/streaks-card/StreakDisplayCard";
-import { StreakVacationCard } from "../components/cards/streaks-card/StreakVacationCard";
-import { UsersSummaryCard } from "../components/cards/UsersSummaryCard";
-import Hero from "../components/Hero";
-import { DiscordCard } from "../components/marketing/DiscordCard";
-import { DonutChartCard } from "../components/marketing/DonutChartCard";
-import { IntegrationsCard } from "../components/marketing/IntegrationsCard";
-import ReviewsShowcase, { demoReviews } from "../components/marketing/Reviews";
-import { WeeklyBarsCard } from "../components/marketing/WeeklyBarsCard";
-import Pricing from "../components/Pricing";
-import UserXPChart from "../components/userXPChart";
+import StreakDisplayCard from '../components/cards/streaks-card/StreakDisplayCard';
+import { StreakVacationCard } from '../components/cards/streaks-card/StreakVacationCard';
+import { UsersSummaryCard } from '../components/cards/UsersSummaryCard';
+import Hero from '../components/Hero';
+import { DiscordCard } from '../components/marketing/DiscordCard';
+import { DonutChartCard } from '../components/marketing/DonutChartCard';
+import { IntegrationsCard } from '../components/marketing/IntegrationsCard';
+import ReviewsShowcase, { demoReviews } from '../components/marketing/Reviews';
+import { WeeklyBarsCard } from '../components/marketing/WeeklyBarsCard';
+import Pricing from '../components/Pricing';
+import UserXPChart from '../components/userXPChart';
 
 export default async function Home() {
 	return (

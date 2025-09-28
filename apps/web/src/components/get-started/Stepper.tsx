@@ -1,5 +1,5 @@
-"use client";
-import * as React from "react";
+'use client';
+import * as React from 'react';
 
 export type StepRenderProps<State> = {
 	state: State;
@@ -39,14 +39,14 @@ export function Stepper<State>({
 	const [index, setIndex] = React.useState(0);
 	const [state, setState] = React.useState<State>(initialState);
 
-	const back = React.useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
+	const back = React.useCallback(() => setIndex(i => Math.max(0, i - 1)), []);
 	const next = React.useCallback(
-		() => setIndex((i) => Math.min(steps.length - 1, i + 1)),
-		[steps.length],
+		() => setIndex(i => Math.min(steps.length - 1, i + 1)),
+		[steps.length]
 	);
 	const goTo = React.useCallback(
 		(i: number) => setIndex(() => Math.min(Math.max(0, i), steps.length - 1)),
-		[steps.length],
+		[steps.length]
 	);
 
 	const Active = steps[index];

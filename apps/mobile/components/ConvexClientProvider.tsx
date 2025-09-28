@@ -1,14 +1,14 @@
-import { ConvexAuthProvider, type TokenStorage } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
-import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
-import type { ReactNode } from "react";
+import { ConvexAuthProvider, type TokenStorage } from '@convex-dev/auth/react';
+import { ConvexReactClient } from 'convex/react';
+import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import type { ReactNode } from 'react';
 
 const convexUrl =
 	process.env.EXPO_PUBLIC_CONVEX_URL ||
 	(Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_CONVEX_URL;
 if (!convexUrl) {
-	throw new Error("EXPO_PUBLIC_CONVEX_URL is not set");
+	throw new Error('EXPO_PUBLIC_CONVEX_URL is not set');
 }
 const convex = new ConvexReactClient(convexUrl);
 

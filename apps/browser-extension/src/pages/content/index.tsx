@@ -1,9 +1,9 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import TrackingWidget from "../../widget/TrackingWidget";
-import styles from "./content.css?inline";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import TrackingWidget from '../../widget/TrackingWidget';
+import styles from './content.css?inline';
 
-import "./provider-runtime"; // Initialize provider runtime
+import './provider-runtime'; // Initialize provider runtime
 
 // Declare Tailwind CSS browser global
 declare global {
@@ -18,34 +18,34 @@ async function loadFontsUsingFontFace(): Promise<void> {
 	try {
 		const faces: Array<FontFace> = [];
 		const pjNormal = new FontFace(
-			"Plus Jakarta Sans",
-			`url('${chrome.runtime.getURL("fonts/PlusJakartaSans-VariableFont_wght.ttf")}')`,
-			{ style: "normal", weight: "100 900" },
+			'Plus Jakarta Sans',
+			`url('${chrome.runtime.getURL('fonts/PlusJakartaSans-VariableFont_wght.ttf')}')`,
+			{ style: 'normal', weight: '100 900' }
 		);
 		faces.push(pjNormal);
 		try {
 			const pjItalic = new FontFace(
-				"Plus Jakarta Sans",
-				`url('${chrome.runtime.getURL("fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf")}')`,
-				{ style: "italic", weight: "100 900" },
+				'Plus Jakarta Sans',
+				`url('${chrome.runtime.getURL('fonts/PlusJakartaSans-Italic-VariableFont_wght.ttf')}')`,
+				{ style: 'italic', weight: '100 900' }
 			);
 			faces.push(pjItalic);
-		} catch { }
+		} catch {}
 		try {
 			const baloo = new FontFace(
-				"Baloo 2",
-				`url('${chrome.runtime.getURL("fonts/Baloo2-VariableFont_wght.ttf")}')`,
-				{ style: "normal", weight: "400 800" },
+				'Baloo 2',
+				`url('${chrome.runtime.getURL('fonts/Baloo2-VariableFont_wght.ttf')}')`,
+				{ style: 'normal', weight: '400 800' }
 			);
 			faces.push(baloo);
-		} catch { }
-		const loads = faces.map((f) => f.load());
+		} catch {}
+		const loads = faces.map(f => f.load());
 		const loaded = await Promise.all(loads);
-		loaded.forEach((f) => {
+		loaded.forEach(f => {
 			document.fonts.add(f);
 		});
-		document.documentElement.classList.add("sn-fonts-ready");
-	} catch { }
+		document.documentElement.classList.add('sn-fonts-ready');
+	} catch {}
 }
 
 function WidgetGate() {
@@ -55,17 +55,17 @@ function WidgetGate() {
 		// Check if user has disabled the widget
 		const checkWidgetEnabled = async () => {
 			try {
-				const data = await new Promise<Record<string, unknown>>((resolve) => {
+				const data = await new Promise<Record<string, unknown>>(resolve => {
 					try {
-						chrome.storage.sync.get(["widgetEnabled"], (items) =>
-							resolve(items || {}),
+						chrome.storage.sync.get(['widgetEnabled'], items =>
+							resolve(items || {})
 						);
 					} catch {
 						resolve({});
 					}
 				});
 				const enabled =
-					typeof data?.widgetEnabled === "boolean" ? data.widgetEnabled : true;
+					typeof data?.widgetEnabled === 'boolean' ? data.widgetEnabled : true;
 				setShow(enabled);
 			} catch {
 				setShow(true);
@@ -75,7 +75,9 @@ function WidgetGate() {
 		checkWidgetEnabled();
 
 		// Listen for storage changes
-		const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
+		const handleStorageChange = (
+			changes: Record<string, chrome.storage.StorageChange>
+		) => {
 			if (changes.widgetEnabled) {
 				setShow(changes.widgetEnabled.newValue ?? true);
 			}
@@ -98,24 +100,25 @@ function WidgetGate() {
 }
 
 // Create Shadow DOM host and inject CSS inside to isolate styles and fonts
-const host = document.createElement("div");
-host.id = "__stupid-neko-host";
+const host = document.createElement('div');
+host.id = '__stupid-neko-host';
 document.body.appendChild(host);
-const shadow = host.attachShadow({ mode: "open" });
+const shadow = host.attachShadow({ mode: 'open' });
 
 // Shadow root children: style, app root, and portal root for Radix
-const appRoot = document.createElement("div");
-appRoot.id = "__stupid-neko-root";
-const portalRoot = document.createElement("div");
-portalRoot.id = "__stupid-neko-portal";
-(window as { __stupidNekoPortalEl?: HTMLElement; }).__stupidNekoPortalEl = portalRoot;
+const appRoot = document.createElement('div');
+appRoot.id = '__stupid-neko-root';
+const portalRoot = document.createElement('div');
+portalRoot.id = '__stupid-neko-portal';
+(window as { __stupidNekoPortalEl?: HTMLElement }).__stupidNekoPortalEl =
+	portalRoot;
 // Ensure overlays are interactive even if CSS isn't loaded yet
-portalRoot.style.pointerEvents = "auto";
+portalRoot.style.pointerEvents = 'auto';
 shadow.appendChild(appRoot);
 shadow.appendChild(portalRoot);
 //REM fix
-(shadow.host as HTMLElement).style.fontSize = "16px !important";
-(host as HTMLElement).style.fontSize = "16px !important";
+(shadow.host as HTMLElement).style.fontSize = '16px !important';
+(host as HTMLElement).style.fontSize = '16px !important';
 const root = createRoot(appRoot);
 
 // Create and apply the stylesheet
@@ -125,15 +128,19 @@ shadow.adoptedStyleSheets = [sheet];
 
 // Initialize the app
 async function initializeApp() {
-	await loadFontsUsingFontFace().catch(() => { });
+	await loadFontsUsingFontFace().catch(() => {});
 
 	// Wait a bit for CSS to load
 	await new Promise(resolve => setTimeout(resolve, 100));
 
 	root.render(
-		React.createElement("div", {
-			className: "h-screen w-screen fixed z-[5000] pointer-events-none"
-		}, React.createElement(WidgetGate))
+		React.createElement(
+			'div',
+			{
+				className: 'h-screen w-screen fixed z-[5000] pointer-events-none',
+			},
+			React.createElement(WidgetGate)
+		)
 	);
 }
 

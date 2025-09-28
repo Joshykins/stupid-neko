@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import { CheckIcon, ChevronsUpDown } from 'lucide-react';
 
-import * as React from "react";
-import timezones from "timezones-list";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import timezones from 'timezones-list';
+import { Button } from '@/components/ui/button';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import {
 	Command,
 	CommandEmpty,
@@ -14,8 +14,8 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "./command";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+} from './command';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 interface TimezoneOption {
 	value: string;
@@ -34,8 +34,8 @@ export default function Combobox({
 	const timezoneList = (timezones as any).default || timezones;
 
 	// Debug: Log the structure to see what we're working with
-	console.log("Timezone data structure:", timezones);
-	console.log("Timezone list:", timezoneList);
+	console.log('Timezone data structure:', timezones);
+	console.log('Timezone list:', timezoneList);
 
 	const options: TimezoneOption[] = timezoneList.map((tz: any) => ({
 		value: tz.tzCode,
@@ -43,7 +43,7 @@ export default function Combobox({
 		searchText: `${tz.tzCode} ${tz.label} ${tz.utc}`.toLowerCase(),
 	}));
 
-	console.log("Processed options:", options.slice(0, 3)); // Log first 3 options
+	console.log('Processed options:', options.slice(0, 3)); // Log first 3 options
 
 	const [open, setOpen] = React.useState(false);
 
@@ -57,8 +57,8 @@ export default function Combobox({
 					className="w-full bg-white justify-between"
 				>
 					{value
-						? options.find((opt) => opt.value === value)?.label || value
-						: "Select timezone..."}
+						? options.find(opt => opt.value === value)?.label || value
+						: 'Select timezone...'}
 					<ChevronsUpDown />
 				</Button>
 			</PopoverTrigger>
@@ -68,14 +68,14 @@ export default function Combobox({
 					<CommandList className="p-1">
 						<CommandEmpty>No timezone.</CommandEmpty>
 						<CommandGroup>
-							{options.map((option) => (
+							{options.map(option => (
 								<CommandItem
 									key={option.value}
 									value={option.searchText}
-									onSelect={(currentValue) => {
+									onSelect={currentValue => {
 										// Find the option that matches the search text
 										const selectedOption = options.find(
-											(opt) => opt.searchText === currentValue,
+											opt => opt.searchText === currentValue
 										);
 										if (selectedOption) {
 											setValue(selectedOption.value);
@@ -91,8 +91,8 @@ export default function Combobox({
 									</div>
 									<CheckIcon
 										className={cn(
-											"ml-auto",
-											value === option.value ? "opacity-100" : "opacity-0",
+											'ml-auto',
+											value === option.value ? 'opacity-100' : 'opacity-0'
 										)}
 									/>
 								</CommandItem>

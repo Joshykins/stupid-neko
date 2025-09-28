@@ -1,10 +1,10 @@
-"use client";
-import { Check, Rocket } from "lucide-react";
-import Link from "next/link";
-import * as React from "react";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+'use client';
+import { Check, Rocket } from 'lucide-react';
+import Link from 'next/link';
+import * as React from 'react';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 function Yes() {
 	return (
@@ -30,52 +30,52 @@ const PRICING_FEATURES: Array<{
 	pro: boolean;
 }> = [
 	{
-		id: "connect",
-		title: "Connect your apps",
-		description: "Anki, YouTube, Spotify, and more. We tag and dedupe.",
+		id: 'connect',
+		title: 'Connect your apps',
+		description: 'Anki, YouTube, Spotify, and more. We tag and dedupe.',
 		free: false,
 		pro: true,
 	},
 	{
-		id: "add-yourself",
-		title: "Add it yourself (fast)",
-		description: "Log sessions, vocab, or notes in a few taps. Works offline.",
+		id: 'add-yourself',
+		title: 'Add it yourself (fast)',
+		description: 'Log sessions, vocab, or notes in a few taps. Works offline.',
 		free: true,
 		pro: true,
 	},
 	{
-		id: "auto-track",
-		title: "We track it for you",
-		description: "Minutes, reviews, words, listening, streaks. Weekly summary.",
+		id: 'auto-track',
+		title: 'We track it for you',
+		description: 'Minutes, reviews, words, listening, streaks. Weekly summary.',
 		free: false,
 		pro: true,
 	},
 	{
-		id: "share",
-		title: "Share your progress",
-		description: "Share a public stats link with friends or your group.",
+		id: 'share',
+		title: 'Share your progress',
+		description: 'Share a public stats link with friends or your group.',
 		free: true,
 		pro: true,
 	},
 	{
-		id: "celebrate",
-		title: "Celebrate wins",
+		id: 'celebrate',
+		title: 'Celebrate wins',
 		description:
-			"Hit milestones? We create‑memes and post to the StupidNeko Discord.",
+			'Hit milestones? We create‑memes and post to the StupidNeko Discord.',
 		free: false,
 		pro: true,
 	},
 	{
-		id: "leaderboards",
-		title: "Leaderboards",
-		description: "Rank with friends and worldwide. Resets weekly.",
+		id: 'leaderboards',
+		title: 'Leaderboards',
+		description: 'Rank with friends and worldwide. Resets weekly.',
 		free: true,
 		pro: true,
 	},
 ];
 
 const SORTED_FEATURES = PRICING_FEATURES.slice().sort(
-	(a, b) => Number(b.free) - Number(a.free),
+	(a, b) => Number(b.free) - Number(a.free)
 );
 
 export default function Pricing() {
@@ -95,7 +95,7 @@ export default function Pricing() {
 					</CardHeader>
 					<CardContent className="p-0 ">
 						<ul className="mt-4 divide-y-2 divide-border border-2 border-border rounded-lg overflow-hidden">
-							{SORTED_FEATURES.map((f) => (
+							{SORTED_FEATURES.map(f => (
 								<li
 									key={f.id}
 									className="grid grid-cols-[1fr_auto] items-center px-4 py-3 odd:bg-secondary-background bg-foreground"
@@ -128,11 +128,11 @@ export default function Pricing() {
 					<CardHeader className="p-0 min-h-16">
 						<CardTitle className="font-display text-3xl font-black flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 							<span>
-								StupidNeko{" "}
+								StupidNeko{' '}
 								<Badge>
 									<Rocket size={14} /> Pro
 								</Badge>
-							</span>{" "}
+							</span>{' '}
 							<div className="flex items-center text-2xl gap-3">
 								<span className="text-muted-foreground line-through font-bold">
 									$19.99/mo
@@ -140,7 +140,7 @@ export default function Pricing() {
 								<span className="relative inline-flex items-center px-2 py-1 bg-background text-foreground border-2 border-border rounded-sm  font-black">
 									$15.99/mo
 									<Badge
-										variant={"neutral"}
+										variant={'neutral'}
 										className="ml-2 sm:ml-0 sm:absolute sm:-top-4.5 sm:-right-6 sm:rotate-6"
 									>
 										Launch deal
@@ -151,7 +151,7 @@ export default function Pricing() {
 					</CardHeader>
 					<CardContent className="p-0">
 						<ul className="mt-4 divide-y-2 divide-border border-2 border-border rounded-lg overflow-hidden">
-							{SORTED_FEATURES.map((f) => (
+							{SORTED_FEATURES.map(f => (
 								<li
 									key={f.id}
 									className="grid grid-cols-[1fr_auto] items-center px-4 py-3 odd:bg-secondary-background bg-foreground"

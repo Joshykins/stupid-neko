@@ -1,49 +1,49 @@
-import "./globals.css";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
-import type { Metadata, Viewport } from "next";
-import { Baloo_2, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
-import ConvexClientProvider from "../../../../components/ConvexClientProvider";
-import { Background } from "../components/Background/Background";
-import TopNav from "../components/TopNav";
-import { TestingComponent } from "../components/testing/TestingComponent";
-import { Toaster } from "../components/ui/sonner";
+import './globals.css';
+import { ConvexAuthNextjsServerProvider } from '@convex-dev/auth/nextjs/server';
+import type { Metadata, Viewport } from 'next';
+import { Baloo_2, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import ConvexClientProvider from '../../../../components/ConvexClientProvider';
+import { Background } from '../components/Background/Background';
+import TopNav from '../components/TopNav';
+import { TestingComponent } from '../components/testing/TestingComponent';
+import { Toaster } from '../components/ui/sonner';
 
 const plusJakarta = Plus_Jakarta_Sans({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-	display: "swap",
+	variable: '--font-geist-sans',
+	subsets: ['latin'],
+	display: 'swap',
 	fallback: [
-		"Zen Kaku Gothic New",
-		"Hiragino Kaku Gothic ProN",
-		"Yu Gothic",
-		"Meiryo",
-		"system-ui",
-		"sans-serif",
+		'Zen Kaku Gothic New',
+		'Hiragino Kaku Gothic ProN',
+		'Yu Gothic',
+		'Meiryo',
+		'system-ui',
+		'sans-serif',
 	],
 });
 
 const baloo = Baloo_2({
-	variable: "--font-display",
-	subsets: ["latin"],
-	weight: "500",
-	display: "swap",
+	variable: '--font-display',
+	subsets: ['latin'],
+	weight: '500',
+	display: 'swap',
 });
 
 const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
+	variable: '--font-geist-mono',
+	subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-	title: "Stupid Neko",
-	description: "Stupid Neko is a language learning companion in your browser",
+	title: 'Stupid Neko',
+	description: 'Stupid Neko is a language learning companion in your browser',
 	keywords:
-		"language learning, japanese, japanese learning, japanese language, japanese language learning, japanese language learning companion, japanese language learning companion in your browser",
-	authors: [{ name: "StupidNeko", url: "https://stupidneko.com" }],
+		'language learning, japanese, japanese learning, japanese language, japanese language learning, japanese language learning companion, japanese language learning companion in your browser',
+	authors: [{ name: 'StupidNeko', url: 'https://stupidneko.com' }],
 };
 
 export const viewport: Viewport = {
-	width: "device-width",
+	width: 'device-width',
 	initialScale: 1,
 };
 

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
-import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
+import * as React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
-type Trend = { direction: "up" | "down" | "neutral"; delta: number };
+type Trend = { direction: 'up' | 'down' | 'neutral'; delta: number };
 
 export default function MetricCard({
 	label,
@@ -16,17 +16,17 @@ export default function MetricCard({
 	trend?: Trend;
 }) {
 	const TrendIcon =
-		trend?.direction === "up"
+		trend?.direction === 'up'
 			? ArrowUp
-			: trend?.direction === "down"
+			: trend?.direction === 'down'
 				? ArrowDown
 				: ArrowRight;
 	const trendColor =
-		trend?.direction === "up"
-			? "text-emerald-600"
-			: trend?.direction === "down"
-				? "text-rose-600"
-				: "text-muted-foreground";
+		trend?.direction === 'up'
+			? 'text-emerald-600'
+			: trend?.direction === 'down'
+				? 'text-rose-600'
+				: 'text-muted-foreground';
 
 	return (
 		<Card className="overflow-hidden">
@@ -43,9 +43,9 @@ export default function MetricCard({
 					{trend && (
 						<div
 							className={[
-								"inline-flex items-center gap-1 text-sm font-medium",
+								'inline-flex items-center gap-1 text-sm font-medium',
 								trendColor,
-							].join(" ")}
+							].join(' ')}
 						>
 							<TrendIcon className="size-4" />
 							<span>{trend.delta}%</span>

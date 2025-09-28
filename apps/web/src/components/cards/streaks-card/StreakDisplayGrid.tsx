@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useQuery } from "convex/react";
-import { motion } from "framer-motion";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
+import { useQuery } from 'convex/react';
+import { motion } from 'framer-motion';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
 
 type Props = {
 	title: string;
@@ -15,7 +15,7 @@ type Props = {
 	liveVersion?: boolean;
 	activityCounts?: Array<number> | undefined;
 	vacationFlags?: Array<boolean> | undefined;
-	vacationConfig: { backgroundColor: string; opacity: number; };
+	vacationConfig: { backgroundColor: string; opacity: number };
 };
 
 function createSeededRng(seedInput: number): () => number {
@@ -51,7 +51,7 @@ export default function StreakDisplayGrid({
 }: Props) {
 	const streakData = useQuery(
 		api.userStreakFunctions.getStreakDataForHeatmap,
-		liveVersion ? { days } : "skip",
+		liveVersion ? { days } : 'skip'
 	);
 	const totalDays = streakData?.totalDays ?? days;
 	const effectiveValues = React.useMemo(() => {
@@ -67,7 +67,7 @@ export default function StreakDisplayGrid({
 	React.useEffect(() => {
 		if (!containerRef.current) return;
 		const el = containerRef.current;
-		const ro = new ResizeObserver((entries) => {
+		const ro = new ResizeObserver(entries => {
 			for (const entry of entries) setContainerWidth(entry.contentRect.width);
 		});
 		ro.observe(el);
@@ -85,7 +85,7 @@ export default function StreakDisplayGrid({
 	const visibleDays = visibleWeeks * 7;
 	const startIndex = Math.max(
 		0,
-		(effectiveValues?.length ?? totalDays) - visibleDays,
+		(effectiveValues?.length ?? totalDays) - visibleDays
 	);
 
 	const columns: Array<Array<number>> = [];
@@ -97,44 +97,43 @@ export default function StreakDisplayGrid({
 		columns.push(slice);
 	}
 
-	const cs = Math.max(10, Math.floor((innerWidth - (visibleWeeks - 1) * 2) / visibleWeeks));
+	const cs = Math.max(
+		10,
+		Math.floor((innerWidth - (visibleWeeks - 1) * 2) / visibleWeeks)
+	);
 
 	return (
-		<div
-			ref={containerRef}
-			className="w-full relative "
-		>
+		<div ref={containerRef} className="w-full relative ">
 			{containerWidth > 0 && (
-				<div
-					className="flex gap-0.5 select-none w-full justify-center py-1"
-				>
+				<div className="flex gap-0.5 select-none w-full justify-center py-1">
 					{columns.map((week, wi) => (
-						<div key={`week-${startIndex + wi * 7}`} className="flex flex-col gap-0.5">
+						<div
+							key={`week-${startIndex + wi * 7}`}
+							className="flex flex-col gap-0.5"
+						>
 							{week.map((v, di) => {
 								const relativeIndex = wi * 7 + di;
 								const absoluteIndex = startIndex + relativeIndex;
 								const seed = hashStringToSeed(
-									`${title}-${totalDays}-${wi}-${di}`,
+									`${title}-${totalDays}-${wi}-${di}`
 								);
 								const rng = createSeededRng(seed);
 								const delay = 0.1 + rng() * 0.7;
 								const isVacation = liveVersion
-									? Boolean(
-										streakData?.vacationFlags?.[absoluteIndex],
-									)
+									? Boolean(streakData?.vacationFlags?.[absoluteIndex])
 									: Boolean(vacationFlags?.[absoluteIndex]);
 								const intensityStyleResult = intensityStyle(v);
 								const style: React.CSSProperties = isVacation
 									? {
-										width: cs,
-										height: cs,
-										...vacationConfig,
-									}
+											width: cs,
+											height: cs,
+											...vacationConfig,
+										}
 									: {
-										width: cs,
-										height: cs,
-										...intensityStyleResult,
-									};
+											width: cs,
+											height: cs,
+											...intensityStyleResult,
+										};
 								return (
 									<motion.div
 										key={`${title}-${totalDays}-${wi}-${di}-${absoluteIndex}`}
@@ -143,8 +142,10 @@ export default function StreakDisplayGrid({
 										onMouseEnter={() => onHover(absoluteIndex, v)}
 										initial={{ opacity: 0, scale: 0.96 }}
 										animate={{
-											opacity: isVacation ? vacationConfig.opacity : (intensityStyleResult.opacity ?? 1),
-											scale: 1
+											opacity: isVacation
+												? vacationConfig.opacity
+												: (intensityStyleResult.opacity ?? 1),
+											scale: 1,
 										}}
 										transition={{ duration: 0.6, delay }}
 									/>

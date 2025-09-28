@@ -1,13 +1,22 @@
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { LanguageCode } from "../../../../convex/schema";
-import { calculateStreakBonusPercent } from "../../../../lib/streakBonus";
-import { useAuth } from "../components/hooks/useAuth";
-import { LanguageFlagSVG } from "../components/LanguageFlagSVG";
-import HeatmapProgress from "../components/ui/heatmap-progress";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
-import { Button } from "../components/ui/button";
-import { useWidgetState, useUserInfo, useWidgetActions, useWidgetPosition } from "./hooks";
+import { motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { LanguageCode } from '../../../../convex/schema';
+import { calculateStreakBonusPercent } from '../../../../lib/streakBonus';
+import { useAuth } from '../components/hooks/useAuth';
+import { LanguageFlagSVG } from '../components/LanguageFlagSVG';
+import HeatmapProgress from '../components/ui/heatmap-progress';
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '../components/ui/popover';
+import { Button } from '../components/ui/button';
+import {
+	useWidgetState,
+	useUserInfo,
+	useWidgetActions,
+	useWidgetPosition,
+} from './hooks';
 
 type TrackingWidgetProps = {
 	userName?: string;
@@ -36,14 +45,14 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		onDragEnd,
 	} = useWidgetPosition();
 
-	const [iconUrl, setIconUrl] = useState<string>("");
+	const [iconUrl, setIconUrl] = useState<string>('');
 	const [currentTime, setCurrentTime] = useState(Date.now());
 
 	useEffect(() => {
 		try {
-			setIconUrl(chrome.runtime.getURL("icon-128.png"));
+			setIconUrl(chrome.runtime.getURL('icon-128.png'));
 		} catch {
-			setIconUrl("/icon-128.png");
+			setIconUrl('/icon-128.png');
 		}
 	}, []);
 
@@ -65,18 +74,18 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	const contentLabel: string = useMemo(() => {
 		try {
-			const raw = localStorage.getItem("lastContentLabel");
+			const raw = localStorage.getItem('lastContentLabel');
 			if (raw) {
 				const parsed = JSON.parse(raw);
-				if (typeof parsed?.title === "string" && parsed.title.trim().length > 0)
+				if (typeof parsed?.title === 'string' && parsed.title.trim().length > 0)
 					return parsed.title.trim();
 			}
-		} catch { }
+		} catch {}
 		try {
-			const title = document.title.replace(/ - YouTube$/, "").trim();
+			const title = document.title.replace(/ - YouTube$/, '').trim();
 			if (title) return title;
-		} catch { }
-		return "this content";
+		} catch {}
+		return 'this content';
 	}, []);
 
 	// Auth/me state from background
@@ -85,15 +94,15 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// Rotating encouragement lines (stupid neko themed)
 	const encouragement: string = useMemo(() => {
 		const lines: Array<string> = [
-			"Keep up the good work",
-			"Stupid Neko approves this grind.",
-			"Nyaa~ your brain is leveling up.",
-			"Meowtstanding progress!",
-			"Learn now, nap later.",
-			"One more minute, one more whisker.",
-			"Claw your way to fluency.",
-			"Big Neko energy.",
-			"No nap until +1 XP.",
+			'Keep up the good work',
+			'Stupid Neko approves this grind.',
+			'Nyaa~ your brain is leveling up.',
+			'Meowtstanding progress!',
+			'Learn now, nap later.',
+			'One more minute, one more whisker.',
+			'Claw your way to fluency.',
+			'Big Neko energy.',
+			'No nap until +1 XP.',
 		];
 		try {
 			const idx = Math.floor(Math.random() * lines.length);
@@ -114,7 +123,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const progressPercent = streakPercent;
 
 	// Enhanced drag handlers with popover management
-	const handleDrag = (_e: unknown, info: { offset: { x: number; y: number; }; }) => {
+	const handleDrag = (
+		_e: unknown,
+		info: { offset: { x: number; y: number } }
+	) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
 		if (dx > 2 || dy > 2) {
@@ -125,7 +137,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		onDrag(_e, info);
 	};
 
-	const handleDragEnd = async (_e: unknown, info: { offset: { x: number; y: number; }; }) => {
+	const handleDragEnd = async (
+		_e: unknown,
+		info: { offset: { x: number; y: number } }
+	) => {
 		setIsDragging(false);
 		await onDragEnd(_e, info);
 	};
@@ -137,8 +152,14 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			return (
 				<>
 					<div className="snbex:mt-3 snbex:text-2xl snbex:font-bold snbex:leading-snug">
-						Hey <span className="snbex:font-black">{me?.name || userInfo.userName}</span>!{" "}
-						<span className="snbex:opacity-80 snbex:font-semibold">{encouragement}</span>
+						Hey{' '}
+						<span className="snbex:font-black">
+							{me?.name || userInfo.userName}
+						</span>
+						!{' '}
+						<span className="snbex:opacity-80 snbex:font-semibold">
+							{encouragement}
+						</span>
 					</div>
 
 					<div className="snbex:mt-4">
@@ -151,7 +172,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 								<span className="snbex:font-black">{dailyStreak}</span>
 							</span>
 							<span className="snbex:ml-auto snbex:rounded-full snbex:border-2 snbex:border-black snbex:bg-white snbex:px-2 snbex:py-1 snbex:text-xs snbex:font-bold">
-								<span className="snbex:font-black">{xpBonusPercent}%</span> XP Bonus
+								<span className="snbex:font-black">{xpBonusPercent}%</span> XP
+								Bonus
 							</span>
 						</div>
 						<div className="snbex:mt-2">
@@ -160,14 +182,18 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					</div>
 
 					<div className="snbex:mt-4 snbex:text-sm snbex:leading-relaxed">
-						<span className="snbex:font-black">{nekos.toLocaleString()}</span> nekos
-						watched <span className="snbex:font-semibold snbex:italic">{contentLabel}</span>{" "}
-						to learn <span className="snbex:font-black">Japanese</span>! Totaling{" "}
-						<span className="snbex:font-black">{hours.toLocaleString()}</span> tracked
-						hours. And{" "}
+						<span className="snbex:font-black">{nekos.toLocaleString()}</span>{' '}
+						nekos watched{' '}
+						<span className="snbex:font-semibold snbex:italic">
+							{contentLabel}
+						</span>{' '}
+						to learn <span className="snbex:font-black">Japanese</span>!
+						Totaling{' '}
+						<span className="snbex:font-black">{hours.toLocaleString()}</span>{' '}
+						tracked hours. And{' '}
 						<span className="snbex:font-black">
 							{experienceMillions.toFixed(2)} million
-						</span>{" "}
+						</span>{' '}
 						experience!
 					</div>
 				</>
@@ -184,11 +210,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						<div className="snbex:text-sm snbex:text-gray-600 snbex:mb-4">
 							Start tracking your learning progress on this site
 						</div>
-						<Button
-							onClick={() => sendConsentResponse(true)}
-
-							size="sm"
-						>
+						<Button onClick={() => sendConsentResponse(true)} size="sm">
 							Start Tracking
 						</Button>
 					</div>
@@ -201,7 +223,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 							Content Tracking Consent
 						</div>
 						<div className="snbex:text-sm snbex:mb-4 snbex:text-center">
-							Allow tracking of content on <strong>{widgetState.domain}</strong>?
+							Allow tracking of content on <strong>{widgetState.domain}</strong>
+							?
 						</div>
 						{widgetState.metadata?.title && (
 							<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-4 snbex:text-center">
@@ -234,7 +257,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						<div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
 							<div className="snbex:w-3 snbex:h-3 snbex:bg-red-500 snbex:rounded-full snbex:animate-pulse"></div>
 							<div className="snbex:text-base snbex:font-bold">
-								Recording {widgetState.provider === 'youtube' ? 'YouTube' : 'Content'}
+								Recording{' '}
+								{widgetState.provider === 'youtube' ? 'YouTube' : 'Content'}
 							</div>
 						</div>
 						<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-2">
@@ -280,7 +304,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						) : null}
 						{widgetState.startTime ? (
 							<div className="snbex:text-xs snbex:text-gray-600 snbex:mb-3">
-								Session: {Math.floor((currentTime - widgetState.startTime) / 1000)}s
+								Session:{' '}
+								{Math.floor((currentTime - widgetState.startTime) / 1000)}s
 							</div>
 						) : null}
 						<Button
@@ -301,7 +326,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 							Language Detected!
 						</div>
 						<div className="snbex:text-sm snbex:mb-4 snbex:text-center">
-							We detected content in <strong>{widgetState.detectedLanguage}</strong> on <strong>{widgetState.domain}</strong>
+							We detected content in{' '}
+							<strong>{widgetState.detectedLanguage}</strong> on{' '}
+							<strong>{widgetState.domain}</strong>
 						</div>
 						{widgetState.metadata?.title && (
 							<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-4 snbex:text-center">
@@ -337,7 +364,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 							Error
 						</div>
 						<div className="snbex:text-sm snbex:text-gray-600 snbex:mb-4">
-							{widgetState.error || "Something went wrong"}
+							{widgetState.error || 'Something went wrong'}
 						</div>
 						<Button
 							onClick={retry}
@@ -363,7 +390,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const IconButton = (
 		<motion.div
 			ref={containerRef}
-			className={`snbex:pointer-events-auto snbex:select-none snbex:fixed snbex:z-[50000] snbex:transition-opacity ${hovered ? "snbex:opacity-100" : "snbex:opacity-70"}`}
+			className={`snbex:pointer-events-auto snbex:select-none snbex:fixed snbex:z-[50000] snbex:transition-opacity ${hovered ? 'snbex:opacity-100' : 'snbex:opacity-70'}`}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
 			drag
@@ -373,16 +400,16 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			onDrag={handleDrag}
 			onDragEnd={handleDragEnd}
 			// Important: reset transform after drag so subsequent left/top math isn't compounded
-			onUpdate={(latest) => {
+			onUpdate={latest => {
 				// If framer applied a transform via x/y, keep motion left/top as source of truth
 				if (
-					typeof (latest as Record<string, unknown>).x === "number" ||
-					typeof (latest as Record<string, unknown>).y === "number"
+					typeof (latest as Record<string, unknown>).x === 'number' ||
+					typeof (latest as Record<string, unknown>).y === 'number'
 				) {
 					// no-op, but hook ensures we can extend if needed
 				}
 			}}
-			onClickCapture={(e) => {
+			onClickCapture={e => {
 				if (isDragging || dragMovedRef.current) {
 					e.preventDefault();
 					e.stopPropagation();
@@ -390,15 +417,15 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			}}
 			animate={controls}
 			style={{
-				position: "fixed",
+				position: 'fixed',
 				left: mvLeft,
 				top: mvTop,
 				zIndex: 50000,
-				pointerEvents: "auto",
-				cursor: isDragging ? "grabbing" : "grab",
-				userSelect: "none",
+				pointerEvents: 'auto',
+				cursor: isDragging ? 'grabbing' : 'grab',
+				userSelect: 'none',
 				opacity: hovered ? 1 : 0.7,
-				transition: "opacity 150ms ease",
+				transition: 'opacity 150ms ease',
 			}}
 		>
 			<div className="snbex:relative">
@@ -407,12 +434,12 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					alt="stupid-neko"
 					className="snbex:h-10 snbex:w-10 snbex:rounded-full snbex:border-2 snbex:border-black snbex:shadow-[4px_4px_0_0_#000] snbex:bg-white"
 					draggable={false}
-					onDragStart={(e) => {
+					onDragStart={e => {
 						e.preventDefault();
 					}}
 					style={{
-						userSelect: "none",
-						display: "block",
+						userSelect: 'none',
+						display: 'block',
 					}}
 				/>
 				<span className="snbex:absolute snbex:right-2 snbex:top-2 snbex:inline-flex snbex:items-center snbex:justify-center">
@@ -426,9 +453,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	return (
 		<Popover open={expanded} onOpenChange={setExpanded}>
 			<PopoverTrigger asChild>{IconButton}</PopoverTrigger>
-			<PopoverContent>
-				{renderStateBasedContent()}
-			</PopoverContent>
+			<PopoverContent>{renderStateBasedContent()}</PopoverContent>
 		</Popover>
 	);
 }

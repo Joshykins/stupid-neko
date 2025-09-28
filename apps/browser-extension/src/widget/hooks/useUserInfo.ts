@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import type { LanguageCode } from "../../../../convex/schema";
-import { callBackground } from "../../messaging/messagesContentRouter";
+import { useEffect, useState } from 'react';
+import type { LanguageCode } from '../../../../convex/schema';
+import { callBackground } from '../../messaging/messagesContentRouter';
 
 type UserInfo = {
 	userName: string;
@@ -14,8 +14,8 @@ type UseUserInfoProps = {
 
 export function useUserInfo(props: UseUserInfoProps = {}) {
 	const [userInfo, setUserInfo] = useState<UserInfo>({
-		userName: "User",
-		languageCode: "ja",
+		userName: 'User',
+		languageCode: 'ja',
 	});
 
 	useEffect(() => {
@@ -26,17 +26,17 @@ export function useUserInfo(props: UseUserInfoProps = {}) {
 				let languageCode = props.languageCode;
 
 				if (!userName) {
-					const cachedName = localStorage.getItem("userName");
+					const cachedName = localStorage.getItem('userName');
 					if (cachedName) userName = cachedName;
 				}
 
 				if (!languageCode) {
-					const cachedLang = localStorage.getItem("currentTargetLanguage");
+					const cachedLang = localStorage.getItem('currentTargetLanguage');
 					if (cachedLang) languageCode = cachedLang as LanguageCode;
 				}
 
 				// Try to get fresh data from background script
-				const response = await callBackground("GET_AUTH_STATE", {});
+				const response = await callBackground('GET_AUTH_STATE', {});
 				if (response.isAuthed && response.me) {
 					if (response.me.name) userName = response.me.name;
 					if (response.me.languageCode)
@@ -44,11 +44,11 @@ export function useUserInfo(props: UseUserInfoProps = {}) {
 				}
 
 				setUserInfo({
-					userName: userName || "User",
-					languageCode: languageCode || "ja",
+					userName: userName || 'User',
+					languageCode: languageCode || 'ja',
 				});
 			} catch (error) {
-				console.warn("[useUserInfo] Failed to load user info:", error);
+				console.warn('[useUserInfo] Failed to load user info:', error);
 			}
 		};
 

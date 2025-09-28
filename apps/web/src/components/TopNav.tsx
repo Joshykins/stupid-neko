@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuthActions } from '@convex-dev/auth/react';
 import {
 	Authenticated,
 	AuthLoading,
 	Unauthenticated,
 	useMutation,
 	useQuery,
-} from "convex/react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
-import { api } from "../../../../convex/_generated/api";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+} from 'convex/react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { api } from '../../../../convex/_generated/api';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -22,13 +22,13 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from './ui/dropdown-menu';
 
-const plainRoutes = ["/get-started", "/sign-in"];
+const plainRoutes = ['/get-started', '/sign-in'];
 
 export function TopNav() {
 	const pathname = usePathname();
-	const isPlain = plainRoutes.includes(pathname ?? "");
+	const isPlain = plainRoutes.includes(pathname ?? '');
 
 	if (isPlain) {
 		return null;
@@ -53,11 +53,9 @@ function TopNavContent() {
 		}
 	}, [me, updateTimezone]);
 
-	const links = [
-		{ href: "/our-method", label: "Our Method" },
-	].filter((link) => {
+	const links = [{ href: '/our-method', label: 'Our Method' }].filter(link => {
 		// Hide integrations link when authenticated
-		if (link.href === "/integrations" && me) {
+		if (link.href === '/integrations' && me) {
 			return false;
 		}
 		return true;
@@ -79,34 +77,36 @@ function TopNavContent() {
 							<Authenticated>
 								<Link
 									href="/dashboard"
-									aria-current={pathname?.startsWith("/dashboard") ? "page" : undefined}
+									aria-current={
+										pathname?.startsWith('/dashboard') ? 'page' : undefined
+									}
 									className={[
-										"text-background/90 font-sans text-xl font-bold transition-colors",
-										pathname?.startsWith("/dashboard")
+										'text-background/90 font-sans text-xl font-bold transition-colors',
+										pathname?.startsWith('/dashboard')
 											? "relative text-background after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:origin-left "
 											: "hover:text-background relative after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform after:duration-200",
 									]
 										.filter(Boolean)
-										.join(" ")}
+										.join(' ')}
 								>
 									Dashboard
 								</Link>
 							</Authenticated>
-							{links.map((l) => {
+							{links.map(l => {
 								const isActive = pathname?.startsWith(l.href);
 								return (
 									<Link
 										key={l.href}
 										href={l.href}
-										aria-current={isActive ? "page" : undefined}
+										aria-current={isActive ? 'page' : undefined}
 										className={[
-											"text-background/90 font-sans text-xl font-bold transition-colors",
+											'text-background/90 font-sans text-xl font-bold transition-colors',
 											isActive
 												? "relative text-background after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:origin-left "
 												: "hover:text-background relative after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-3 after:h-1 after:bg-background after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform after:duration-200",
 										]
 											.filter(Boolean)
-											.join(" ")}
+											.join(' ')}
 									>
 										{l.label}
 									</Link>
@@ -128,8 +128,8 @@ function TopNavContent() {
 						<Authenticated>
 							<div className="gap-2 flex items-center">
 								<Link href="/dashboard">
-									{" "}
-									<Button variant={"default"} size="sm">
+									{' '}
+									<Button variant={'default'} size="sm">
 										Dashboard
 									</Button>
 								</Link>
@@ -144,10 +144,10 @@ function TopNavContent() {
 											<Avatar className="size-9">
 												<AvatarImage
 													src={me?.image ?? undefined}
-													alt={me?.name ?? "User"}
+													alt={me?.name ?? 'User'}
 												/>
 												<AvatarFallback>
-													{(me?.name ?? "U").slice(0, 1)}
+													{(me?.name ?? 'U').slice(0, 1)}
 												</AvatarFallback>
 											</Avatar>
 										</Button>
@@ -158,15 +158,15 @@ function TopNavContent() {
 												<Avatar className="size-7">
 													<AvatarImage
 														src={me?.image ?? undefined}
-														alt={me?.name ?? "User"}
+														alt={me?.name ?? 'User'}
 													/>
 													<AvatarFallback>
-														{(me?.name ?? "U").slice(0, 1)}
+														{(me?.name ?? 'U').slice(0, 1)}
 													</AvatarFallback>
 												</Avatar>
 												<div className="min-w-0">
 													<div className="truncate text-sm font-heading">
-														{me?.name ?? "Account"}
+														{me?.name ?? 'Account'}
 													</div>
 												</div>
 											</div>
@@ -180,7 +180,7 @@ function TopNavContent() {
 										</DropdownMenuItem>
 										<DropdownMenuSeparator />
 										<DropdownMenuItem
-											onSelect={(e) => {
+											onSelect={e => {
 												e.preventDefault();
 												void signOut();
 											}}

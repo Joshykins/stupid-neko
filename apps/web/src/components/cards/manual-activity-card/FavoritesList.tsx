@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery } from "convex/react";
-import { Clock, ExternalLink, MoreHorizontal, PlusCircle } from "lucide-react";
-import Image from "next/image";
-import * as React from "react";
-import { api } from "../../../../../../convex/_generated/api";
-import { Button, buttonVariants } from "../../ui/button";
+import { useMutation, useQuery } from 'convex/react';
+import { Clock, ExternalLink, MoreHorizontal, PlusCircle } from 'lucide-react';
+import Image from 'next/image';
+import * as React from 'react';
+import { api } from '../../../../../../convex/_generated/api';
+import { Button, buttonVariants } from '../../ui/button';
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../../ui/dialog";
+} from '../../ui/dialog';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "../../ui/dropdown-menu";
-import { Input } from "../../ui/input";
-import { Label } from "../../ui/label";
-import { ScrollArea } from "../../ui/scroll-area";
-import { Textarea } from "../../ui/textarea";
+} from '../../ui/dropdown-menu';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { ScrollArea } from '../../ui/scroll-area';
+import { Textarea } from '../../ui/textarea';
 
 function FavoriteRow({
 	favorite,
@@ -37,22 +37,23 @@ function FavoriteRow({
 	onDelete: any;
 }) {
 	const [isOpen, setIsOpen] = React.useState(false);
-	const [title, setTitle] = React.useState((favorite as any).title ?? "");
+	const [title, setTitle] = React.useState((favorite as any).title ?? '');
 	const [minutes, setMinutes] = React.useState<number>(
-		Math.max(0, Math.round((favorite as any).defaultDurationInMinutes ?? 10)),
+		Math.max(0, Math.round((favorite as any).defaultDurationInMinutes ?? 10))
 	);
 	const [desc, setDesc] = React.useState<string>(
-		(favorite as any).description ?? "",
+		(favorite as any).description ?? ''
 	);
 	const [url, setUrl] = React.useState<string>(
-		(favorite as any).externalUrl ?? "",
+		(favorite as any).externalUrl ?? ''
 	);
-	const [useCustomMinutes, setUseCustomMinutes] = React.useState<boolean>(false);
+	const [useCustomMinutes, setUseCustomMinutes] =
+		React.useState<boolean>(false);
 	const [customHours, setCustomHours] = React.useState<number>(
-		Math.floor(Math.max(0, minutes) / 60),
+		Math.floor(Math.max(0, minutes) / 60)
 	);
 	const [customMinutes, setCustomMinutes] = React.useState<number>(
-		Math.max(0, Math.round(minutes) % 60),
+		Math.max(0, Math.round(minutes) % 60)
 	);
 
 	React.useEffect(() => {
@@ -78,7 +79,7 @@ function FavoriteRow({
 								rel="noreferrer"
 								className="block font-bold truncate underline decoration-main text-background hover:text-background/80 max-w-[58vw] sm:max-w-[420px]"
 							>
-								{title || "(untitled)"}
+								{title || '(untitled)'}
 							</a>
 							<a
 								href={(favorite as any).externalUrl}
@@ -92,7 +93,7 @@ function FavoriteRow({
 						</span>
 					) : (
 						<div className="block font-bold truncate text-background max-w-[58vw] sm:max-w-[420px]">
-							{title || "(untitled)"}
+							{title || '(untitled)'}
 						</div>
 					)}
 					<div className="text-xs text-background/80 flex items-center gap-2">
@@ -145,12 +146,12 @@ function FavoriteRow({
 					</DialogHeader>
 					<div className="grid gap-2">
 						<Label>Title</Label>
-						<Input value={title} onChange={(e) => setTitle(e.target.value)} />
+						<Input value={title} onChange={e => setTitle(e.target.value)} />
 					</div>
 					<div className="grid gap-2 mt-2">
 						<Label>Default minutes</Label>
 						<div className="flex flex-wrap gap-2">
-							{[5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map((m) => (
+							{[5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map(m => (
 								<button
 									key={m}
 									type="button"
@@ -161,10 +162,10 @@ function FavoriteRow({
 									className={buttonVariants({
 										variant:
 											minutes === m && !useCustomMinutes
-												? "default"
-												: "neutral",
-										size: "sm",
-										className: "px-3",
+												? 'default'
+												: 'neutral',
+										size: 'sm',
+										className: 'px-3',
 									})}
 								>
 									{m >= 60
@@ -182,9 +183,9 @@ function FavoriteRow({
 									setMinutes(total);
 								}}
 								className={buttonVariants({
-									variant: useCustomMinutes ? "default" : "neutral",
-									size: "sm",
-									className: "px-3",
+									variant: useCustomMinutes ? 'default' : 'neutral',
+									size: 'sm',
+									className: 'px-3',
 								})}
 							>
 								Custom
@@ -198,10 +199,10 @@ function FavoriteRow({
 										min={0}
 										step={1}
 										value={customHours}
-										onChange={(e) => {
+										onChange={e => {
 											const h = Math.max(
 												0,
-												Math.min(999, Number(e.target.value) || 0),
+												Math.min(999, Number(e.target.value) || 0)
 											);
 											setCustomHours(h);
 											const total = h * 60 + customMinutes;
@@ -209,17 +210,19 @@ function FavoriteRow({
 										}}
 										className="px-2 py-2 text-sm text-main-foreground w-[72px] text-center border-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none shadow-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [appearance:textfield]"
 									/>
-									<div className="px-0.5 py-2 text-xl text-main-foreground bg-transparent">:</div>
+									<div className="px-0.5 py-2 text-xl text-main-foreground bg-transparent">
+										:
+									</div>
 									<Input
 										type="number"
 										min={0}
 										max={59}
 										step={1}
 										value={customMinutes}
-										onChange={(e) => {
+										onChange={e => {
 											const m = Math.max(
 												0,
-												Math.min(59, Number(e.target.value) || 0),
+												Math.min(59, Number(e.target.value) || 0)
 											);
 											setCustomMinutes(m);
 											const total = customHours * 60 + m;
@@ -236,14 +239,14 @@ function FavoriteRow({
 						<Input
 							placeholder="https://example.com/your-link"
 							value={url}
-							onChange={(e) => setUrl(e.target.value)}
+							onChange={e => setUrl(e.target.value)}
 						/>
 					</div>
 					<div className="grid gap-2 mt-2">
 						<Label>Description</Label>
 						<Textarea
 							value={desc}
-							onChange={(e) => setDesc(e.target.value)}
+							onChange={e => setDesc(e.target.value)}
 							className="bg-white placeholder:text-main-foreground/70 text-main-foreground"
 						/>
 					</div>
@@ -268,7 +271,6 @@ function FavoriteRow({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-
 		</li>
 	);
 }
@@ -281,15 +283,17 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 	const [cursor, setCursor] = React.useState<string | null>(null);
 	const favorites = useQuery(
 		api.userTargetLanguageFavoriteActivityFunctions.listFavoritesPaginated,
-		{ paginationOpts: { numItems: 12, cursor } },
+		{ paginationOpts: { numItems: 12, cursor } }
 	);
 	const updateFavorite = useMutation(
-		api.userTargetLanguageFavoriteActivityFunctions.updateFavorite,
+		api.userTargetLanguageFavoriteActivityFunctions.updateFavorite
 	);
 	const deleteFavorite = useMutation(
-		api.userTargetLanguageFavoriteActivityFunctions.deleteFavorite,
+		api.userTargetLanguageFavoriteActivityFunctions.deleteFavorite
 	);
-	const [cursorStack, setCursorStack] = React.useState<Array<string | null>>([]);
+	const [cursorStack, setCursorStack] = React.useState<Array<string | null>>(
+		[]
+	);
 
 	return (
 		<div className="flex flex-col h-full">
@@ -322,7 +326,8 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 									height={140}
 								/>
 								<div className="mt-2 text-sm text-background/80">
-									No favorites yet. Use previous manual records to add favorites.
+									No favorites yet. Use previous manual records to add
+									favorites.
 								</div>
 							</div>
 						</div>
@@ -333,7 +338,7 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 								<FavoriteRow
 									key={(f as any)._id}
 									favorite={f}
-									onAutoFill={onAutoFill || (() => { })}
+									onAutoFill={onAutoFill || (() => {})}
 									onUpdate={updateFavorite}
 									onDelete={deleteFavorite}
 								/>
@@ -347,7 +352,7 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 					<Button
 						variant="neutral"
 						onClick={() => {
-							setCursorStack((stack) => {
+							setCursorStack(stack => {
 								if (stack.length === 0) return stack;
 								const next = [...stack];
 								const prev = next.pop();
@@ -362,7 +367,7 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 					<Button
 						variant="neutral"
 						onClick={() => {
-							setCursorStack((stack) => [...stack, cursor]);
+							setCursorStack(stack => [...stack, cursor]);
 							setCursor(favorites?.continueCursor ?? null);
 						}}
 						disabled={Boolean(favorites) && Boolean(favorites?.isDone)}

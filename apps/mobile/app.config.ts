@@ -1,15 +1,15 @@
-import type { ExpoConfig } from "expo/config";
+import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-	name: "Stupid Neko",
-	slug: "mobile",
-	scheme: "stupidneko",
-	version: "0.1.0",
-	orientation: "portrait",
+	name: 'Stupid Neko',
+	slug: 'mobile',
+	scheme: 'stupidneko',
+	version: '0.1.0',
+	orientation: 'portrait',
 	updates: {
 		fallbackToCacheTimeout: 0,
 	},
-	assetBundlePatterns: ["**/*"],
+	assetBundlePatterns: ['**/*'],
 	ios: {
 		supportsTablet: true,
 	},

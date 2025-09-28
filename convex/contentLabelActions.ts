@@ -1,41 +1,41 @@
-import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { internalAction } from "./_generated/server";
+import { v } from 'convex/values';
+import { internal } from './_generated/api';
+import { internalAction } from './_generated/server';
 
 export const processOneContentLabel = internalAction({
-	args: v.object({ contentLabelId: v.id("contentLabels") }),
+	args: v.object({ contentLabelId: v.id('contentLabels') }),
 	returns: v.union(
 		v.object({
-			contentLabelId: v.id("contentLabels"),
-			stage: v.literal("completed"),
+			contentLabelId: v.id('contentLabels'),
+			stage: v.literal('completed'),
 		}),
 		v.object({
-			contentLabelId: v.id("contentLabels"),
-			stage: v.literal("failed"),
-		}),
+			contentLabelId: v.id('contentLabels'),
+			stage: v.literal('failed'),
+		})
 	),
 	handler: async (ctx, args) => {
 		const label = await ctx.runQuery(
 			internal.contentLabelFunctions.getLabelBasics,
-			{ contentLabelId: args.contentLabelId },
+			{ contentLabelId: args.contentLabelId }
 		);
-		if (!label) throw new Error("contentLabel not found");
-		const source = label.contentKey.split(":")[0];
-		if (!source) throw new Error("source not found");
+		if (!label) throw new Error('contentLabel not found');
+		const source = label.contentKey.split(':')[0];
+		if (!source) throw new Error('source not found');
 
 		await ctx.runMutation(internal.contentLabelFunctions.markProcessing, {
 			contentLabelId: args.contentLabelId,
 		});
 		// Split by source
 		switch (source) {
-			case "youtube":
+			case 'youtube':
 				await ctx.runAction(
 					internal.contentLabelYouTubeActions.processOneYoutubeContentLabel,
-					{ contentLabelId: args.contentLabelId },
+					{ contentLabelId: args.contentLabelId }
 				);
 				break;
 			default:
-				throw new Error("source not supported");
+				throw new Error('source not supported');
 		}
 
 		try {
@@ -45,14 +45,14 @@ export const processOneContentLabel = internalAction({
 			});
 			return {
 				contentLabelId: args.contentLabelId,
-				stage: "completed",
+				stage: 'completed',
 			} as const;
 		} catch (e: any) {
 			await ctx.runMutation(internal.contentLabelFunctions.markFailed, {
 				contentLabelId: args.contentLabelId,
-				error: e?.message ?? "unknown_error",
+				error: e?.message ?? 'unknown_error',
 			});
-			return { contentLabelId: args.contentLabelId, stage: "failed" } as const;
+			return { contentLabelId: args.contentLabelId, stage: 'failed' } as const;
 		}
 	},
 });

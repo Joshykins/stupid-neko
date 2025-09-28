@@ -1,7 +1,7 @@
 // messaging/contract.ts
 
-import type { ContentSource } from "../../../../convex/schema";
-import type { ContentActivityEvent } from "../pages/background/providers/types";
+import type { ContentSource } from '../../../../convex/schema';
+import type { ContentActivityEvent } from '../pages/background/providers/types';
 
 // Map each message key to its request & response shapes.
 // Keep this tiny and colocated so both sides import it.
@@ -78,13 +78,13 @@ export type AuthMe = {
 
 export type WidgetStateUpdate = {
 	state:
-		| "idle"
-		| "awaiting-consent"
-		| "recording-youtube"
-		| "recording-default"
-		| "default-tracking"
-		| "prompt-user-for-track"
-		| "error";
+		| 'idle'
+		| 'awaiting-consent'
+		| 'recording-youtube'
+		| 'recording-default'
+		| 'default-tracking'
+		| 'prompt-user-for-track'
+		| 'error';
 	provider?: string;
 	domain?: string;
 	metadata?: Record<string, unknown>;
@@ -95,7 +95,7 @@ export type WidgetStateUpdate = {
 
 export type PlaybackEvent = {
 	source: ContentSource;
-	event: "start" | "pause" | "end" | "progress";
+	event: 'start' | 'pause' | 'end' | 'progress';
 	url: string;
 	title?: string;
 	videoId?: string;
@@ -108,12 +108,12 @@ export type PlaybackEvent = {
 
 // Helpers to derive request/response types by key
 export type MsgKey = keyof MessageMap;
-export type Req<K extends MsgKey> = { type: K } & MessageMap[K]["req"];
-export type Res<K extends MsgKey> = MessageMap[K]["res"];
+export type Req<K extends MsgKey> = { type: K } & MessageMap[K]['req'];
+export type Res<K extends MsgKey> = MessageMap[K]['res'];
 
 // Narrowed runtime predicate (handy but optional)
 export function isReq<K extends MsgKey>(type: K, m: unknown): m is Req<K> {
 	return Boolean(
-		m && typeof m === "object" && (m as { type?: string }).type === type,
+		m && typeof m === 'object' && (m as { type?: string }).type === type
 	);
 }
