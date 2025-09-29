@@ -25,7 +25,7 @@ export async function getEffectiveNow(
 	if (!userId) return Date.now();
 	const user = await ctx.db.get(userId);
 	if (!user) return Date.now();
-	const devDate = (user as any).devDate as number | undefined;
+	const devDate = (user as any).devDate;
 
 	// If devDate is set, preserve the day but use current time
 	if (typeof devDate === 'number') {

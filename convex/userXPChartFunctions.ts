@@ -50,7 +50,7 @@ export const getXpTimeseries = query({
 			// Filter by userTargetLanguageId for specificity
 			const q = ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_user_target_language', (q: any) =>
+				.withIndex('by_user_target_language', q =>
 					q.eq('userTargetLanguageId', currentTargetLanguageId)
 				);
 			const rows = await q.collect();
@@ -59,7 +59,7 @@ export const getXpTimeseries = query({
 			// Fallback: all XP for the user
 			const q = ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_user', (q: any) => q.eq('userId', userId));
+				.withIndex('by_user', q => q.eq('userId', userId));
 			const rows = await q.collect();
 			events = rows;
 		}

@@ -4,8 +4,11 @@ import {
 	internalMutation,
 	internalQuery,
 	mutation,
+	MutationCtx,
 	query,
+	QueryCtx,
 } from './_generated/server';
+import { Id } from './_generated/dataModel';
 // Use Web Crypto (available in Convex runtime) to generate random IDs
 
 export function generateIntegrationKey(): string {
@@ -73,32 +76,36 @@ export const clearIntegrationKey = mutation({
 	},
 });
 
-export const getUserByIntegrationKey = internalQuery({
-	args: { integrationId: v.string() },
-	returns: v.union(v.any(), v.null()),
-	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query('users')
-			.withIndex('by_integration_key', q =>
-				q.eq('integrationKey', args.integrationId)
-			)
-			.unique();
-		return user;
-	},
-});
+export const getUserByIntegrationKey = async ({
+	ctx,
+	args,
+}: {
+	ctx: QueryCtx;
+	args: { integrationId: string };
+}) => {
+	const user = await ctx.db
+		.query('users')
+		.withIndex('by_integration_key', q =>
+			q.eq('integrationKey', args.integrationId)
+		)
+		.unique();
+	if (!user) throw new Error('User not found');
 
-export const markIntegrationKeyAsUsed = internalMutation({
-	args: { integrationId: v.string() },
-	returns: v.null(),
-	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query('users')
-			.withIndex('by_integration_key', q =>
-				q.eq('integrationKey', args.integrationId)
-			)
-			.unique();
-		if (!user) return null;
-		await ctx.db.patch(user._id, { integrationKeyUsedByPlugin: true });
-		return null;
-	},
-});
+	return user;
+};
+
+export const markIntegrationKeyAsUsed = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
+	args: { integrationId: string };
+}) => {
+	const user = await getUserByIntegrationKey({
+		ctx,
+		args: { integrationId: args.integrationId },
+	});
+
+	if (!user) throw new Error('User not found');
+	await ctx.db.patch(user._id, { integrationKeyUsedByPlugin: true });
+};

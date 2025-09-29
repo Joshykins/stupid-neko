@@ -8,39 +8,13 @@ import {
 	type MutationCtx,
 } from './_generated/server';
 import { contentSourceValidator, languageCodeValidator } from './schema';
-
-async function resolveUserId(
-	ctx: QueryCtx,
-	integrationId: string
-): Promise<Id<'users'>> {
-	const user = (await ctx.runQuery(
-		internal.integrationKeyFunctions.getUserByIntegrationKey,
-		{ integrationId }
-	)) as Doc<'users'> | null;
-	if (!user) throw new Error('Unauthorized');
-	return user._id;
-}
-
-async function resolveUserIdAndMarkUsed(
-	ctx: MutationCtx,
-	integrationId: string
-): Promise<Id<'users'>> {
-	const user = (await ctx.runQuery(
-		internal.integrationKeyFunctions.getUserByIntegrationKey,
-		{ integrationId }
-	)) as any;
-	if (!user) throw new Error('Unauthorized');
-
-	// Only mark as used if not already set
-	if (!user.integrationKeyUsedByPlugin) {
-		await ctx.runMutation(
-			internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
-			{ integrationId }
-		);
-	}
-
-	return user._id;
-}
+import {
+	getUserByIntegrationKey,
+	markIntegrationKeyAsUsed,
+} from './integrationKeyFunctions';
+import { recordContentActivity } from './labelingEngine/contentActivityFunctions';
+import { getContentLabelByContentKey } from './labelingEngine/contentLabelFunctions';
+import { getCurrentTargetLanguage } from './userFunctions';
 
 export const meFromIntegration = query({
 	args: { integrationId: v.string() },
@@ -55,8 +29,10 @@ export const meFromIntegration = query({
 		v.null()
 	),
 	handler: async (ctx, args) => {
-		const userId = await resolveUserId(ctx, args.integrationId);
-		const user = await ctx.db.get(userId);
+		const user = await getUserByIntegrationKey({
+			ctx,
+			args: { integrationId: args.integrationId },
+		});
 		if (!user) return null;
 		const currentTargetLanguageId = user.currentTargetLanguageId;
 		if (!currentTargetLanguageId)
@@ -74,26 +50,13 @@ export const meFromIntegration = query({
 
 export const markIntegrationKeyAsUsedFromExtension = mutation({
 	args: { integrationId: v.string() },
-	returns: v.object({ success: v.boolean() }),
-	handler: async (ctx, args) => {
-		const user = (await ctx.runQuery(
-			internal.integrationKeyFunctions.getUserByIntegrationKey,
-			{ integrationId: args.integrationId }
-		)) as Doc<'users'> | null;
+	handler: async (ctx, args): Promise<null> => {
+		await markIntegrationKeyAsUsed({
+			ctx,
+			args: { integrationId: args.integrationId },
+		});
 
-		if (!user) {
-			return { success: false };
-		}
-
-		// Only mark as used if not already set
-		if (!user.integrationKeyUsedByPlugin) {
-			await ctx.runMutation(
-				internal.integrationKeyFunctions.markIntegrationKeyAsUsed,
-				{ integrationId: args.integrationId }
-			);
-		}
-
-		return { success: true };
+		return null;
 	},
 });
 
@@ -144,27 +107,29 @@ export const recordContentActivityFromIntegration = mutation({
 		} | null;
 	}> => {
 		const { integrationId, ...rest } = args;
-		const userId = await resolveUserIdAndMarkUsed(ctx, integrationId);
-		const result = await ctx.runMutation(
-			internal.contentActivityFunctions.recordContentActivity,
-			{ userId, ...rest }
-		);
+		const user = await getUserByIntegrationKey({
+			ctx,
+			args: { integrationId: args.integrationId },
+		});
+		const userId = user._id;
+		const result = await recordContentActivity({
+			ctx,
+			args: { userId, ...rest },
+		});
 		let contentLabel = null;
-		try {
-			if (result?.contentKey) {
-				contentLabel = await ctx.runQuery(
-					internal.contentLabelFunctions.getByContentKey,
-					{ contentKey: result.contentKey }
-				);
-			}
-		} catch {}
+
+		if (result?.contentKey) {
+			contentLabel = await getContentLabelByContentKey({
+				ctx,
+				args: { contentKey: result.contentKey },
+			});
+		}
+
 		let currentTargetLanguage = null;
-		try {
-			currentTargetLanguage = await ctx.runQuery(
-				internal.userFunctions.getCurrentTargetLanguage,
-				{ userId }
-			);
-		} catch {}
+		currentTargetLanguage = await getCurrentTargetLanguage({
+			ctx,
+			args: { userId },
+		});
 		return { ...result, contentLabel, currentTargetLanguage };
 	},
 });

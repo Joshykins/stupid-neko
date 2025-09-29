@@ -230,7 +230,7 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return { page: [], isDone: true, continueCursor: undefined };
 		const pageLimit = Math.max(1, Math.min(50, args.limit ?? 20));
-		let cursor = args.cursorOccurredAt as number | undefined;
+		let cursor = args.cursorOccurredAt;
 		type ManualActivityRow = {
 			_id: Id<'userTargetLanguageActivities'>;
 			title?: string;

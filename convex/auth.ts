@@ -74,20 +74,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 					}
 				}
 			}
-			// If an OAuth account already exists, delete the password account
-			if (
-				existingUserId &&
-				(args.type === 'oauth' || args.provider?.type === 'oauth')
-			) {
-				const pwAccounts = await ctx.db
-					.query('authAccounts')
-					.withIndex('userIdAndProvider', q => q.eq('userId', existingUserId!))
-					.filter(q => q.eq(q.field('provider'), 'password'))
-					.collect();
-				for (const acc of pwAccounts) {
-					await ctx.db.delete(acc._id);
-				}
-			}
+
 
 			if (!existingUserId) {
 				const profile = args.profile;

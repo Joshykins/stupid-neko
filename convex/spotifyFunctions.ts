@@ -9,6 +9,7 @@ import {
 	mutation,
 	query,
 } from './_generated/server';
+import { Id } from './_generated/dataModel';
 
 // Utilities
 function encodeQuery(
@@ -82,92 +83,8 @@ export const startAuth = mutation({
 	},
 });
 
-// Finish OAuth via HTTP callback handler in http.ts; we split exchange logic here.
-// Helper: look up and manage state rows
-export const getAuthStateByState = internalQuery({
-	args: { state: v.string() },
-	returns: v.union(
-		v.object({
-			_id: v.id('spotifyAuthStates'),
-			state: v.string(),
-			userId: v.id('users'),
-			createdAt: v.number(),
-			redirectTo: v.optional(v.string()),
-		}),
-		v.null()
-	),
-	handler: async (ctx, args) => {
-		const row = await ctx.db
-			.query('spotifyAuthStates')
-			.withIndex('by_state', (q: any) => q.eq('state', args.state))
-			.unique();
-		if (!row) return null;
-		return {
-			_id: row._id,
-			state: row.state,
-			userId: row.userId,
-			createdAt: row.createdAt,
-			redirectTo: row.redirectTo,
-		} as any;
-	},
-});
 
-export const deleteAuthState = internalMutation({
-	args: { id: v.id('spotifyAuthStates') },
-	returns: v.null(),
-	handler: async (ctx, args) => {
-		await ctx.db.delete(args.id);
-		return null;
-	},
-});
 
-export const upsertSpotifyAccount = internalMutation({
-	args: {
-		userId: v.id('users'),
-		spotifyUserId: v.optional(v.string()),
-		displayName: v.optional(v.string()),
-		accessToken: v.string(),
-		refreshToken: v.string(),
-		expiresAt: v.number(),
-		tokenType: v.optional(v.string()),
-		scope: v.optional(v.string()),
-	},
-	returns: v.null(),
-	handler: async (ctx, args) => {
-		const existing = await ctx.db
-			.query('spotifyAccounts')
-			.withIndex('by_user', (q: any) => q.eq('userId', args.userId))
-			.unique();
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				accessToken: args.accessToken,
-				refreshToken: args.refreshToken,
-				expiresAt: args.expiresAt,
-				tokenType: args.tokenType,
-				scope: args.scope,
-				spotifyUserId: args.spotifyUserId,
-				displayName: args.displayName,
-				status: 'connected',
-				updatedAt: Date.now(),
-			} as any);
-		} else {
-			await ctx.db.insert('spotifyAccounts', {
-				userId: args.userId,
-				spotifyUserId: args.spotifyUserId,
-				displayName: args.displayName,
-				accessToken: args.accessToken,
-				refreshToken: args.refreshToken,
-				expiresAt: args.expiresAt,
-				tokenType: args.tokenType,
-				scope: args.scope,
-				status: 'connected',
-				createdAt: Date.now(),
-				updatedAt: Date.now(),
-			} as any);
-		}
-		return null;
-	},
-});
 
 // finishAuth moved to convex/spotifyActions.ts (Node runtime)
 
@@ -182,7 +99,7 @@ export const getStatus = query({
 		if (!userId) return { connected: false } as const;
 		const acct = await ctx.db
 			.query('spotifyAccounts')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.unique();
 		return { connected: !!acct, displayName: acct?.displayName } as const;
 	},
@@ -196,50 +113,11 @@ export const disconnect = mutation({
 		if (!userId) throw new Error('Unauthorized');
 		const acct = await ctx.db
 			.query('spotifyAccounts')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.unique();
 		if (acct) {
 			await ctx.db.delete(acct._id);
 		}
 		return { ok: true } as const;
-	},
-});
-
-// refreshToken moved to convex/spotifyActions.ts (Node runtime)
-
-export const getAccountByUser = internalQuery({
-	args: { userId: v.id('users') },
-	returns: v.union(
-		v.object({
-			_id: v.id('spotifyAccounts'),
-			userId: v.id('users'),
-			accessToken: v.string(),
-			refreshToken: v.string(),
-			expiresAt: v.number(),
-		}),
-		v.null()
-	),
-	handler: async (ctx, args) => {
-		return await ctx.db
-			.query('spotifyAccounts')
-			.withIndex('by_user', (q: any) => q.eq('userId', args.userId))
-			.unique();
-	},
-});
-
-export const updateAccessToken = internalMutation({
-	args: {
-		id: v.id('spotifyAccounts'),
-		accessToken: v.string(),
-		expiresAt: v.number(),
-	},
-	returns: v.null(),
-	handler: async (ctx, args) => {
-		await ctx.db.patch(args.id, {
-			accessToken: args.accessToken,
-			expiresAt: args.expiresAt,
-			updatedAt: Date.now(),
-		} as any);
-		return null;
 	},
 });

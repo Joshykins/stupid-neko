@@ -6,7 +6,9 @@ import {
 	internalMutation,
 	internalQuery,
 	mutation,
+	MutationCtx,
 	query,
+	QueryCtx,
 } from './_generated/server';
 import { getEffectiveNow } from './utils';
 
@@ -23,12 +25,12 @@ function dayStartMsOf(timestampMs: number): number {
 }
 
 async function getVacationBalance(
-	ctx: any,
+	ctx: QueryCtx,
 	userId: Id<'users'>
 ): Promise<number> {
 	const user = await ctx.db.get(userId);
 	if (!user) return 0;
-	const currentTargetLanguageId = (user as any).currentTargetLanguageId as
+	const currentTargetLanguageId = user.currentTargetLanguageId as
 		| Id<'userTargetLanguages'>
 		| undefined;
 	let totalExperience = 0;
@@ -36,42 +38,44 @@ async function getVacationBalance(
 		const latest = (
 			await ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_user_target_language', (q: any) =>
+				.withIndex('by_user_target_language', q =>
 					q.eq('userTargetLanguageId', currentTargetLanguageId)
 				)
 				.order('desc')
 				.take(1)
-		)[0] as any | undefined;
-		totalExperience = Math.max(
-			0,
-			(latest?.runningTotalAfter as number | undefined) ?? 0
-		);
+		)[0];
+		totalExperience = Math.max(0, latest?.runningTotalAfter ?? 0);
 	}
 	const earned = Math.floor(totalExperience / VACATION_COST);
-	const ledger = await ctx.db
-		.query('userStreakVacationLedgers')
-		.withIndex('by_user', (q: any) => q.eq('userId', userId))
-		.collect();
-	const grants = ledger.filter((e: any) => e.reason === 'grant').length;
-	const uses = ledger.filter((e: any) => e.reason === 'use').length;
+	const [grants, uses] = await Promise.all([
+		ctx.db
+			.query('userStreakVacationLedgers')
+			.withIndex('by_user_and_reason', q => q.eq('userId', userId).eq('reason', 'grant'))
+			.collect()
+			.then(ledger => ledger.length),
+		ctx.db
+			.query('userStreakVacationLedgers')
+			.withIndex('by_user_and_reason', q => q.eq('userId', userId).eq('reason', 'use'))
+			.collect()
+			.then(ledger => ledger.length)
+	]);
 	const balance = Math.max(0, earned + grants - uses);
 	return Math.min(VACATION_CAP, balance);
 }
 
 // Fetch the most recent credited streak day for a user, optionally before a given day.
 async function getMostRecentCreditedStreakDay(
-	ctx: any,
+	ctx: QueryCtx,
 	userId: Id<'users'>,
 	beforeDayStartMs?: number
 ): Promise<any | undefined> {
 	const rows = await ctx.db
 		.query('userStreakDays')
-		.withIndex('by_user_and_day', (q: any) => {
-			let builder = q.eq('userId', userId);
+		.withIndex('by_user_and_day', q => {
 			if (beforeDayStartMs !== undefined) {
-				builder = builder.lt('dayStartMs', beforeDayStartMs);
+				return q.eq('userId', userId).lt('dayStartMs', beforeDayStartMs);
 			}
-			return builder;
+			return q.eq('userId', userId);
 		})
 		.order('desc')
 		.take(50);
@@ -80,14 +84,14 @@ async function getMostRecentCreditedStreakDay(
 
 // Load the `streakDays` row for a user and day; if missing, create a default one and return it.
 async function getOrCreateStreakDay(
-	ctx: any,
+	ctx: MutationCtx,
 	userId: Id<'users'>,
 	dayStartMs: number,
 	nowUtc: number
 ): Promise<any> {
 	let row = await ctx.db
 		.query('userStreakDays')
-		.withIndex('by_user_and_day', (q: any) =>
+		.withIndex('by_user_and_day', q =>
 			q.eq('userId', userId).eq('dayStartMs', dayStartMs)
 		)
 		.unique();
@@ -103,7 +107,7 @@ async function getOrCreateStreakDay(
 		} as any);
 		row = await ctx.db
 			.query('userStreakDays')
-			.withIndex('by_user_and_day', (q: any) =>
+			.withIndex('by_user_and_day', q =>
 				q.eq('userId', userId).eq('dayStartMs', dayStartMs)
 			)
 			.unique();
@@ -112,7 +116,7 @@ async function getOrCreateStreakDay(
 }
 
 async function creditMissingDayWithVacation(
-	ctx: any,
+	ctx: MutationCtx,
 	userId: Id<'users'>,
 	missingDayStartMs: number,
 	prevStreakLen: number,
@@ -125,7 +129,7 @@ async function creditMissingDayWithVacation(
 	const coveredStreakLen = prevStreakLen + 1;
 	const existing = await ctx.db
 		.query('userStreakDays')
-		.withIndex('by_user_and_day', (q: any) =>
+		.withIndex('by_user_and_day', q =>
 			q.eq('userId', userId).eq('dayStartMs', missingDayStartMs)
 		)
 		.unique();
@@ -170,7 +174,7 @@ async function creditMissingDayWithVacation(
 }
 
 async function creditDayByActivity(
-	ctx: any,
+	ctx: MutationCtx,
 	userId: Id<'users'>,
 	dayStartMs: number,
 	streakLength: number,
@@ -196,81 +200,82 @@ async function creditDayByActivity(
 // -----------------------------
 // Mutations & Queries
 // -----------------------------
-
-export const updateStreakDays = internalMutation({
+export const updateStreakDays = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
 	args: {
-		userId: v.id('users'),
-		occurredAt: v.optional(v.number()),
-	},
-	returns: v.object({
-		trackedMs: v.number(),
-		xpGained: v.number(),
-	}),
-	handler: async (ctx, args) => {
-		const user = await ctx.db.get(args.userId);
-		if (!user) throw new Error('User not found');
+		userId: Id<'users'>;
+		occurredAt?: number;
+	};
+}): Promise<{
+	trackedMs: number;
+	xpGained: number;
+}> => {
+	const user = await ctx.db.get(args.userId);
+	if (!user) throw new Error('User not found');
 
-		const nowUtc = args.occurredAt ?? Date.now();
-		const dayStart = dayStartMsOf(nowUtc);
-		const dayEnd = dayStart + DAY_MS - 1;
+	const nowUtc = args.occurredAt ?? Date.now();
+	const dayStart = dayStartMsOf(nowUtc);
+	const dayEnd = dayStart + DAY_MS - 1;
 
-		// Aggregate activities in this day
-		const activitiesOnThisDay = await ctx.db
-			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', (q: any) =>
-				q
-					.eq('userId', args.userId)
-					.gte('occurredAt', dayStart)
-					.lte('occurredAt', dayEnd)
-			)
-			.collect();
+	// Aggregate activities in this day
+	const activitiesOnThisDay = await ctx.db
+		.query('userTargetLanguageActivities')
+		.withIndex('by_user_and_occurred', q =>
+			q
+				.eq('userId', args.userId)
+				.gte('occurredAt', dayStart)
+				.lte('occurredAt', dayEnd)
+		)
+		.collect();
 
-		const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {
-			const ms = Math.max(0, Math.floor(a?.durationInMs ?? 0));
-			return sum + ms;
-		}, 0);
+	const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {
+		const ms = Math.max(0, Math.floor(a?.durationInMs ?? 0));
+		return sum + ms;
+	}, 0);
 
-		// Aggregate XP deltas from experience ledger by occurredAt
-		const xpEvents = await ctx.db
-			.query('userTargetLanguageExperienceLedgers')
-			.withIndex('by_user', (q: any) => q.eq('userId', args.userId))
-			.collect();
-		const xpGained = xpEvents.reduce((sum: number, e: any) => {
-			const t = (e.occurredAt as number | undefined) ?? 0;
-			if (t >= dayStart && t <= dayEnd)
-				return sum + Math.floor(e.deltaExperience ?? 0);
-			return sum;
-		}, 0);
+	// Aggregate XP deltas from experience ledger by occurredAt
+	const xpEvents = await ctx.db
+		.query('userTargetLanguageExperienceLedgers')
+		.withIndex('by_user', q => q.eq('userId', args.userId))
+		.collect();
+	const xpGained = xpEvents.reduce((sum: number, e: any) => {
+		const t = e.occurredAt ?? 0;
+		if (t >= dayStart && t <= dayEnd)
+			return sum + Math.floor(e.deltaExperience ?? 0);
+		return sum;
+	}, 0);
 
-		// Upsert streakDays for this day
-		const existing = await ctx.db
-			.query('userStreakDays')
-			.withIndex('by_user_and_day', (q: any) =>
-				q.eq('userId', args.userId).eq('dayStartMs', dayStart)
-			)
-			.unique();
+	// Upsert streakDays for this day
+	const existing = await ctx.db
+		.query('userStreakDays')
+		.withIndex('by_user_and_day', q =>
+			q.eq('userId', args.userId).eq('dayStartMs', dayStart)
+		)
+		.unique();
 
-		if (existing) {
-			await ctx.db.patch(existing._id, {
-				trackedMs,
-				xpGained,
-				lastEventAtMs: Math.max(existing.lastEventAtMs ?? 0, nowUtc),
-			} as any);
-		} else {
-			await ctx.db.insert('userStreakDays', {
-				userId: args.userId,
-				dayStartMs: dayStart,
-				trackedMs,
-				xpGained,
-				credited: false,
-				streakLength: 0,
-				lastEventAtMs: nowUtc,
-			} as any);
-		}
+	if (existing) {
+		await ctx.db.patch(existing._id, {
+			trackedMs,
+			xpGained,
+			lastEventAtMs: Math.max(existing.lastEventAtMs ?? 0, nowUtc),
+		} as any);
+	} else {
+		await ctx.db.insert('userStreakDays', {
+			userId: args.userId,
+			dayStartMs: dayStart,
+			trackedMs,
+			xpGained,
+			credited: false,
+			streakLength: 0,
+			lastEventAtMs: nowUtc,
+		} as any);
+	}
 
-		return { trackedMs, xpGained };
-	},
-});
+	return { trackedMs, xpGained };
+};
 
 export const updateStreakOnActivity = internalMutation({
 	args: {
@@ -290,9 +295,12 @@ export const updateStreakOnActivity = internalMutation({
 		const todayStart = dayStartMsOf(nowUtc);
 
 		// Refresh aggregates for today
-		await ctx.runMutation(internal.userStreakFunctions.updateStreakDays, {
-			userId: args.userId,
-			occurredAt: nowUtc,
+		await updateStreakDays({
+			ctx,
+			args: {
+				userId: args.userId,
+				occurredAt: nowUtc,
+			}
 		});
 
 		// Ensure today's row exists
@@ -377,23 +385,19 @@ import {
 	HABIT_CAP_DAYS,
 } from '../lib/streakBonus';
 
-export const getStreakBonusMultiplier = internalQuery({
-	args: { userId: v.id('users') },
-	returns: v.number(),
-	handler: async (ctx, args) => {
-		// Prefer latest credited streakDays
-		const latestCredited = await getMostRecentCreditedStreakDay(
-			ctx,
-			args.userId as any
-		);
-		const currentStreak = Math.max(
-			0,
-			(latestCredited?.streakLength as number | undefined) ?? 0
-		);
-		const multiplier = calculateStreakBonusMultiplier(currentStreak);
-		return multiplier; // e.g., 1.476
-	},
-});
+export const getStreakBonusMultiplier = async (
+	ctx: QueryCtx,
+	userId: Id<'users'>
+): Promise<number> => {
+	// Prefer latest credited streakDays
+	const latestCredited = await getMostRecentCreditedStreakDay(
+		ctx,
+		userId
+	);
+	const currentStreak = Math.max(0, latestCredited?.streakLength ?? 0);
+	const multiplier = calculateStreakBonusMultiplier(currentStreak);
+	return multiplier; // e.g., 1.476
+};
 
 export const getStreakDataForHeatmap = query({
 	args: {
@@ -435,7 +439,7 @@ export const getStreakDataForHeatmap = query({
 			// Get all streak days for the user
 			const daysRows = await ctx.db
 				.query('userStreakDays')
-				.withIndex('by_user', (q: any) => q.eq('userId', userId))
+				.withIndex('by_user', q => q.eq('userId', userId))
 				.collect();
 
 			// Create maps for quick lookups
@@ -452,8 +456,7 @@ export const getStreakDataForHeatmap = query({
 				const minutes = Math.max(
 					0,
 					Math.floor(
-						(((row as any).trackedMinutes as number | undefined) ??
-							trackedMs / 60000) as number
+						((row as any).trackedMinutes ?? trackedMs / 60000) as number
 					)
 				);
 				const day = (row as any).dayStartMs as number;
@@ -576,10 +579,10 @@ export const nudgeUserStreak = internalMutation({
 		const prev = (
 			await ctx.db
 				.query('userStreakDays')
-				.withIndex('by_user_and_day', (q: any) => q.eq('userId', args.userId))
+				.withIndex('by_user_and_day', q => q.eq('userId', args.userId))
 				.order('desc')
 				.take(1)
-		)[0] as any | undefined;
+		)[0];
 
 		if (!prev || !prev.credited) return { usedFreeze: false } as any;
 
@@ -594,7 +597,7 @@ export const nudgeUserStreak = internalMutation({
 		// If the missing day is already credited, nothing to do
 		const missing = await ctx.db
 			.query('userStreakDays')
-			.withIndex('by_user_and_day', (q: any) =>
+			.withIndex('by_user_and_day', q =>
 				q.eq('userId', args.userId).eq('dayStartMs', missingDayStart)
 			)
 			.unique();
@@ -692,17 +695,14 @@ export const getVacationStatus = query({
 		const latest = (
 			await ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_user_target_language', (q: any) =>
+				.withIndex('by_user_target_language', q =>
 					q.eq('userTargetLanguageId', currentTargetLanguageId)
 				)
 				.order('desc')
 				.take(1)
-		)[0] as any | undefined;
+		)[0];
 
-		const totalExperience = Math.max(
-			0,
-			(latest?.runningTotalAfter as number | undefined) ?? 0
-		);
+		const totalExperience = Math.max(0, latest?.runningTotalAfter ?? 0);
 		const remainderTowardsNext = totalExperience % VACATION_COST;
 		const percentTowardsNext = Math.max(
 			0,

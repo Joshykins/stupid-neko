@@ -136,7 +136,8 @@ export default defineSchema({
 		note: v.optional(v.string()),
 	})
 		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt']),
+		.index('by_user_and_occurred', ['userId', 'occurredAt'])
+		.index('by_user_and_reason', ['userId', 'reason']),
 
 	userTargetLanguages: defineTable({
 		userId: v.id('users'),

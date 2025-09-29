@@ -6,6 +6,7 @@ import {
 } from '../lib/levelAndExperienceCalculations/levelAndExperienceCalculator';
 import type { Id } from './_generated/dataModel';
 import { action, internalQuery, mutation, query } from './_generated/server';
+import type { QueryCtx } from './_generated/server';
 import { type LanguageCode, languageCodeValidator } from './schema';
 
 export type MeInfo = {
@@ -148,7 +149,7 @@ export const getUserProgress = query({
 		// Determine if the user has a pre-release code (or was manually granted)
 		const code = await ctx.db
 			.query('preReleaseCodes')
-			.withIndex('by_user', (q: any) => q.eq('usedByUserId', userId))
+			.withIndex('by_user', q => q.eq('usedByUserId', userId))
 			.take(1);
 		const hasPreReleaseCode =
 			Boolean((user as any)?.preReleaseGranted) || code.length > 0;
@@ -157,26 +158,21 @@ export const getUserProgress = query({
 		const latest = (
 			await ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_user_target_language', (q: any) =>
+				.withIndex('by_user_target_language', q =>
 					q.eq('userTargetLanguageId', currentTargetLanguageId)
 				)
 				.order('desc')
 				.take(1)
-		)[0] as any | undefined;
+		)[0];
 
-		const totalExperience =
-			(latest?.runningTotalAfter as number | undefined) ?? 0;
+		const totalExperience = latest?.runningTotalAfter ?? 0;
 
 		// Prefer values from the ledger snapshot; fall back to calculator for older events
-		const currentLevel =
-			(latest?.newLevel as number | undefined) ??
-			levelFromXp(totalExperience).level;
+		const currentLevel = latest?.newLevel ?? levelFromXp(totalExperience).level;
 		const experienceTowardsNextLevel =
-			(latest?.remainderTowardsNextLevel as number | undefined) ??
+			latest?.remainderTowardsNextLevel ??
 			levelFromXp(totalExperience).remainder;
-		const nextLevelXp =
-			(latest?.nextLevelCost as number | undefined) ??
-			xpForNextLevel(currentLevel);
+		const nextLevelXp = latest?.nextLevelCost ?? xpForNextLevel(currentLevel);
 
 		return {
 			name: user.name ?? undefined,
@@ -195,22 +191,22 @@ export const getUserProgress = query({
 	},
 });
 
-export const getCurrentTargetLanguage = internalQuery({
-	args: { userId: v.id('users') },
-	returns: v.union(
-		v.null(),
-		v.object({
-			languageCode: v.optional(languageCodeValidator),
-		})
-	),
-	handler: async (ctx, args) => {
-		const user = await ctx.db.get(args.userId);
-		if (!user?.currentTargetLanguageId) return null;
-		const rec = await ctx.db.get(user.currentTargetLanguageId);
-		if (!rec) return null;
-		return { languageCode: rec.languageCode };
-	},
-});
+export const getCurrentTargetLanguage = async ({
+	ctx,
+	args,
+}: {
+	ctx: QueryCtx;
+	args: { userId: Id<'users'> };
+}): Promise<{
+	languageCode?: LanguageCode;
+} | null> => {
+	const user = await ctx.db.get(args.userId);
+	if (!user?.currentTargetLanguageId)
+		throw new Error('Current target language not found');
+	const rec = await ctx.db.get(user.currentTargetLanguageId);
+	if (!rec) throw new Error('Current target language not found');
+	return { languageCode: rec.languageCode };
+};
 
 export const listAllUsersForCron = internalQuery({
 	args: {},

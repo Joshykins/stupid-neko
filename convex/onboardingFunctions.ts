@@ -66,7 +66,7 @@ export const completeOnboarding = mutation({
 
 		const existing = await ctx.db
 			.query('userTargetLanguages')
-			.withIndex('by_user_and_language', (q: any) =>
+			.withIndex('by_user_and_language', q =>
 				q
 					.eq('userId', userId as any)
 					.eq('languageCode', args.targetLanguageCode)

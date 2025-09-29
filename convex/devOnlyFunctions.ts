@@ -3,6 +3,9 @@ import { v } from 'convex/values';
 import { api, internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { dangerousTestingEnabled, getEffectiveNow } from './utils';
+import { addLanguageActivity } from './userTargetLanguageActivityFunctions';
+import { Id } from './_generated/dataModel';
+import { LanguageCode } from './schema';
 
 function isDangerousTestingEnabled() {
 	console.log('isDangerousTestingEnabled', process.env.DANGEROUS_TESTING);
@@ -122,7 +125,7 @@ export const stepDevDate = mutation({
 				if (!userId) throw new Error('Unauthorized');
 				const utl = await ctx.db
 					.query('userTargetLanguages')
-					.withIndex('by_user', (q: any) => q.eq('userId', userId))
+					.withIndex('by_user', q => q.eq('userId', userId))
 					.order('desc')
 					.take(1);
 				const userTargetLanguageId = utl && utl[0]?._id;
@@ -140,13 +143,13 @@ export const stepDevDate = mutation({
 								: source === 'spotify'
 									? 'Spotify listening'
 									: 'Manual entry';
-					await ctx.runMutation(
-						internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-						{
+					await addLanguageActivity({
+						ctx,
+						args: {
 							title,
 							durationInMinutes,
 							occurredAt: next,
-							languageCode: languageCode as any,
+							languageCode: languageCode as LanguageCode,
 							contentCategories:
 								source === 'anki'
 									? ['other']
@@ -156,10 +159,11 @@ export const stepDevDate = mutation({
 											? ['audio']
 											: ['other'],
 							isManuallyTracked: source === 'manual',
-							userTargetLanguageId: userTargetLanguageId as any,
+							userTargetLanguageId:
+								userTargetLanguageId as Id<'userTargetLanguages'>,
 							source,
-						} as any
-					);
+						},
+					});
 				}
 			}
 		}
@@ -194,7 +198,7 @@ export const seedAtDevDate = mutation({
 		if (!user) throw new Error('User not found');
 		const utl = await ctx.db
 			.query('userTargetLanguages')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(1);
 		const userTargetLanguageId = utl && utl[0]?._id;
@@ -245,13 +249,13 @@ export const seedAtDevDate = mutation({
 						: source === 'spotify'
 							? 'Spotify listening'
 							: 'Manual entry';
-			await ctx.runMutation(
-				internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-				{
+			await addLanguageActivity({
+				ctx,
+				args: {
 					title,
 					durationInMinutes,
 					occurredAt: nowEffective,
-					languageCode: languageCode as any,
+					languageCode: languageCode as LanguageCode,
 					contentCategories:
 						source === 'anki'
 							? ['other']
@@ -261,10 +265,12 @@ export const seedAtDevDate = mutation({
 									? ['audio']
 									: ['other'],
 					isManuallyTracked: source === 'manual',
-					userTargetLanguageId: userTargetLanguageId as any,
+					userTargetLanguageId:
+						userTargetLanguageId as Id<'userTargetLanguages'>,
 					source,
-				} as any
-			);
+				},
+			});
+
 			inserted += 1;
 		}
 
@@ -298,7 +304,7 @@ export const seedToTargetAtDevDate = mutation({
 		if (!user) throw new Error('User not found');
 		const utl = await ctx.db
 			.query('userTargetLanguages')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(1);
 		const userTargetLanguageId = utl && utl[0]?._id;
@@ -359,13 +365,13 @@ export const seedToTargetAtDevDate = mutation({
 							? 'Spotify listening'
 							: 'Manual entry';
 
-			await ctx.runMutation(
-				internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-				{
+			await addLanguageActivity({
+				ctx,
+				args: {
 					title,
 					durationInMinutes: chunk,
 					occurredAt: nowEffective,
-					languageCode: languageCode as any,
+					languageCode: languageCode as LanguageCode,
 					contentCategories:
 						source === 'anki'
 							? ['other']
@@ -375,10 +381,11 @@ export const seedToTargetAtDevDate = mutation({
 									? ['audio']
 									: ['other'],
 					isManuallyTracked: source === 'manual',
-					userTargetLanguageId: userTargetLanguageId as any,
+					userTargetLanguageId:
+						userTargetLanguageId as Id<'userTargetLanguages'>,
 					source,
-				} as any
-			);
+				},
+			});
 
 			seededMinutes += chunk;
 			inserted += 1;
@@ -401,7 +408,7 @@ export const resetMyDevState = mutation({
 		// 1) Delete all language activities for the user
 		const activities = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const a of activities) {
 			await ctx.db.delete(a._id);
@@ -410,7 +417,7 @@ export const resetMyDevState = mutation({
 		// 1b) Delete all content activities for the user
 		const contentActs = await ctx.db
 			.query('contentActivities')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const ev of contentActs) {
 			await ctx.db.delete(ev._id);
@@ -419,7 +426,7 @@ export const resetMyDevState = mutation({
 		// 2) Delete experience records for the user
 		const exps = await ctx.db
 			.query('userTargetLanguageExperienceLedgers')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const e of exps) {
 			await ctx.db.delete(e._id);
@@ -428,7 +435,7 @@ export const resetMyDevState = mutation({
 		// 2b) Delete streak day ledger entries
 		const dayLedger = await ctx.db
 			.query('userStreakDayLedgers')
-			.withIndex('by_user_and_occurred', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user_and_occurred', q => q.eq('userId', userId))
 			.collect();
 		for (const row of dayLedger) {
 			await ctx.db.delete(row._id);
@@ -437,7 +444,7 @@ export const resetMyDevState = mutation({
 		// 2c) Delete streak vacation ledger entries
 		const freezeLedger = await ctx.db
 			.query('userStreakVacationLedgers')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const row of freezeLedger) {
 			await ctx.db.delete(row._id);
@@ -453,7 +460,7 @@ export const resetMyDevState = mutation({
 
 		const utls = await ctx.db
 			.query('userTargetLanguages')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const utl of utls) {
 			await ctx.db.patch(utl._id, {
@@ -464,7 +471,7 @@ export const resetMyDevState = mutation({
 		// 4) Clear streakDays for the user
 		const days = await ctx.db
 			.query('userStreakDays')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const d of days) {
 			await ctx.db.delete(d._id);

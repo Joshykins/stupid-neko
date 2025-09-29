@@ -4,140 +4,111 @@ import { v } from 'convex/values';
 import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { action, internalMutation, mutation, query } from './_generated/server';
+import type { MutationCtx } from './_generated/server';
 import { type LanguageCode, languageCodeValidator } from './schema';
 import { getEffectiveNow } from './utils';
+import { addExperience } from './userTargetLanguageExperienceFunctions';
 
 // Create activity, update streak, then add experience (internal)
-export const addLanguageActivity = internalMutation({
+export const addLanguageActivity = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
 	args: {
-		userId: v.optional(v.id('users')),
-		title: v.string(),
-		description: v.optional(v.string()),
-		durationInMinutes: v.number(),
-		occurredAt: v.optional(v.number()),
-		languageCode: languageCodeValidator,
-		contentKey: v.optional(v.string()),
-		externalUrl: v.optional(v.string()),
-		contentCategories: v.optional(
-			v.array(
-				v.union(
-					v.literal('audio'),
-					v.literal('video'),
-					v.literal('text'),
-					v.literal('other')
-				)
-			)
-		),
-		isManuallyTracked: v.optional(v.boolean()),
-		userTargetLanguageId: v.id('userTargetLanguages'),
+		userId?: Id<'users'>;
+		title: string;
+		description?: string;
+		durationInMinutes: number;
+		occurredAt?: number;
+		languageCode: LanguageCode;
+		contentKey?: string;
+		externalUrl?: string;
+		contentCategories?: ('audio' | 'video' | 'text' | 'other')[];
+		isManuallyTracked?: boolean;
+		userTargetLanguageId: Id<'userTargetLanguages'>;
+		source?: 'youtube' | 'spotify' | 'anki' | 'manual';
+	};
+}): Promise<{
+	activityId: Id<'userTargetLanguageActivities'>;
+	currentStreak: number;
+	longestStreak: number;
+	experience: {
+		userTargetLanguageId: Id<'userTargetLanguages'>;
+		previousTotalExperience: number;
+		newTotalExperience: number;
+		previousLevel: number;
+		newLevel: number;
+		levelsGained: number;
+	};
+}> => {
+	const userId = args.userId ?? (await getAuthUserId(ctx));
+	if (!userId) throw new Error('Unauthorized');
 
-		source: v.optional(
-			v.union(
-				v.literal('youtube'),
-				v.literal('spotify'),
-				v.literal('anki'),
-				v.literal('manual')
-			)
-		),
-	},
-	returns: v.object({
-		activityId: v.id('userTargetLanguageActivities'),
-		currentStreak: v.number(),
-		longestStreak: v.number(),
-		experience: v.object({
-			userTargetLanguageId: v.id('userTargetLanguages'),
-			previousTotalExperience: v.number(),
-			newTotalExperience: v.number(),
-			previousLevel: v.number(),
-			newLevel: v.number(),
-			levelsGained: v.number(),
-		}),
-	}),
-	handler: async (
-		ctx,
-		args
-	): Promise<{
-		activityId: any;
-		currentStreak: number;
-		longestStreak: number;
-		experience: {
-			userTargetLanguageId: Id<'userTargetLanguages'>;
-			previousTotalExperience: number;
-			newTotalExperience: number;
-			previousLevel: number;
-			newLevel: number;
-			levelsGained: number;
-		};
-	}> => {
-		const userId = args.userId ?? (await getAuthUserId(ctx));
-		if (!userId) throw new Error('Unauthorized');
+	// 1) Create the language activity
+	const nowEffective = await getEffectiveNow(ctx);
+	const occurredAt = args.occurredAt ?? nowEffective;
+	const activityId = await ctx.db.insert('userTargetLanguageActivities', {
+		userId,
+		isManuallyTracked:
+			args.isManuallyTracked ?? (args.source ?? 'manual') === 'manual',
+		languageCode: args.languageCode,
+		title: args.title,
+		userTargetLanguageId: args.userTargetLanguageId,
+		description: args.description ?? undefined,
+		// Canonical ms field
+		durationInMs: Math.max(0, Math.round(args.durationInMinutes * 60 * 1000)),
+		occurredAt,
+		state: 'completed',
+		contentKey: args.contentKey ?? undefined,
+		externalUrl: args.externalUrl ?? undefined,
+	});
 
-		// 1) Create the language activity
-		const nowEffective = await getEffectiveNow(ctx);
-		const occurredAt = args.occurredAt ?? nowEffective;
-		const activityId = await ctx.db.insert('userTargetLanguageActivities', {
+	// 2) Update streak
+	const streak = await ctx.runMutation(
+		internal.userStreakFunctions.updateStreakOnActivity,
+		{
 			userId,
-			isManuallyTracked:
-				args.isManuallyTracked ?? (args.source ?? 'manual') === 'manual',
-			languageCode: args.languageCode,
-			title: args.title,
-			userTargetLanguageId: args.userTargetLanguageId,
-			description: args.description ?? undefined,
-			// Canonical ms field
-			durationInMs: Math.max(0, Math.round(args.durationInMinutes * 60 * 1000)),
 			occurredAt,
-			state: 'completed',
-			contentKey: args.contentKey ?? undefined,
-			externalUrl: args.externalUrl ?? undefined,
-		});
+		}
+	);
 
-		// 2) Update streak
-		const streak = await ctx.runMutation(
-			internal.userStreakFunctions.updateStreakOnActivity,
-			{
-				userId,
-				occurredAt,
-			}
-		);
+	// 3) Add experience (with optional streak bonus)
+	const exp = await addExperience({
+		ctx,
+		args: {
+			userId,
+			languageCode: args.languageCode,
+			languageActivityId: activityId,
+			deltaExperience: await ctx.runQuery(
+				internal.userTargetLanguageExperienceFunctions.getExperienceForActivity,
+				{
+					userId,
+					languageCode: args.languageCode,
+					isManuallyTracked: args.isManuallyTracked ?? false,
+					durationInMinutes: args.durationInMinutes,
+					occurredAt,
+				}
+			),
+			isApplyingStreakBonus: true,
+			durationInMinutes: args.durationInMinutes,
+		},
+	});
 
-		// 3) Add experience (with optional streak bonus)
-		const exp = await ctx.runMutation(
-			internal.userTargetLanguageExperienceFunctions.addExperience,
-			{
-				userId,
-				languageCode: args.languageCode,
-				languageActivityId: activityId,
-				deltaExperience: await ctx.runQuery(
-					internal.userTargetLanguageExperienceFunctions
-						.getExperienceForActivity,
-					{
-						userId,
-						languageCode: args.languageCode,
-						isManuallyTracked: args.isManuallyTracked ?? false,
-						durationInMinutes: args.durationInMinutes,
-						occurredAt,
-					}
-				),
-				isApplyingStreakBonus: true,
-				durationInMinutes: args.durationInMinutes,
-			}
-		);
-
-		return {
-			activityId,
-			currentStreak: streak.currentStreak,
-			longestStreak: streak.longestStreak,
-			experience: {
-				userTargetLanguageId: exp.userTargetLanguageId,
-				previousTotalExperience: exp.result.previousTotalExperience,
-				newTotalExperience: exp.result.newTotalExperience,
-				previousLevel: exp.result.previousLevel,
-				newLevel: exp.result.newLevel,
-				levelsGained: exp.result.levelsGained,
-			},
-		};
-	},
-});
+	return {
+		activityId,
+		currentStreak: streak.currentStreak,
+		longestStreak: streak.longestStreak,
+		experience: {
+			userTargetLanguageId: exp.userTargetLanguageId,
+			previousTotalExperience: exp.result.previousTotalExperience,
+			newTotalExperience: exp.result.newTotalExperience,
+			previousLevel: exp.result.previousLevel,
+			newLevel: exp.result.newLevel,
+			levelsGained: exp.result.levelsGained,
+		},
+	};
+};
 
 export const addManualLanguageActivity = mutation({
 	args: {
@@ -182,9 +153,9 @@ export const addManualLanguageActivity = mutation({
 			throw new Error('User target language not found');
 		const languageCode = currentTargetLanguage.languageCode as LanguageCode;
 
-		const result = await ctx.runMutation(
-			internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-			{
+		const result = await addLanguageActivity({
+			ctx,
+			args: {
 				userTargetLanguageId: currentTargetLanguage._id,
 				title: args.title,
 				description: args.description ?? undefined,
@@ -193,8 +164,8 @@ export const addManualLanguageActivity = mutation({
 				externalUrl: args.externalUrl ?? undefined,
 				isManuallyTracked: true,
 				languageCode: languageCode as LanguageCode,
-			}
-		);
+			},
+		});
 
 		return { activityId: result.activityId };
 	},
@@ -208,7 +179,7 @@ export const listManualTrackedLanguageActivities = query({
 		if (!userId) return [];
 		const items = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(200);
 		const set = new Set<string>();
@@ -263,7 +234,7 @@ export const listRecentLanguageActivities = query({
 		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
 		const items = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user_and_occurred', q => q.eq('userId', userId))
 			.order('desc')
 			.take(limit);
 		const results: Array<any> = [];
@@ -273,9 +244,7 @@ export const listRecentLanguageActivities = query({
 			if (contentKey) {
 				const l = await ctx.db
 					.query('contentLabels')
-					.withIndex('by_content_key', (q: any) =>
-						q.eq('contentKey', contentKey)
-					)
+					.withIndex('by_content_key', q => q.eq('contentKey', contentKey))
 					.unique();
 				if (l) {
 					label = {
@@ -290,7 +259,7 @@ export const listRecentLanguageActivities = query({
 			// Sum actual awarded experience tied to this activity from the ledger
 			const exps = await ctx.db
 				.query('userTargetLanguageExperienceLedgers')
-				.withIndex('by_language_activity', (q: any) =>
+				.withIndex('by_language_activity', q =>
 					q.eq('languageActivityId', (it as any)._id)
 				)
 				.collect();
@@ -324,7 +293,7 @@ export const recentManualLanguageActivities = query({
 		if (!userId) return [];
 		const items = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(Math.max(1, Math.min(20, args.limit ?? 8)));
 		return items
@@ -462,7 +431,7 @@ export const getWeeklySourceDistribution = query({
 		// Query activities within this local week window using UTC timestamps
 		const itemsWithOccurredAt = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', (q: any) =>
+			.withIndex('by_user_and_occurred', q =>
 				q
 					.eq('userId', userId)
 					.gte('occurredAt', mondayStartLocalUtcMs)
@@ -475,10 +444,10 @@ export const getWeeklySourceDistribution = query({
 		const allItems: Array<any> = [...itemsWithOccurredAt];
 		const candidates = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user', (q: any) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const it of candidates) {
-			const occ = (it as any)?.occurredAt as number | undefined;
+			const occ = (it as any)?.occurredAt;
 			if (typeof occ === 'number') continue; // already included via occurredAt index
 			const created = (it as any)._creationTime as number;
 			if (created < mondayStartLocalUtcMs || created > sundayEndLocalUtcMs)
@@ -552,7 +521,7 @@ export const deleteLanguageActivity = mutation({
 		// Sum all experience deltas tied to this activity
 		const exps = await ctx.db
 			.query('userTargetLanguageExperienceLedgers')
-			.withIndex('by_language_activity', (q: any) =>
+			.withIndex('by_language_activity', q =>
 				q.eq('languageActivityId', args.activityId)
 			)
 			.collect();
@@ -562,16 +531,16 @@ export const deleteLanguageActivity = mutation({
 		);
 
 		if (totalDelta !== 0) {
-			await ctx.runMutation(
-				internal.userTargetLanguageExperienceFunctions.addExperience,
-				{
+			await addExperience({
+				ctx,
+				args: {
 					userId,
 					languageCode,
 					languageActivityId: args.activityId,
 					deltaExperience: -totalDelta,
 					isApplyingStreakBonus: false,
-				}
-			);
+				},
+			});
 		}
 
 		// Adjust minutes

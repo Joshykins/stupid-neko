@@ -4,6 +4,8 @@ import type { Doc, Id } from './_generated/dataModel';
 import { internalMutation } from './_generated/server';
 import type { LanguageCode, MediaType } from './schema';
 import { dangerousTestingEnabled } from './utils';
+import { addLanguageActivity } from './userTargetLanguageActivityFunctions';
+import { addExperience } from './userTargetLanguageExperienceFunctions';
 
 type ActivityType = 'heartbeat' | 'start' | 'pause' | 'end';
 
@@ -139,7 +141,7 @@ export const translateBatch = internalMutation({
 						if (userTargetLanguageId) {
 							const label = await ctx.db
 								.query('contentLabels')
-								.withIndex('by_content_key', (q: any) =>
+								.withIndex('by_content_key', q =>
 									q.eq('contentKey', current.contentKey)
 								)
 								.unique();
@@ -177,7 +179,7 @@ export const translateBatch = internalMutation({
 									// Upsert in-progress record by (userId, state, contentKey)
 									const existing = await ctx.db
 										.query('userTargetLanguageActivities')
-										.withIndex('by_user_state_and_content_key', (q: any) =>
+										.withIndex('by_user_state_and_content_key', q =>
 											q
 												.eq('userId', current.userId)
 												.eq('state', 'in-progress')
@@ -249,9 +251,7 @@ export const translateBatch = internalMutation({
 				// Fetch label for metadata
 				const label = await ctx.db
 					.query('contentLabels')
-					.withIndex('by_content_key', (q: any) =>
-						q.eq('contentKey', s.contentKey)
-					)
+					.withIndex('by_content_key', q => q.eq('contentKey', s.contentKey))
 					.unique();
 
 				// If no label or not completed, we cannot determine language yet
@@ -290,7 +290,7 @@ export const translateBatch = internalMutation({
 					// If an in-progress exists for this contentKey, patch to completed; else insert completed
 					const existing = await ctx.db
 						.query('userTargetLanguageActivities')
-						.withIndex('by_user_state_and_content_key', (q: any) =>
+						.withIndex('by_user_state_and_content_key', q =>
 							q
 								.eq('userId', s.userId)
 								.eq('state', 'in-progress')
@@ -320,9 +320,9 @@ export const translateBatch = internalMutation({
 							// No-op: streak credit failures shouldn't block XP awarding
 						}
 						// Award XP for finalized activity
-						await ctx.runMutation(
-							internal.userTargetLanguageExperienceFunctions.addExperience,
-							{
+						await addExperience({
+							ctx,
+							args: {
 								userId: s.userId,
 								languageCode,
 								languageActivityId: existing._id,
@@ -338,12 +338,12 @@ export const translateBatch = internalMutation({
 										durationInMinutes,
 									}
 								),
-							}
-						);
+							},
+						});
 					} else {
-						await ctx.runMutation(
-							internal.userTargetLanguageActivityFunctions.addLanguageActivity,
-							{
+						await addLanguageActivity({
+							ctx,
+							args: {
 								userId: s.userId,
 								userTargetLanguageId,
 								title,
@@ -356,8 +356,8 @@ export const translateBatch = internalMutation({
 									? [contentMediaType]
 									: undefined,
 								isManuallyTracked: false,
-							}
-						);
+							},
+						});
 						createdActivities += 1;
 					}
 				} finally {

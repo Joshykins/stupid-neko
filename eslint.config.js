@@ -3,6 +3,7 @@ import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import unusedImports from 'eslint-plugin-unused-imports';
 import prettier from 'eslint-config-prettier';
 
 export default [
@@ -23,6 +24,7 @@ export default [
       '@typescript-eslint': typescript,
       react,
       'react-hooks': reactHooks,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -32,7 +34,9 @@ export default [
       
       // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error', // Prevent any usage
+      'unused-imports/no-unused-imports': 'error', // Prevent unused imports
+      'unused-imports/no-unused-vars': ['error', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
       
       // React specific rules
       'react/react-in-jsx-scope': 'off', // Not needed with React 17+
