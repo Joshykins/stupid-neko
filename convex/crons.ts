@@ -24,7 +24,7 @@ export const tick = internalAction({
 		);
 		const now = Date.now();
 		for (const u of users.slice(0, 100)) {
-			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreak, {
+			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreakMutation, {
 				userId: u._id,
 				now,
 			});
@@ -46,7 +46,7 @@ export const hourlyNudge = internalAction({
 		const batch = users.slice(0, 250);
 		for (const u of batch) {
 			const now = (u as any).devDate ?? Date.now();
-			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreak, {
+			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreakMutation, {
 				userId: u._id,
 				now,
 			});
