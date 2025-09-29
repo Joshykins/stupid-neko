@@ -7,7 +7,8 @@ import { action, internalMutation, mutation, query } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { type LanguageCode, languageCodeValidator } from './schema';
 import { getEffectiveNow } from './utils';
-import { addExperience } from './userTargetLanguageExperienceFunctions';
+import { addExperience, getExperienceForActivity } from './userTargetLanguageExperienceFunctions';
+import { updateStreakOnActivity } from './userStreakFunctions';
 
 // Create activity, update streak, then add experience (internal)
 export const addLanguageActivity = async ({
@@ -65,13 +66,13 @@ export const addLanguageActivity = async ({
 	});
 
 	// 2) Update streak
-	const streak = await ctx.runMutation(
-		internal.userStreakFunctions.updateStreakOnActivity,
-		{
+	const streak = await updateStreakOnActivity({
+		ctx,
+		args: {
 			userId,
 			occurredAt,
 		}
-	);
+	});
 
 	// 3) Add experience (with optional streak bonus)
 	const exp = await addExperience({
@@ -80,16 +81,16 @@ export const addLanguageActivity = async ({
 			userId,
 			languageCode: args.languageCode,
 			languageActivityId: activityId,
-			deltaExperience: await ctx.runQuery(
-				internal.userTargetLanguageExperienceFunctions.getExperienceForActivity,
-				{
+			deltaExperience: await getExperienceForActivity({
+				ctx,
+				args: {
 					userId,
 					languageCode: args.languageCode,
 					isManuallyTracked: args.isManuallyTracked ?? false,
 					durationInMinutes: args.durationInMinutes,
 					occurredAt,
 				}
-			),
+			}),
 			isApplyingStreakBonus: true,
 			durationInMinutes: args.durationInMinutes,
 		},

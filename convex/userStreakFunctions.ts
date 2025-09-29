@@ -277,108 +277,110 @@ export const updateStreakDays = async ({
 	return { trackedMs, xpGained };
 };
 
-export const updateStreakOnActivity = internalMutation({
+export const updateStreakOnActivity = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
 	args: {
-		userId: v.id('users'),
-		occurredAt: v.optional(v.number()), // UTC ms; defaults to now
-	},
-	returns: v.object({
-		currentStreak: v.number(),
-		longestStreak: v.number(),
-		didIncrementToday: v.boolean(), // "today" now means "in this 24h window"
-	}),
-	handler: async (ctx, args) => {
-		const user = await ctx.db.get(args.userId);
-		if (!user) throw new Error('User not found');
+		userId: Id<'users'>;
+		occurredAt?: number; // UTC ms; defaults to now
+	};
+}): Promise<{
+	currentStreak: number;
+	longestStreak: number;
+	didIncrementToday: boolean; // "today" now means "in this 24h window"
+}> => {
+	const user = await ctx.db.get(args.userId);
+	if (!user) throw new Error('User not found');
 
-		const nowUtc = args.occurredAt ?? Date.now();
-		const todayStart = dayStartMsOf(nowUtc);
+	const nowUtc = args.occurredAt ?? Date.now();
+	const todayStart = dayStartMsOf(nowUtc);
 
-		// Refresh aggregates for today
-		await updateStreakDays({
-			ctx,
-			args: {
-				userId: args.userId,
-				occurredAt: nowUtc,
-			}
-		});
-
-		// Ensure today's row exists
-		const today = await getOrCreateStreakDay(
-			ctx,
-			args.userId as any,
-			todayStart,
-			nowUtc
-		);
-
-		// If already credited today, no increment
-		if (today!.credited) {
-			const currentStreak = today!.streakLength ?? user.currentStreak ?? 0;
-			const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
-			if (
-				(user.currentStreak ?? 0) !== currentStreak ||
-				(user.longestStreak ?? 0) !== longestStreak
-			) {
-				await ctx.db.patch(args.userId, {
-					currentStreak,
-					longestStreak,
-				} as any);
-			}
-			return { currentStreak, longestStreak, didIncrementToday: false };
+	// Refresh aggregates for today
+	await updateStreakDays({
+		ctx,
+		args: {
+			userId: args.userId,
+			occurredAt: nowUtc,
 		}
+	});
 
-		// Find previous credited day
-		const prev = await getMostRecentCreditedStreakDay(
-			ctx,
-			args.userId as any,
-			todayStart
-		);
+	// Ensure today's row exists
+	const today = await getOrCreateStreakDay(
+		ctx,
+		args.userId,
+		todayStart,
+		nowUtc
+	);
 
-		let streakLength = 1;
+	// If already credited today, no increment
+	if (today.credited) {
+		const currentStreak = today.streakLength ?? user.currentStreak ?? 0;
+		const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
+		if (
+			(user.currentStreak ?? 0) !== currentStreak ||
+			(user.longestStreak ?? 0) !== longestStreak
+		) {
+			await ctx.db.patch(args.userId, {
+				currentStreak,
+				longestStreak,
+			});
+		}
+		return { currentStreak, longestStreak, didIncrementToday: false };
+	}
 
-		if (prev && prev.credited) {
-			const gap = todayStart - prev.dayStartMs;
-			if (gap === DAY_MS) {
-				streakLength = (prev.streakLength ?? 0) + 1;
-			} else if (gap === 2 * DAY_MS) {
-				const missingDayStart = prev.dayStartMs + DAY_MS;
-				const used = await creditMissingDayWithVacation(
-					ctx,
-					args.userId as any,
-					missingDayStart,
-					prev.streakLength ?? 0,
-					nowUtc,
-					'user'
-				);
-				if (used) {
-					streakLength = (prev.streakLength ?? 0) + 2;
-				} else {
-					streakLength = 1;
-				}
+	// Find previous credited day
+	const prev = await getMostRecentCreditedStreakDay(
+		ctx,
+		args.userId,
+		todayStart
+	);
+
+	let streakLength = 1;
+
+	if (prev && prev.credited) {
+		const gap = todayStart - prev.dayStartMs;
+		if (gap === DAY_MS) {
+			streakLength = (prev.streakLength ?? 0) + 1;
+		} else if (gap === 2 * DAY_MS) {
+			const missingDayStart = prev.dayStartMs + DAY_MS;
+			const used = await creditMissingDayWithVacation(
+				ctx,
+				args.userId,
+				missingDayStart,
+				prev.streakLength ?? 0,
+				nowUtc,
+				'user'
+			);
+			if (used) {
+				streakLength = (prev.streakLength ?? 0) + 2;
 			} else {
-				// Gap > 48h
 				streakLength = 1;
 			}
+		} else {
+			// Gap > 48h
+			streakLength = 1;
 		}
+	}
 
-		await creditDayByActivity(
-			ctx,
-			args.userId as any,
-			todayStart,
-			streakLength,
-			nowUtc
-		);
+	await creditDayByActivity(
+		ctx,
+		args.userId,
+		todayStart,
+		streakLength,
+		nowUtc
+	);
 
-		const currentStreak = streakLength;
-		const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
-		await ctx.db.patch(args.userId, {
-			currentStreak,
-			longestStreak,
-			lastStreakCreditAt: nowUtc,
-		} as any);
-		return { currentStreak, longestStreak, didIncrementToday: true };
-	},
-});
+	const currentStreak = streakLength;
+	const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
+	await ctx.db.patch(args.userId, {
+		currentStreak,
+		longestStreak,
+		lastStreakCreditAt: nowUtc,
+	});
+	return { currentStreak, longestStreak, didIncrementToday: true };
+};
 
 import {
 	calculateStreakBonusMultiplier,
@@ -559,7 +561,110 @@ export const getStreakDataForHeatmap = query({
 	},
 });
 
-export const nudgeUserStreak = internalMutation({
+export const nudgeUserStreak = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
+	args: {
+		userId: Id<'users'>;
+		now?: number;
+	};
+}): Promise<{
+	usedFreeze: boolean;
+	coveredDayStartMs?: number;
+}> => {
+	const user = await ctx.db.get(args.userId);
+	if (!user) throw new Error('User not found');
+
+	const nowUtc = args.now ?? Date.now();
+	const todayStart = dayStartMsOf(nowUtc);
+
+	// Find the most recent credited day
+	const prev = (
+		await ctx.db
+			.query('userStreakDays')
+			.withIndex('by_user_and_day', q => q.eq('userId', args.userId))
+			.order('desc')
+			.take(1)
+	)[0];
+
+	if (!prev || !prev.credited) return { usedFreeze: false };
+
+	const gap = todayStart - prev.dayStartMs;
+	if (gap !== DAY_MS * 2) {
+		// Only auto-bridge exactly one missed day
+		return { usedFreeze: false };
+	}
+
+	const missingDayStart = prev.dayStartMs + DAY_MS;
+
+	// If the missing day is already credited, nothing to do
+	const missing = await ctx.db
+		.query('userStreakDays')
+		.withIndex('by_user_and_day', q =>
+			q.eq('userId', args.userId).eq('dayStartMs', missingDayStart)
+		)
+		.unique();
+	if (missing && missing.credited) {
+		return { usedFreeze: false };
+	}
+
+	// Need a vacation available
+	const balance = await getVacationBalance(ctx, args.userId);
+	if (balance <= 0) return { usedFreeze: false };
+
+	const coveredStreakLen = (prev.streakLength ?? 0) + 1;
+
+	if (!missing) {
+		await ctx.db.insert('userStreakDays', {
+			userId: args.userId,
+			dayStartMs: missingDayStart,
+			trackedMs: 0,
+			xpGained: 0,
+			credited: true,
+			creditedKind: 'vacation',
+			streakLength: coveredStreakLen,
+			lastEventAtMs: nowUtc,
+			autoVacationAppliedAtMs: nowUtc,
+		});
+	} else {
+		await ctx.db.patch(missing._id, {
+			credited: true,
+			creditedKind: 'vacation',
+			streakLength: coveredStreakLen,
+			autoVacationAppliedAtMs: nowUtc,
+		});
+	}
+
+	await ctx.db.insert('userStreakDayLedgers', {
+		userId: args.userId,
+		dayStartMs: missingDayStart,
+		occurredAt: nowUtc,
+		reason: 'credit_vacation',
+		streakLengthAfter: coveredStreakLen,
+		source: 'system_nudge',
+	});
+
+	await ctx.db.insert('userStreakVacationLedgers', {
+		userId: args.userId,
+		occurredAt: nowUtc,
+		reason: 'use',
+		delta: -1,
+		newTotal: balance - 1,
+		coveredDayStartMs: missingDayStart,
+		source: 'auto_nudge',
+	});
+
+	// Optionally update user's currentStreak if this increases the latest credited day
+	const currentStreak = Math.max(user.currentStreak ?? 0, coveredStreakLen);
+	const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
+	await ctx.db.patch(args.userId, { currentStreak, longestStreak });
+
+	return { usedFreeze: true, coveredDayStartMs: missingDayStart };
+};
+
+export const nudgeUserStreakMutation = internalMutation({
 	args: {
 		userId: v.id('users'),
 		now: v.optional(v.number()),
@@ -569,94 +674,7 @@ export const nudgeUserStreak = internalMutation({
 		coveredDayStartMs: v.optional(v.number()),
 	}),
 	handler: async (ctx, args) => {
-		const user = await ctx.db.get(args.userId);
-		if (!user) throw new Error('User not found');
-
-		const nowUtc = args.now ?? Date.now();
-		const todayStart = dayStartMsOf(nowUtc);
-
-		// Find the most recent credited day
-		const prev = (
-			await ctx.db
-				.query('userStreakDays')
-				.withIndex('by_user_and_day', q => q.eq('userId', args.userId))
-				.order('desc')
-				.take(1)
-		)[0];
-
-		if (!prev || !prev.credited) return { usedFreeze: false } as any;
-
-		const gap = todayStart - prev.dayStartMs;
-		if (gap !== DAY_MS * 2) {
-			// Only auto-bridge exactly one missed day
-			return { usedFreeze: false } as any;
-		}
-
-		const missingDayStart = prev.dayStartMs + DAY_MS;
-
-		// If the missing day is already credited, nothing to do
-		const missing = await ctx.db
-			.query('userStreakDays')
-			.withIndex('by_user_and_day', q =>
-				q.eq('userId', args.userId).eq('dayStartMs', missingDayStart)
-			)
-			.unique();
-		if (missing && missing.credited) {
-			return { usedFreeze: false } as any;
-		}
-
-		// Need a vacation available
-		const balance = await getVacationBalance(ctx, args.userId as any);
-		if (balance <= 0) return { usedFreeze: false } as any;
-
-		const coveredStreakLen = (prev.streakLength ?? 0) + 1;
-
-		if (!missing) {
-			await ctx.db.insert('userStreakDays', {
-				userId: args.userId,
-				dayStartMs: missingDayStart,
-				trackedMinutes: 0,
-				xpGained: 0,
-				credited: true,
-				creditedKind: 'vacation',
-				streakLength: coveredStreakLen,
-				lastEventAtMs: nowUtc,
-				autoVacationAppliedAtMs: nowUtc,
-			} as any);
-		} else {
-			await ctx.db.patch(missing._id, {
-				credited: true,
-				creditedKind: 'vacation',
-				streakLength: coveredStreakLen,
-				autoVacationAppliedAtMs: nowUtc,
-			} as any);
-		}
-
-		await ctx.db.insert('userStreakDayLedgers', {
-			userId: args.userId,
-			dayStartMs: missingDayStart,
-			occurredAt: nowUtc,
-			reason: 'credit_vacation',
-			streakLengthAfter: coveredStreakLen,
-			source: 'system_nudge',
-		} as any);
-
-		await ctx.db.insert('userStreakVacationLedgers', {
-			userId: args.userId,
-			occurredAt: nowUtc,
-			reason: 'use',
-			delta: -1,
-			newTotal: balance - 1,
-			coveredDayStartMs: missingDayStart,
-			source: 'auto_nudge',
-		} as any);
-
-		// Optionally update user's currentStreak if this increases the latest credited day
-		const currentStreak = Math.max(user.currentStreak ?? 0, coveredStreakLen);
-		const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
-		await ctx.db.patch(args.userId, { currentStreak, longestStreak } as any);
-
-		return { usedFreeze: true, coveredDayStartMs: missingDayStart } as any;
+		return await nudgeUserStreak({ ctx, args });
 	},
 });
 

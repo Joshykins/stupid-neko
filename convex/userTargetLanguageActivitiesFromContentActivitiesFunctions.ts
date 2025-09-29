@@ -5,7 +5,8 @@ import { internalMutation } from './_generated/server';
 import type { LanguageCode, MediaType } from './schema';
 import { dangerousTestingEnabled } from './utils';
 import { addLanguageActivity } from './userTargetLanguageActivityFunctions';
-import { addExperience } from './userTargetLanguageExperienceFunctions';
+import { addExperience, getExperienceForActivity } from './userTargetLanguageExperienceFunctions';
+import { updateStreakOnActivity } from './userStreakFunctions';
 
 type ActivityType = 'heartbeat' | 'start' | 'pause' | 'end';
 
@@ -307,18 +308,15 @@ export const translateBatch = internalMutation({
 							occurredAt: startMsEffective,
 						});
 						// Ensure daily streak is credited for this finalized session
-						try {
-							const occurredAtForStreak: number = startMsEffective;
-							await ctx.runMutation(
-								internal.userStreakFunctions.updateStreakOnActivity,
-								{
-									userId: s.userId,
-									occurredAt: occurredAtForStreak,
-								}
-							);
-						} catch (err) {
-							// No-op: streak credit failures shouldn't block XP awarding
-						}
+						const occurredAtForStreak: number = startMsEffective;
+						await updateStreakOnActivity({
+							ctx,
+							args: {
+								userId: s.userId,
+								occurredAt: occurredAtForStreak,
+							}
+						});
+						
 						// Award XP for finalized activity
 						await addExperience({
 							ctx,
@@ -328,16 +326,15 @@ export const translateBatch = internalMutation({
 								languageActivityId: existing._id,
 								isApplyingStreakBonus: true,
 								durationInMinutes,
-								deltaExperience: await ctx.runQuery(
-									internal.userTargetLanguageExperienceFunctions
-										.getExperienceForActivity,
-									{
+								deltaExperience: await getExperienceForActivity({
+									ctx,
+									args: {
 										userId: s.userId,
 										languageCode,
 										isManuallyTracked: false,
 										durationInMinutes,
 									}
-								),
+								}),
 							},
 						});
 					} else {

@@ -4,6 +4,7 @@ import { api, internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { dangerousTestingEnabled, getEffectiveNow } from './utils';
 import { addLanguageActivity } from './userTargetLanguageActivityFunctions';
+import { nudgeUserStreak } from './userStreakFunctions';
 import { Id } from './_generated/dataModel';
 import { LanguageCode } from './schema';
 
@@ -76,16 +77,14 @@ export const stepDevDate = mutation({
 
 		await ctx.db.patch(userId, { devDate: next } as any);
 
-		// After moving the effective day forward, try auto-bridging a single missed day
-		// so streak vacations are applied during dev time travel.
-		try {
-			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreak, {
+
+		await nudgeUserStreak({
+			ctx,
+			args: {
 				userId,
 				now: next,
-			});
-		} catch (e) {
-			// Best-effort; ignore if nudge fails
-		}
+			}
+		});
 
 		if (args.seedEachStep) {
 			const count = Math.max(0, Math.floor(args.seedPerStepCount ?? 0));

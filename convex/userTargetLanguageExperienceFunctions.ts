@@ -12,7 +12,7 @@ import {
 	mutation,
 	query,
 } from './_generated/server';
-import type { MutationCtx } from './_generated/server';
+import type { MutationCtx, QueryCtx } from './_generated/server';
 import { LanguageCode, languageCodeValidator } from './schema';
 import { getStreakBonusMultiplier } from './userStreakFunctions';
 
@@ -30,53 +30,55 @@ function dayStartMsOf(timestampMs: number): number {
 	return Math.floor(timestampMs / DAY_MS) * DAY_MS;
 }
 
-export const getExperienceForActivity = internalQuery({
+export const getExperienceForActivity = async ({
+	ctx,
+	args,
+}: {
+	ctx: QueryCtx;
 	args: {
-		userId: v.id('users'),
-		languageCode: languageCodeValidator,
-		isManuallyTracked: v.optional(v.boolean()),
-		durationInMinutes: v.optional(v.number()),
-		occurredAt: v.optional(v.number()),
-	},
-	returns: v.number(),
-	handler: async (ctx, args) => {
-		const { durationInMinutes } = args;
-		const minutes = Math.max(0, Math.round(durationInMinutes ?? 0));
-		if (minutes <= 0) return 0;
+		userId: Id<'users'>;
+		languageCode: LanguageCode;
+		isManuallyTracked?: boolean;
+		durationInMinutes?: number;
+		occurredAt?: number;
+	};
+}): Promise<number> => {
+	const { durationInMinutes } = args;
+	const minutes = Math.max(0, Math.round(durationInMinutes ?? 0));
+	if (minutes <= 0) return 0;
 
-		const when = args.occurredAt ?? Date.now();
-		const dayStart = dayStartMsOf(when);
-		const dayEnd = dayStart + DAY_MS - 1;
+	const when = args.occurredAt ?? Date.now();
+	const dayStart = dayStartMsOf(when);
+	const dayEnd = dayStart + DAY_MS - 1;
 
-		// Sum total minutes already recorded for this user today
-		const activitiesOnThisDay = await ctx.db
-			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', q =>
-				q
-					.eq('userId', args.userId)
-					.gte('occurredAt', dayStart)
-					.lte('occurredAt', dayEnd)
-			)
-			.collect();
-		const totalMinutesToday = activitiesOnThisDay.reduce(
-			(sum: number, userTargetLanguageActivity) => {
-				const ms = Math.max(
-					0,
-					Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
-				);
-				return sum + Math.floor(ms / 60000);
-			},
-			0
-		);
+	// Sum total minutes already recorded for this user today
+	const activitiesOnThisDay = await ctx.db
+		.query('userTargetLanguageActivities')
+		.withIndex('by_user_and_occurred', (q) =>
+			q
+				.eq('userId', args.userId)
+				.gte('occurredAt', dayStart)
+				.lte('occurredAt', dayEnd)
+		)
+		.collect();
+	const totalMinutesToday = activitiesOnThisDay.reduce(
+		(sum: number, userTargetLanguageActivity: any) => {
+			const ms = Math.max(
+				0,
+				Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
+			);
+			return sum + Math.floor(ms / 60000);
+		},
+		0
+	);
 
-		// Subtract this entry's minutes if it was already inserted before this query
-		const priorMinutes = Math.max(0, totalMinutesToday - minutes);
-		const remaining = Math.max(0, DAILY_XP_CAP_MINUTES - priorMinutes);
-		const effectiveMinutes = Math.max(0, Math.min(minutes, remaining));
-		const rawXp = BASE_RATE_PER_MIN * effectiveMinutes;
-		return Math.max(0, Math.round(rawXp));
-	},
-});
+	// Subtract this entry's minutes if it was already inserted before this query
+	const priorMinutes = Math.max(0, totalMinutesToday - minutes);
+	const remaining = Math.max(0, DAILY_XP_CAP_MINUTES - priorMinutes);
+	const effectiveMinutes = Math.max(0, Math.min(minutes, remaining));
+	const rawXp = BASE_RATE_PER_MIN * effectiveMinutes;
+	return Math.max(0, Math.round(rawXp));
+};
 
 export const addExperience = async ({
 	ctx,
