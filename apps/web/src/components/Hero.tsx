@@ -128,13 +128,7 @@ export function Hero() {
 							<UnreleasedBanner />
 
 							<Card className="p-6 md:p-10 relative">
-								<div className="mb-2 md:mb-3">
-									<div className="flex items-center gap-2">
-										<Badge className="w-fit bg-accent text-main-foreground text-lg px-3 py-1">
-											Language Learners
-										</Badge>
-									</div>
-								</div>
+
 
 								<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
 									Do you want to{' '}

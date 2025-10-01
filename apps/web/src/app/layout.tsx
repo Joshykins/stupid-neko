@@ -53,7 +53,7 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
+		<html lang="en" className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable}`}>
 			<head>
 				<link
 					rel="stylesheet"
@@ -74,7 +74,7 @@ export default async function RootLayout({
 			</head>
 			<body
 				suppressHydrationWarning
-				className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable} antialiased relative`}
+				className="antialiased relative"
 			>
 				<ConvexAuthNextjsServerProvider>
 					<ConvexClientProvider>
