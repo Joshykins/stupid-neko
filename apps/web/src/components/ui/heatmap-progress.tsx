@@ -26,8 +26,8 @@ export function HeatmapProgress({
 	const is100Percent = value === 100;
 
 	return (
-		<div className="relative scale-y-50">
-			<div className="absolute overflow-hidden blur-sm -inset-1 rounded-lg">
+		<div className="relative scale-y-80 mx-0.75 mt-0.5">
+			{is100Percent && <div className="absolute overflow-hidden blur-sm -inset-1 rounded-lg">
 				<div
 					className={cn(
 						'absolute inset-0 aspect-square -translate-y-[47%] scale-y-30 opacity-0',
@@ -44,7 +44,7 @@ export function HeatmapProgress({
                     )`,
 					}}
 				></div>
-			</div>
+			</div>}
 
 			<div
 				className={cn('absolute overflow-hidden -inset-[2.5px] rounded-full')}
@@ -53,20 +53,20 @@ export function HeatmapProgress({
 					className={cn(
 						'absolute inset-0 aspect-square -translate-y-[47%] scale-y-30',
 						is100Percent && 'bg-transparent',
-						styles.heatmapSpin
+						is100Percent && styles.heatmapSpin || ''
 					)}
 					style={
 						!is100Percent
 							? { backgroundColor: 'var(--color-heatmap-bg)' }
 							: {
-									backgroundImage: `linear-gradient(90deg,
+								backgroundImage: `linear-gradient(90deg,
                         var(--color-heatmap-4) 0%,
                         var(--color-heatmap-3) 25%,
                         var(--color-heatmap-2) 50%,
                         var(--color-heatmap-3) 75%,
                         var(--color-heatmap-4) 100%
                     )`,
-								}
+							}
 					}
 				></div>
 			</div>
@@ -74,7 +74,7 @@ export function HeatmapProgress({
 			<ProgressPrimitive.Root
 				data-slot="progress blur"
 				className={cn(
-					'relative h-4 z-[2] w-full overflow-hidden rounded-base bg-[var(--color-heatmap-bg)]'
+					'relative h-2 z-[2] w-full overflow-hidden rounded-base bg-[var(--color-heatmap-bg)]'
 				)}
 				{...props}
 			>

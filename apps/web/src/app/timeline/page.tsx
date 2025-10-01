@@ -7,30 +7,13 @@ import IntegrationsCard from '../../components/dashboard/IntegrationsCard';
 import TrackedHistoryCard from '../../components/dashboard/TrackedHistoryCard';
 import { WeeklyBarsCard } from '../../components/marketing/WeeklyBarsCard';
 import UserXPChart from '../../components/userXPChart';
-import { DashboardTopBar } from './DashboardTopBar';
+import { DashboardTopBar } from '../dashboard/DashboardTopBar';
 
-export default async function DashboardPage() {
+export default async function ActivityTimelinePage() {
 	return (
 		<main className="py-6">
 			<DashboardTopBar />
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-				<div className="lg:col-span-1 space-y-4">
-					<AddManualActvitiyCard />
-					<TrackedHistoryCard />
-				</div>
-				<div className="lg:col-span-1 space-y-4">
-					<UserProgressCard isLiveVersion={true} />
-					<UserXPChart isLiveVersion={true} />
-					<IntegrationsCard />
-				</div>
-				<div className="lg:col-span-1 space-y-4">
-					<StreakDisplayCard title="Daily Streak" liveVersion={true} />
 
-					<StreakVacationCard isLiveVersion={true} />
-					{/* <DonutChartCard /> */}
-					<WeeklyBarsCard />
-				</div>
-			</div>
 		</main>
 	);
 }

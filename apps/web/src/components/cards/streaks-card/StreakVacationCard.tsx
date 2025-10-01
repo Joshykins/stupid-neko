@@ -45,7 +45,7 @@ export const StreakVacationCard = ({
 			<div className="flex items-center gap-4">
 				{/* Icon badge */}
 				<div className="flex justify-center">
-					<div className="relative w-16 h-16 rounded-full overflow-hidden border-2 shadow-shadow">
+					<div className="relative w-12 h-12 rounded-full overflow-hidden border-2 shadow-shadow">
 						<Image
 							src="/streak-vacation/streak-vacation-palm-tree.svg"
 							alt="Streak vacation"
@@ -57,53 +57,53 @@ export const StreakVacationCard = ({
 
 				<div className="flex-1">
 					{/* Count and label */}
-					<div className="text-left pb-2 flex items-end justify-start gap-1">
-						<div className="text-lg font-black text-main-foreground">
+					<div className="text-left flex items-end justify-start gap-1">
+						<div className="font-display text-xl font-black">
 							{balance}
 						</div>
-						<div className="text-lg font-semibold text-main-foreground">
-							/ {cap} <span className="font-normal">Vacations</span>
+						<div className="font-display text-xl font-normal">
+							/ {cap} <span className="font-display text-xl font-black">Vacations</span>
 						</div>
 					</div>
 
-					{/* Progress bar with label */}
-					<div className="grid gap-2 relative">
-						<Progress
-							className="h-5 rounded-full bg-teal-100/50 border-border border-2"
-							value={capped ? 100 : percent}
-							indicatorColor="#90D8C9"
-							showBubble
-							bubble={
-								<div className="relative w-5 h-5">
-									<Image
-										src="/streak-vacation/streak-vacation-beach-ball.svg"
-										alt="Progress"
-										fill
-										className="object-contain"
-									/>
-								</div>
-							}
-						></Progress>
-						<div
-							className={cn(
-								'text-right text-xs font-semibold text-main-foreground absolute top-0.5',
-								capped || percent >= 70 ? 'left-2' : 'right-2'
-							)}
-						>
-							{capped ? 'At cap' : `${percent}% to next`}
-						</div>
-					</div>
 
 					{/* Info row */}
-					<div className="flex items-center gap-2 text-main-foreground pt-2">
-						<Info className="w-5 h-5 stroke-2.5" />
-
-						<div className="text-sm leading-tight font-semibold">
+					<div className="flex items-center gap-2 text-main-foreground">
+						<div className="text-sm text-muted-foreground">
 							Used automatically if you miss a day.
 						</div>
 					</div>
 				</div>
 			</div>
-		</Card>
+			<div className="flex-1 pt-4">
+				{/* Progress bar with label */}
+				<div className="grid gap-2 relative">
+					<Progress
+						className="h-5 rounded-full bg-teal-100/50 border-border border-2"
+						value={capped ? 100 : percent}
+						indicatorColor="#90D8C9"
+						showBubble
+						bubble={
+							<div className="relative w-5 h-5">
+								<Image
+									src="/streak-vacation/streak-vacation-beach-ball.svg"
+									alt="Progress"
+									fill
+									className="object-contain"
+								/>
+							</div>
+						}
+					></Progress>
+					<div
+						className={cn(
+							'text-right text-xs font-semibold text-main-foreground absolute top-0.5',
+							capped || percent >= 70 ? 'left-2' : 'right-2'
+						)}
+					>
+						{capped ? 'At cap' : `${percent}% to next`}
+					</div>
+				</div>
+			</div>
+		</Card >
 	);
 };

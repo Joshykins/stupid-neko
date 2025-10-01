@@ -2,7 +2,7 @@
 
 import StreakDisplayCard from '../components/cards/streaks-card/StreakDisplayCard';
 import { StreakVacationCard } from '../components/cards/streaks-card/StreakVacationCard';
-import { UsersSummaryCard } from '../components/cards/UsersSummaryCard';
+import { UserProgressCard } from '../components/cards/UserProgressCard';
 import Hero from '../components/Hero';
 import { DiscordCard } from '../components/marketing/DiscordCard';
 import { DonutChartCard } from '../components/marketing/DonutChartCard';
@@ -25,7 +25,7 @@ export default async function Home() {
 			</div>
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4" id="demo">
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">
-					<UsersSummaryCard isLiveVersion={false} />
+					<UserProgressCard isLiveVersion={false} />
 					<UserXPChart isLiveVersion={false} />
 				</div>
 				<div className="lg:col-span-1 grid grid-cols-1 gap-4">

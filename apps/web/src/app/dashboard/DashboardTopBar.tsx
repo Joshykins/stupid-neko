@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from 'convex/react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Clock } from 'lucide-react';
 import * as React from 'react';
 import { api } from '../../../../../convex/_generated/api';
 import LanguageFlagSVG from '../../components/LanguageFlagSVG';
@@ -24,6 +24,12 @@ export const DashboardTopBar = () => {
 					Learning {targetLanguageLabel}
 				</Button>
 				{/* buttons for different views, history(30d,7d,all), timeline, and flashcards */}
+
+				{/* Timeline */}
+				<Button variant={"neutral"} className="overflow-hidden">
+					<Clock />
+					Timeline
+				</Button>
 
 				{/* <div className="flex items-center gap-1 pl-2 py-0 divide-x divide-x-border">
 					<Button variant={"neutral"} className="overflow-hidden">
