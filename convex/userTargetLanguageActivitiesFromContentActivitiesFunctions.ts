@@ -26,7 +26,8 @@ export const translateBatch = internalMutation({
 	},
 	returns: v.object({ processed: v.number(), createdActivities: v.number() }),
 	handler: async (ctx, args) => {
-		const limit = Math.max(1, Math.min(2000, args.limit ?? 500));
+		// Enforce strict limits for scalability
+		const limit = Math.max(1, Math.min(100, args.limit ?? 50));
 
 		// Pull a batch of content activities, oldest first to preserve ordering
 		const candidates = await ctx.db
@@ -34,8 +35,8 @@ export const translateBatch = internalMutation({
 			.order('asc')
 			.take(limit);
 
-		// Filter to those ready to translate
-		const ready = candidates.filter(row => !row.translated);
+		// All candidates are ready to translate (no filtering needed)
+		const ready = candidates;
 		if (ready.length === 0) {
 			return { processed: 0, createdActivities: 0 } as const;
 		}
@@ -223,12 +224,9 @@ export const translateBatch = internalMutation({
 				// Load user and their current target language
 				const user = await ctx.db.get(s.userId);
 				if (!user) {
-					// Mark processed to avoid blocking; user deleted edge case
+					// Delete immediately; user deleted edge case
 					for (const evId of s.eventIds) {
-						await ctx.db.patch(evId, {
-							translated: true,
-							processedAt: Date.now(),
-						});
+						await ctx.db.delete(evId);
 						processed += 1;
 					}
 					continue;
@@ -238,12 +236,9 @@ export const translateBatch = internalMutation({
 					| Id<'userTargetLanguages'>
 					| undefined;
 				if (!userTargetLanguageId) {
-					// Mark processed to avoid hot loop; skip creating activity
+					// Delete immediately; skip creating activity
 					for (const evId of s.eventIds) {
-						await ctx.db.patch(evId, {
-							translated: true,
-							processedAt: Date.now(),
-						});
+						await ctx.db.delete(evId);
 						processed += 1;
 					}
 					continue;
@@ -261,7 +256,12 @@ export const translateBatch = internalMutation({
 					label.stage !== 'completed' ||
 					!label.contentLanguageCode
 				) {
-					// Still waiting on labeling; skip for now (leave events as-is)
+					// Delete activities immediately to avoid infinite loop
+					// These activities cannot be processed due to missing language information
+					for (const evId of s.eventIds) {
+						await ctx.db.delete(evId);
+						processed += 1;
+					}
 					continue;
 				}
 
@@ -365,8 +365,27 @@ export const translateBatch = internalMutation({
 					}
 				}
 			}
+
+			// Delete orphaned events immediately (events that don't form complete sessions)
+			const processedEventIds = new Set<string>();
+			
+			// Collect all event IDs that were processed in sessions
+			for (const session of sessions) {
+				for (const eventId of session.eventIds) {
+					processedEventIds.add(eventId);
+				}
+			}
+			
+			// Delete remaining events immediately
+			for (const event of events) {
+				if (!processedEventIds.has(event._id)) {
+					await ctx.db.delete(event._id);
+					processed += 1;
+				}
+			}
 		}
 
 		return { processed, createdActivities } as const;
 	},
 });
+

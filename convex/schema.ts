@@ -245,9 +245,6 @@ export default defineSchema({
 		),
 		occurredAt: v.optional(v.number()),
 		isWaitingOnLabeling: v.optional(v.boolean()),
-		// Translation pipeline bookkeeping
-		translated: v.optional(v.boolean()),
-		processedAt: v.optional(v.number()),
 	})
 		.index('by_user', ['userId'])
 		.index('by_user_and_occurred', ['userId', 'occurredAt'])

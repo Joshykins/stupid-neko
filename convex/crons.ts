@@ -10,13 +10,15 @@ export const tick = internalAction({
 	args: {},
 	returns: v.null(),
 	handler: async ctx => {
+		// Process content activities in small batches for scalability
 		await ctx.runMutation(
 			internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
 				.translateBatch,
 			{
-				limit: 500,
+				limit: 50, // Small batch size for better performance
 			}
 		);
+		
 		// Nudge all users once per tick (bounded)
 		const users = await ctx.runQuery(
 			internal.userFunctions.listAllUsersForCron,
@@ -32,6 +34,7 @@ export const tick = internalAction({
 		return null;
 	},
 });
+
 
 // Hourly vacation enforcement via streak nudge mimicking TestingComponent behavior
 export const hourlyNudge = internalAction({
@@ -61,6 +64,7 @@ crons.interval(
 	internal.crons.tick,
 	{}
 );
+
 
 crons.interval(
 	'hourly streak nudge',
