@@ -90,8 +90,9 @@ export type WidgetStateUpdate = {
 		| 'default-provider-awaiting-consent'
 		| 'default-provider-tracking'
 		| 'default-provider-prompt-user-for-track'
-		| 'youtube-idle'
-		| 'youtube-tracking'
+		| 'youtube-not-tracking'
+		| 'youtube-tracking-unverified'
+		| 'youtube-tracking-verified'
 		| 'determining-provider'
 		| 'error';
 	provider?: ProviderName;

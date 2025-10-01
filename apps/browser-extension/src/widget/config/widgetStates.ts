@@ -58,8 +58,8 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		requiresUserInteraction: true
 	},
 
-	'youtube-idle': {
-		state: 'youtube-idle',
+	'youtube-not-tracking': {
+		state: 'youtube-not-tracking',
 		visibility: 'hidden',
 		expandable: false,
 		showTimer: false,
@@ -67,8 +67,17 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		requiresUserInteraction: false
 	},
 
-	'youtube-tracking': {
-		state: 'youtube-tracking',
+	'youtube-tracking-unverified': {
+		state: 'youtube-tracking-unverified',
+		visibility: 'hidden',
+		expandable: false,
+		showTimer: false,
+		showControls: false,
+		requiresUserInteraction: false
+	},
+
+	'youtube-tracking-verified': {
+		state: 'youtube-tracking-verified',
 		visibility: 'visible',
 		expandable: true,
 		showTimer: true,

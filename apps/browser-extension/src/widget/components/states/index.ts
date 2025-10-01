@@ -1,9 +1,11 @@
 export { DefaultProviderIdle } from './DefaultProviderIdle';
-export { YouTubeIdle } from './YouTubeIdle';
+export { YouTubeNotTracking } from './YouTubeNotTracking';
+export { YouTubeTrackingUnverified } from './YouTubeTrackingUnverified';
+export { YouTubeTrackingVerified } from './YouTubeTrackingVerified';
 export { DeterminingProvider } from './DeterminingProvider';
 export { DefaultProviderAwaitingConsent } from './DefaultProviderAwaitingConsent';
-export { YouTubeTracking } from './YouTubeTracking';
 export { DefaultProviderTracking } from './DefaultProviderTracking';
 export { DefaultProviderPromptUser } from './DefaultProviderPromptUser';
 export { ErrorState } from './ErrorState';
 export { DefaultState } from './DefaultState';
+export { HiddenState } from './HiddenState';

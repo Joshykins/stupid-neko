@@ -18,10 +18,11 @@ import {
 import { getWidgetStateConfig } from './config/widgetStates';
 import {
 	DefaultProviderIdle,
-	YouTubeIdle,
+	YouTubeNotTracking,
+	YouTubeTrackingUnverified,
+	YouTubeTrackingVerified,
 	DeterminingProvider,
 	DefaultProviderAwaitingConsent,
-	YouTubeTracking,
 	DefaultProviderTracking,
 	DefaultProviderPromptUser,
 	ErrorState,
@@ -47,6 +48,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const userInfo = useUserInfo(props);
 	const { sendConsentResponse, stopRecording, retry } = useWidgetActions();
 	const {
+		position,
 		mvLeft,
 		mvTop,
 		controls,
@@ -55,6 +57,13 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		onDrag,
 		onDragEnd,
 	} = useWidgetPosition();
+
+	// Calculate optimal popover side based on widget position
+	const popoverSide = useMemo(() => {
+		const screenCenter = window.innerWidth / 2;
+		const widgetCenter = position.left + 20; // 20px is half the widget width (40px)
+		return widgetCenter < screenCenter ? 'right' : 'left';
+	}, [position.left]);
 
 	const [iconUrl, setIconUrl] = useState<string>('');
 	const [currentTime, setCurrentTime] = useState(Date.now());
@@ -202,10 +211,28 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					/>
 				);
 
-			case 'youtube-idle':
+			case 'youtube-not-tracking':
 				return (
-					<YouTubeIdle
+					<YouTubeNotTracking
 						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'youtube-tracking-unverified':
+				return (
+					<YouTubeTrackingUnverified
+						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'youtube-tracking-verified':
+				return (
+					<YouTubeTrackingVerified
+						widgetState={widgetState}
+						currentTime={currentTime}
+						stopRecording={stopRecording}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -223,16 +250,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					<DefaultProviderAwaitingConsent
 						widgetState={widgetState}
 						sendConsentResponse={sendConsentResponse}
-						renderDebugInfo={renderDebugInfo}
-					/>
-				);
-
-			case 'youtube-tracking':
-				return (
-					<YouTubeTracking
-						widgetState={widgetState}
-						currentTime={currentTime}
-						stopRecording={stopRecording}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -354,7 +371,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			onOpenChange={setExpanded}
 		>
 			<PopoverTrigger asChild>{WidgetButton}</PopoverTrigger>
-			<PopoverContent className='snbex:p-4 snbex:relative'>
+			<PopoverContent
+				side={popoverSide}
+				className='snbex:p-4 snbex:relative'
+			>
 				{/* Minimize button */}
 				<IconButton
 					title="Minimize widget"
@@ -369,3 +389,4 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		</Popover>
 	);
 }
+

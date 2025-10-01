@@ -1,19 +1,19 @@
 import React from 'react';
-import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
-import { useUserInfo } from '../../hooks/useUserInfo';
-import { CirclePause, Pause } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge';
 import { languageCodeToLabel } from '../../../../../../lib/languages';
+import { CirclePause } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
+import { useUserInfo } from '../../hooks/useUserInfo';
 
-interface YouTubeTrackingProps {
+interface YouTubeTrackingVerifiedProps {
     widgetState: WidgetState;
     currentTime: number;
     stopRecording: () => void;
     renderDebugInfo?: () => React.ReactNode;
 }
 
-export const YouTubeTracking: React.FC<YouTubeTrackingProps> = ({
+export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = ({
     widgetState,
     currentTime,
     stopRecording,

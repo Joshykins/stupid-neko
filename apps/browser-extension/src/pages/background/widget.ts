@@ -80,7 +80,7 @@ export async function updateWidgetStateForEvent(
 				}
 			} else {
 				// Non-default providers (like YouTube)
-				const stateKey = providerName === 'youtube' ? 'youtube-tracking' : 'default-provider-tracking';
+				const stateKey = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'default-provider-tracking';
 				updateWidgetState({
 					state: stateKey,
 					provider: providerName,
@@ -97,7 +97,7 @@ export async function updateWidgetStateForEvent(
 
 		case 'end':
 			// Return to provider-specific idle state
-			const idleState = providerName === 'youtube' ? 'youtube-idle' : 'default-provider-idle';
+			const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
 			updateWidgetState({
 				state: idleState,
 				provider: providerName,

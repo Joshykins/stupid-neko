@@ -25,7 +25,7 @@ export function setDeterminingProviderState(domain?: string, tabId?: number): vo
  */
 export function transitionFromDeterminingProvider(providerName: ProviderName, domain: string, tabId?: number): void {
 	// Transition from determining-provider to appropriate provider idle state
-	const idleState = providerName === 'youtube' ? 'youtube-idle' : 'default-provider-idle';
+	const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
 	
 	updateWidgetState({
 		state: idleState,

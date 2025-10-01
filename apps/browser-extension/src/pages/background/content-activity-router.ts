@@ -47,7 +47,8 @@ function deriveContentKey(evt: PlaybackEvent): string | undefined {
 }
 
 export async function postContentActivityFromPlayback(
-	evt: PlaybackEvent
+	evt: PlaybackEvent,
+	tabId?: number
 ): Promise<ContentActivityResult | null> {
 	if (!convex) return null;
 
@@ -85,6 +86,11 @@ export async function postContentActivityFromPlayback(
 
 	// Cache label by content key when provided
 	cacheContentLabel(result, contentKey);
+
+	// Handle YouTube state transitions based on result
+	if (tabId !== undefined) {
+		await updateYouTubeStateFromResult(tabId, result, evt.url);
+	}
 
 	return result;
 }
@@ -225,7 +231,7 @@ export async function handleContentActivityPosting(
 	// For YouTube provider, always post content activities
 	if (isYouTubeProvider) {
 		console.debug(`${DEBUG_LOG_PREFIX} YouTube provider -> posting`);
-		await postContentActivityFromPlayback(payload);
+		await postContentActivityFromPlayback(payload, tabId);
 		return;
 	}
 
@@ -233,7 +239,7 @@ export async function handleContentActivityPosting(
 		console.debug(`${DEBUG_LOG_PREFIX} probing start -> backend detection`);
 
 		const { data: result } = await tryCatch(
-			postContentActivityFromPlayback(payload)
+			postContentActivityFromPlayback(payload, tabId)
 		);
 
 		if (!tabStates[tabId] || !result) return;
@@ -241,10 +247,71 @@ export async function handleContentActivityPosting(
 		updateAllowPostFromResult(tabId, result);
 	} else if (state?.allowPost) {
 		console.debug(`${DEBUG_LOG_PREFIX} allowPost -> posting`);
-		await postContentActivityFromPlayback(payload);
+		await postContentActivityFromPlayback(payload, tabId);
 	} else {
 		console.debug(`${DEBUG_LOG_PREFIX} skip posting (allowPost=false)`);
 	}
+}
+
+export async function updateYouTubeStateFromResult(
+	tabId: number,
+	result: ContentActivityResult,
+	url: string
+): Promise<void> {
+	const providerName = getProviderName(url);
+	if (providerName !== 'youtube') return;
+
+	// Import updateWidgetState function
+	const { updateWidgetState } = await import('./widget');
+	const domain = new URL(url).hostname;
+	
+	// Determine YouTube state based on result
+	let newState: 'youtube-not-tracking' | 'youtube-tracking-unverified' | 'youtube-tracking-verified';
+	let contentLanguage: string | undefined;
+	let targetLanguage: string | undefined;
+	
+	if (result.isWaitingOnLabeling) {
+		// Still waiting for content labeling
+		newState = 'youtube-tracking-unverified';
+		console.debug(`${DEBUG_LOG_PREFIX} YouTube state: waiting for labeling`);
+	} else if (result.contentLabel && result.currentTargetLanguage) {
+		// Check if content label matches target language
+		const contentLabel = result.contentLabel as any;
+		targetLanguage = result.currentTargetLanguage.languageCode;
+		
+		// Check for content language in the contentLabel object
+		contentLanguage = contentLabel?.contentLanguageCode || contentLabel?.languageCode || contentLabel?.detectedLanguage;
+		
+		console.debug(`${DEBUG_LOG_PREFIX} YouTube language check:`, {
+			contentLanguage,
+			targetLanguage,
+			contentLabel: contentLabel
+		});
+		
+		if (contentLanguage === targetLanguage) {
+			newState = 'youtube-tracking-verified';
+		} else {
+			newState = 'youtube-not-tracking';
+		}
+	} else {
+		// No content label available yet, keep as unverified
+		newState = 'youtube-tracking-unverified';
+		console.debug(`${DEBUG_LOG_PREFIX} YouTube state: no content label available`);
+	}
+
+	console.debug(`${DEBUG_LOG_PREFIX} YouTube state transition:`, {
+		from: 'current state',
+		to: newState,
+		contentLanguage,
+		targetLanguage,
+		isWaitingOnLabeling: result.isWaitingOnLabeling
+	});
+
+	updateWidgetState({
+		state: newState,
+		provider: 'youtube',
+		domain,
+	}, tabId);
 }
 
 export function updateAllowPostFromResult(
