@@ -23,9 +23,25 @@ let onNavigate: (() => void) | null = null;
 let onPlaybackEvent: ((event: ContentActivityEvent) => void) | null = null;
 
 const getVideo = (): HTMLVideoElement | null => {
-	return document.querySelector(
-		'video.html5-main-video'
-	) as HTMLVideoElement | null;
+	// Try multiple selectors as YouTube may have changed their DOM structure
+	const selectors = [
+		'video.html5-main-video',
+		'video',
+		'#movie_player video',
+		'#player video',
+		'.html5-video-player video'
+	];
+	
+	for (const selector of selectors) {
+		const video = document.querySelector(selector) as HTMLVideoElement | null;
+		if (video) {
+			console.debug('[content][youtube] found video with selector:', selector);
+			return video;
+		}
+	}
+	
+	console.debug('[content][youtube] no video element found with any selector');
+	return null;
 };
 
 const getCurrentVideoId = (): string | undefined => {
@@ -50,7 +66,37 @@ const getCurrentVideoId = (): string | undefined => {
 const getCurrentMetadata = (): ContentMetadata => {
 	const title = document.title.replace(/ - YouTube$/, '');
 	const videoId = getCurrentVideoId();
-	return { title, videoId };
+	
+	// Extract author/channel name from YouTube DOM
+	let author: string | undefined;
+	try {
+		// Try multiple selectors for channel name
+		const channelSelectors = [
+			'#owner-name a', // Main channel link
+			'#owner-name', // Channel name without link
+			'#channel-name a', // Alternative channel link
+			'#channel-name', // Alternative channel name
+			'.ytd-channel-name a', // Channel name in video player
+			'.ytd-channel-name', // Channel name without link
+			'#upload-info #owner-name a', // Upload info section
+			'#upload-info #owner-name', // Upload info without link
+		];
+		
+		for (const selector of channelSelectors) {
+			const element = document.querySelector(selector);
+			if (element) {
+				author = element.textContent?.trim();
+				if (author) {
+					console.debug('[content][youtube] found author with selector:', selector, author);
+					break;
+				}
+			}
+		}
+	} catch (error) {
+		console.debug('[content][youtube] error extracting author:', error);
+	}
+	
+	return { title, videoId, author };
 };
 
 const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
@@ -83,9 +129,13 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 
 const attach = (p: HTMLVideoElement): void => {
 	const ensureStart = () => {
+		console.debug('[content][youtube] ensureStart called - isPlaying:', isPlaying, 'paused:', p.paused);
 		if (!isPlaying && !p.paused) {
+			console.debug('[content][youtube] emitting start event');
 			isPlaying = true;
 			emit('start');
+		} else {
+			console.debug('[content][youtube] not emitting start - isPlaying:', isPlaying, 'paused:', p.paused);
 		}
 	};
 
@@ -110,6 +160,14 @@ const attach = (p: HTMLVideoElement): void => {
 	p.addEventListener('seeked', onSeeked, { passive: true });
 	p.addEventListener('pause', onPause, { passive: true });
 	p.addEventListener('ended', onEnded, { passive: true });
+
+	// Check if video is already playing when we attach
+	console.debug('[content][youtube] Video attached - paused:', p.paused, 'isPlaying:', isPlaying);
+	if (!p.paused && !isPlaying) {
+		console.debug('[content][youtube] Video already playing, emitting start event');
+		isPlaying = true;
+		emit('start');
+	}
 
 	// Set up heartbeat for progress tracking
 	const heartbeat = () => {
@@ -169,7 +227,9 @@ const watchForVideo = (): void => {
 	}
 
 	const p = getVideo();
+	console.debug('[content][youtube] watchForVideo - found video:', !!p, 'current player:', !!player);
 	if (p && p !== player) {
+		console.debug('[content][youtube] attaching to new video element');
 		detach();
 		player = p;
 		attach(p);
@@ -179,13 +239,16 @@ const watchForVideo = (): void => {
 // Public API for content script
 export const youtubeContentHandler: ContentHandler = {
 	start: (playbackEventCallback: (event: ContentActivityEvent) => void) => {
+		console.debug('[content][youtube] starting YouTube content handler');
 		onPlaybackEvent = playbackEventCallback;
 		isPlaying = false;
 		lastVideoId = getCurrentVideoId() ?? null;
+		console.debug('[content][youtube] initial video ID:', lastVideoId);
 		watchForVideo();
 		watchInterval = window.setInterval(() => watchForVideo(), 1500);
 		onNavigate = () => watchForVideo();
 		document.addEventListener('yt-navigate-finish', onNavigate, true);
+		console.debug('[content][youtube] YouTube content handler started');
 	},
 
 	stop: () => {

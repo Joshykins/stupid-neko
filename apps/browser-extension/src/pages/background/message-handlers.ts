@@ -57,6 +57,13 @@ export function registerMessageHandlers(): void {
 		}
 	});
 
+	// Widget state handlers
+	on('GET_WIDGET_STATE', async (_, sender) => {
+		const tabId = sender.tab?.id;
+		const { getCurrentWidgetState } = await import('./widget');
+		return getCurrentWidgetState(tabId);
+	});
+
 	// Widget handlers
 	on('WIDGET_ACTION', async ({ action, payload }, sender) => {
 		const tabId = sender.tab?.id;
@@ -90,7 +97,7 @@ export function registerMessageHandlers(): void {
 			}
 
 			case 'retry':
-				handleRetry();
+				handleRetry(tabId);
 				break;
 
 			default:
@@ -100,6 +107,7 @@ export function registerMessageHandlers(): void {
 
 		return { success: true };
 	});
+
 
 	// Playback handlers
 	on('PLAYBACK_EVENT', async ({ payload }, sender) => {
@@ -143,6 +151,24 @@ export function registerMessageHandlers(): void {
 
 		// Handle the content activity event
 		await handleContentActivityEvent(tabId, payload);
+
+		// Update widget state based on the event (only for playback events, not language-detected)
+		if (payload.event !== 'language-detected') {
+			// Convert ContentActivityEvent to PlaybackEvent format for widget state update
+			const playbackEvent: PlaybackEvent = {
+				source: payload.source,
+				event: payload.event,
+				url: payload.url,
+				ts: payload.ts,
+				position: payload.position,
+				duration: payload.duration,
+				rate: payload.rate,
+				matchesTarget: payload.matchesTarget,
+				title: payload.metadata?.title,
+				videoId: payload.metadata?.videoId,
+			};
+			updateWidgetStateForEvent(playbackEvent, tabId);
+		}
 
 		return {};
 	});

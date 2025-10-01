@@ -1,7 +1,7 @@
 import type { ProviderMeta } from '../registry';
 
 const meta: ProviderMeta = {
-	id: 'default',
+	id: 'default' as const,
 	displayName: 'Web',
 	matches: () => true,
 	extractContentKey: (url: string) => {

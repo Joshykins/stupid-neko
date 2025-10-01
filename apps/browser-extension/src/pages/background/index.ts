@@ -23,10 +23,12 @@ chrome.tabs.onRemoved.addListener(tabId => {
 });
 
 chrome.tabs.onActivated.addListener(activeInfo => {
+	console.debug('[bg] Tab activated:', activeInfo.tabId);
 	handleTabActivated(activeInfo.tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+	console.debug('[bg] Tab updated:', tabId, changeInfo);
 	handleTabUpdated(tabId, changeInfo);
 });
 

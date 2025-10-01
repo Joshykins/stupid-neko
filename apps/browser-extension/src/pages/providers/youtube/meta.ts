@@ -27,7 +27,7 @@ function deriveYouTubeId(input: string): string | null {
 }
 
 const meta: ProviderMeta = {
-	id: 'youtube',
+	id: 'youtube' as const,
 	displayName: 'YouTube',
 	matches: (url: string) => {
 		try {

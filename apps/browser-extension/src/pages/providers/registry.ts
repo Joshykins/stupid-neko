@@ -1,6 +1,8 @@
 // Auto-discovered provider registry for background and content
 
-export type ProviderId = string;
+import type { ProviderName } from '../background/providers/types';
+
+export type ProviderId = ProviderName;
 
 export type ProviderMeta = {
 	id: ProviderId;
@@ -15,9 +17,14 @@ const metaModules = import.meta.glob('./**/meta.ts', { eager: true }) as Record<
 	{ default: ProviderMeta }
 >;
 
-export const metas: ProviderMeta[] = Object.values(metaModules).map(
-	m => m.default
-);
+// Load all providers and sort them so specific providers come before the default
+const allMetas = Object.values(metaModules).map(m => m.default);
+export const metas: ProviderMeta[] = allMetas.sort((a, b) => {
+	// Put default provider last, all others first
+	if (a.id === 'default') return 1;
+	if (b.id === 'default') return -1;
+	return 0;
+});
 
 // Lazy loaders for content/background modules
 export const loadContent: Record<string, () => Promise<unknown>> =

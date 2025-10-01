@@ -4,6 +4,7 @@ import TrackingWidget from '../../widget/TrackingWidget';
 import styles from './content.css?inline';
 
 import './provider-runtime'; // Initialize provider runtime
+console.debug('[content] Provider runtime initialized');
 
 // Declare Tailwind CSS browser global
 declare global {
@@ -30,7 +31,7 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'italic', weight: '100 900' }
 			);
 			faces.push(pjItalic);
-		} catch {}
+		} catch { }
 		try {
 			const baloo = new FontFace(
 				'Baloo 2',
@@ -38,14 +39,14 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'normal', weight: '400 800' }
 			);
 			faces.push(baloo);
-		} catch {}
+		} catch { }
 		const loads = faces.map(f => f.load());
 		const loaded = await Promise.all(loads);
 		loaded.forEach(f => {
 			document.fonts.add(f);
 		});
 		document.documentElement.classList.add('sn-fonts-ready');
-	} catch {}
+	} catch { }
 }
 
 function WidgetGate() {
@@ -110,7 +111,7 @@ const appRoot = document.createElement('div');
 appRoot.id = '__stupid-neko-root';
 const portalRoot = document.createElement('div');
 portalRoot.id = '__stupid-neko-portal';
-(window as { __stupidNekoPortalEl?: HTMLElement }).__stupidNekoPortalEl =
+(window as { __stupidNekoPortalEl?: HTMLElement; }).__stupidNekoPortalEl =
 	portalRoot;
 // Ensure overlays are interactive even if CSS isn't loaded yet
 portalRoot.style.pointerEvents = 'auto';
@@ -128,7 +129,7 @@ shadow.adoptedStyleSheets = [sheet];
 
 // Initialize the app
 async function initializeApp() {
-	await loadFontsUsingFontFace().catch(() => {});
+	await loadFontsUsingFontFace().catch(() => { });
 
 	// Wait a bit for CSS to load
 	await new Promise(resolve => setTimeout(resolve, 100));
@@ -145,4 +146,5 @@ async function initializeApp() {
 }
 
 // Start the app
+console.debug('[content] Content script loaded and initializing...');
 initializeApp();

@@ -11,8 +11,8 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
 			data-slot="input"
 			className={cx(
 				// Keep styles inline to avoid relying on web app utilities; use px not rem
-				'flex h-[42px] w-full rounded-[12px] border-2 border-[#D9D3C7] bg-white selection:bg-black selection:text-white px-[14px] py-[10px] text-[14px] leading-[20px] text-[#0F172A]',
-				'placeholder:text-[#0F172A]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+				'snbex:flex snbex:h-[42px] snbex:w-full snbex:rounded-[12px] snbex:border-2 snbex:border-[#D9D3C7] snbex:bg-white snbex:selection:bg-black snbex:selection:text-white snbex:px-[14px] snbex:py-[10px] snbex:text-[14px] snbex:leading-[20px] snbex:text-[#0F172A]',
+				'snbex:placeholder:text-[#0F172A]/60 snbex:focus-visible:outline-none snbex:focus-visible:ring-2 snbex:focus-visible:ring-black snbex:focus-visible:ring-offset-2 snbex:disabled:cursor-not-allowed snbex:disabled:opacity-50',
 				className as any
 			)}
 			{...props}

@@ -1,9 +1,9 @@
 import { convex, getIntegrationId } from './auth';
-import type { ContentActivityEvent } from './providers/types';
+import type { ContentActivityEvent, ProviderName } from './providers/types';
 import type { PlaybackEvent } from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
 import { api } from '../../../../../convex/_generated/api';
-import { getMetaForUrl } from '../providers/registry';
+import { getMetaForUrl, extractContentKey, getProviderName } from './determineProvider';
 import { sendToTab } from '../../messaging/messagesBackgroundRouter';
 
 const DEBUG_LOG_PREFIX = '[bg:content-router]';
@@ -14,7 +14,7 @@ export type TabPlaybackState = {
 	isPlaying: boolean;
 	allowPost?: boolean;
 	lastContentKey?: string;
-	currentProvider?: string;
+	currentProvider?: ProviderName;
 	hasConsent?: boolean;
 	startTime?: number;
 	detectedLanguage?: string;
@@ -43,8 +43,7 @@ export const tabStates: Record<number, TabPlaybackState> = {};
 export const contentLabelsByKey: Record<string, ContentLabel> = {};
 
 function deriveContentKey(evt: PlaybackEvent): string | undefined {
-	const meta = getMetaForUrl(evt.url);
-	return meta.extractContentKey(evt.url) || undefined;
+	return extractContentKey(evt.url) || undefined;
 }
 
 export async function postContentActivityFromPlayback(
@@ -108,8 +107,7 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	};
 	const nextKey = deriveContentKey(payload);
 	const contentChanged = nextKey && nextKey !== prev.lastContentKey;
-	const meta = getMetaForUrl(payload.url);
-	const providerName = meta.id;
+	const providerName = getProviderName(payload.url);
 	const currentDomain = new URL(payload.url).hostname;
 	const domainChanged = currentDomain !== prev.currentDomain;
 
@@ -130,6 +128,13 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 		// Restart the provider for the new domain
 		setTimeout(async () => {
 			try {
+				// Check if the tab supports content scripts before trying to send messages
+				const tab = await chrome.tabs.get(tabId);
+				if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+					console.debug(`${DEBUG_LOG_PREFIX} Skipping provider restart for system page: ${tab.url}`);
+					return;
+				}
+
 				await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {});
 
 				// Get target language if we have consent for this domain
@@ -145,8 +150,9 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 					targetLanguage,
 				});
 			} catch (error) {
-				console.warn(
-					`${DEBUG_LOG_PREFIX} failed to restart provider on domain change:`,
+				// This is expected for some tabs, don't treat as error
+				console.debug(
+					`${DEBUG_LOG_PREFIX} Content script not ready for tab ${tabId}:`,
 					error
 				);
 			}
@@ -205,14 +211,21 @@ export async function handleContentActivityPosting(
 	payload: PlaybackEvent
 ): Promise<void> {
 	const state = tabStates[tabId];
-	const meta = getMetaForUrl(payload.url);
-	const isDefaultProvider = meta.id === 'default';
+	const isDefaultProvider = getProviderName(payload.url) === 'default';
+	const isYouTubeProvider = getProviderName(payload.url) === 'youtube';
 
 	// For default provider, check consent first
 	if (isDefaultProvider && !state?.hasConsent) {
 		console.debug(
 			`${DEBUG_LOG_PREFIX} default provider without consent - skipping post`
 		);
+		return;
+	}
+
+	// For YouTube provider, always post content activities
+	if (isYouTubeProvider) {
+		console.debug(`${DEBUG_LOG_PREFIX} YouTube provider -> posting`);
+		await postContentActivityFromPlayback(payload);
 		return;
 	}
 
@@ -302,6 +315,11 @@ export function handleTabRemoved(tabId: number): void {
 		postContentActivityFromPlayback(endEvt);
 	}
 
+	// Clean up widget state for this tab
+	import('./widget').then(({ cleanupTabState }) => {
+		cleanupTabState(tabId);
+	});
+
 	delete tabStates[tabId];
 }
 
@@ -355,7 +373,7 @@ export async function handleContentActivityEvent(
 
 	// Update tab state and handle posting
 	updateTabState(tabId, playbackEvent);
-	handleContentActivityPosting(tabId, playbackEvent);
+	await handleContentActivityPosting(tabId, playbackEvent);
 }
 
 /**
@@ -366,20 +384,8 @@ export async function handleUrlChange(
 	url: string
 ): Promise<void> {
 	try {
-		const meta = getMetaForUrl(url);
-
-		// Get user's target language from auth state
-		const { getAuthState } = await import('./auth');
-		const authState = await getAuthState();
-		const targetLanguage = authState.me?.languageCode;
-
-		await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
-			providerId: meta.id,
-			targetLanguage,
-		});
-		console.debug(
-			`${DEBUG_LOG_PREFIX} activated provider: ${meta.id} for URL: ${url}`
-		);
+		const { determineAndActivateProvider } = await import('./determineProvider');
+		await determineAndActivateProvider(tabId, url);
 	} catch (error) {
 		console.warn(`${DEBUG_LOG_PREFIX} failed to handle URL change:`, error);
 	}
@@ -390,9 +396,18 @@ export async function handleUrlChange(
  */
 export async function handleTabActivated(tabId: number): Promise<void> {
 	try {
+		console.debug(`${DEBUG_LOG_PREFIX} handleTabActivated called for tab:`, tabId);
+		
+		// Set this tab as the active tab for widget state management
+		const { setActiveTab } = await import('./widget');
+		setActiveTab(tabId);
+		
 		const tab = await chrome.tabs.get(tabId);
 		if (tab.url) {
+			console.debug(`${DEBUG_LOG_PREFIX} Tab activated with URL:`, tab.url);
 			await handleUrlChange(tabId, tab.url);
+		} else {
+			console.debug(`${DEBUG_LOG_PREFIX} Tab activated but no URL found`);
 		}
 	} catch (error) {
 		console.warn(`${DEBUG_LOG_PREFIX} failed to handle tab activation:`, error);
@@ -404,9 +419,25 @@ export async function handleTabActivated(tabId: number): Promise<void> {
  */
 export async function handleTabUpdated(
 	tabId: number,
-	changeInfo: { url?: string }
+	changeInfo: { url?: string; status?: string }
 ): Promise<void> {
+	console.debug(`${DEBUG_LOG_PREFIX} handleTabUpdated called:`, { tabId, changeInfo });
 	if (changeInfo.url) {
+		console.debug(`${DEBUG_LOG_PREFIX} URL changed to:`, changeInfo.url);
 		await handleUrlChange(tabId, changeInfo.url);
+	} else if (changeInfo.status === 'complete') {
+		// When tab status becomes 'complete', check if we need to activate a provider
+		console.debug(`${DEBUG_LOG_PREFIX} Tab completed, checking if provider activation needed`);
+		try {
+			const tab = await chrome.tabs.get(tabId);
+			if (tab.url && tab.url.includes('youtube.com')) {
+				console.debug(`${DEBUG_LOG_PREFIX} YouTube tab completed, activating provider`);
+				await handleUrlChange(tabId, tab.url);
+			}
+		} catch (error) {
+			console.debug(`${DEBUG_LOG_PREFIX} Failed to check tab URL on completion:`, error);
+		}
+	} else {
+		console.debug(`${DEBUG_LOG_PREFIX} No URL change detected`);
 	}
 }

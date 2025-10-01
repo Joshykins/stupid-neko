@@ -28,6 +28,11 @@ export type MessageMap = {
 	};
 
 	// Widget messages
+	GET_WIDGET_STATE: {
+		req: Record<string, never>;
+		res: WidgetStateUpdate;
+	};
+
 	WIDGET_ACTION: {
 		req: { action: string; payload?: Record<string, unknown> };
 		res: { success: boolean; error?: string };
@@ -43,6 +48,7 @@ export type MessageMap = {
 		req: { payload: WidgetStateUpdate };
 		res: Record<string, never>;
 	};
+
 
 	// Playback messages
 	PLAYBACK_EVENT: {
@@ -76,16 +82,19 @@ export type AuthMe = {
 	languageCode?: string;
 };
 
+import type { ProviderName } from '../pages/background/providers/types';
+
 export type WidgetStateUpdate = {
 	state:
-		| 'idle'
-		| 'awaiting-consent'
-		| 'recording-youtube'
-		| 'recording-default'
-		| 'default-tracking'
-		| 'prompt-user-for-track'
+		| 'default-provider-idle'
+		| 'default-provider-awaiting-consent'
+		| 'default-provider-tracking'
+		| 'default-provider-prompt-user-for-track'
+		| 'youtube-idle'
+		| 'youtube-tracking'
+		| 'determining-provider'
 		| 'error';
-	provider?: string;
+	provider?: ProviderName;
 	domain?: string;
 	metadata?: Record<string, unknown>;
 	error?: string;

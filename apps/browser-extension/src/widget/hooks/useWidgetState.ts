@@ -4,7 +4,7 @@ import { widgetStateManager } from '../WidgetStateManager';
 
 export function useWidgetState() {
 	const [widgetState, setWidgetState] = useState<WidgetState>({
-		state: 'idle',
+		state: 'determining-provider',
 	});
 
 	useEffect(() => {

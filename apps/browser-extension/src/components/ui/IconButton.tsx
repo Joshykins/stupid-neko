@@ -18,16 +18,19 @@ export function IconButton({
 	className = '',
 }: IconButtonProps) {
 	const baseClasses =
-		'snbex:inline-flex snbex:items-center snbex:justify-center snbex:cursor-pointer snbex:rounded-md snbex:transition-colors';
+		'snbex:inline-flex snbex:items-center snbex:justify-center snbex:cursor-pointer snbex:rounded-md snbex:transition-colors snbex:focus:outline-none';
 	const borderClasses = borderless
-		? 'snbex:border snbex:border-transparent'
+		? '!snbex:border-transparent !snbex:ring-0'
 		: 'snbex:border !snbex:border-neutral-700/50';
 	const stateClasses = selected
 		? borderless
-			? 'snbex:bg-black/15'
+			? 'snbex:bg-black/15 !snbex:border-transparent !snbex:ring-0'
 			: 'snbex:border-neutral-700/50 snbex:bg-black/15'
 		: '';
 	const hoverClasses = 'snbex:hover:bg-black/10';
+	const focusClasses = borderless
+		? 'snbex:focus:bg-black/10 !snbex:focus:border-transparent !snbex:focus:ring-0'
+		: 'snbex:focus:bg-black/10 snbex:focus:border-neutral-700/50';
 	const spacingClasses = 'snbex:px-[4px] snbex:py-[2px]';
 	const textClasses = 'snbex:text-gray-900';
 
@@ -37,7 +40,7 @@ export function IconButton({
 			title={title}
 			aria-label={title}
 			onClick={onClick}
-			className={`${baseClasses} ${borderClasses} ${stateClasses} ${hoverClasses} ${spacingClasses} ${textClasses} ${className}`}
+			className={`${baseClasses} ${borderClasses} ${stateClasses} ${hoverClasses} ${focusClasses} ${spacingClasses} ${textClasses} ${className}`}
 		>
 			{children}
 		</button>

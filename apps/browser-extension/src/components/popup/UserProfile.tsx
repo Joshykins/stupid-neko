@@ -2,10 +2,9 @@ import type { LanguageCode } from '../../../../../convex/schema';
 import { languageCodeToLabel } from '../../../../../lib/languages';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../hooks/useAuth';
-import LanguageFlagSVG from '../LanguageFlagSVG';
 import { Badge } from '../ui/badge';
 
-export function UserProfile({ className }: { className?: string }) {
+export function UserProfile({ className }: { className?: string; }) {
 	const auth = useAuth();
 
 	if (!auth.isAuthed || !auth.me) {

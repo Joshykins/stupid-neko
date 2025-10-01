@@ -1,39 +1,41 @@
 // Widget state management for background script
 
-import { getMetaForUrl } from '../providers/registry';
+import { getMetaForUrl } from './determineProvider';
 import type {
 	WidgetStateUpdate,
 	PlaybackEvent,
 } from '../../messaging/messages';
+import type { ProviderName } from './providers/types';
 
 const DEBUG_LOG_PREFIX = '[bg:widget]';
 
-// State
-let currentWidgetState: WidgetStateUpdate = { state: 'idle' };
+// Per-tab widget state management
+const tabWidgetStates: Record<number, WidgetStateUpdate> = {};
+let currentActiveTabId: number | null = null;
 
-export function updateWidgetState(update: WidgetStateUpdate): void {
-	console.log(`${DEBUG_LOG_PREFIX} Updating widget state:`, update);
-	currentWidgetState = { ...currentWidgetState, ...update };
-	console.log(`${DEBUG_LOG_PREFIX} New widget state:`, currentWidgetState);
+export function updateWidgetState(update: WidgetStateUpdate, tabId?: number): void {
+	// If no tabId provided, use the currently active tab
+	const targetTabId = tabId || currentActiveTabId;
+	if (!targetTabId) {
+		console.warn(`${DEBUG_LOG_PREFIX} No active tab to update widget state`);
+		return;
+	}
 
-	// Send state update to all tabs
-	chrome.tabs.query({}, tabs => {
-		console.log(
-			`${DEBUG_LOG_PREFIX} Sending widget state to ${tabs.length} tabs`
-		);
-		tabs.forEach(tab => {
-			if (tab.id) {
-				chrome.tabs
-					.sendMessage(tab.id, {
-						type: 'WIDGET_STATE_UPDATE',
-						payload: currentWidgetState,
-					})
-					.catch(() => {
-						// Ignore errors for tabs that don't have content scripts
-					});
-			}
+	console.log(`${DEBUG_LOG_PREFIX} Updating widget state for tab ${targetTabId}:`, update);
+	
+	// Update the specific tab's state
+	tabWidgetStates[targetTabId] = { ...tabWidgetStates[targetTabId], ...update };
+	console.log(`${DEBUG_LOG_PREFIX} New widget state for tab ${targetTabId}:`, tabWidgetStates[targetTabId]);
+
+	// Send state update only to the specific tab
+	chrome.tabs
+		.sendMessage(targetTabId, {
+			type: 'WIDGET_STATE_UPDATE',
+			payload: tabWidgetStates[targetTabId],
+		})
+		.catch(() => {
+			// Ignore errors for tabs that don't have content scripts
 		});
-	});
 }
 
 export async function updateWidgetStateForEvent(
@@ -55,7 +57,7 @@ export async function updateWidgetStateForEvent(
 				// For default provider, check if we have consent
 				if (tabState?.hasConsent) {
 					updateWidgetState({
-						state: 'default-tracking',
+						state: 'default-provider-tracking',
 						provider: providerName,
 						domain,
 						startTime: Date.now(),
@@ -63,67 +65,69 @@ export async function updateWidgetStateForEvent(
 							title: evt.title,
 							url: evt.url,
 						},
-					});
+					}, tabId);
 				} else {
-					// No consent yet, show idle state
+					// No consent yet, show provider-specific idle state
 					updateWidgetState({
-						state: 'idle',
+						state: 'default-provider-idle',
 						provider: providerName,
 						domain,
 						metadata: {
 							title: evt.title,
 							url: evt.url,
 						},
-					});
+					}, tabId);
 				}
 			} else {
-				// Non-default providers (like YouTube) work as before
-				const stateKey =
-					providerName === 'youtube'
-						? 'recording-youtube'
-						: 'recording-default';
+				// Non-default providers (like YouTube)
+				const stateKey = providerName === 'youtube' ? 'youtube-tracking' : 'default-provider-tracking';
 				updateWidgetState({
 					state: stateKey,
 					provider: providerName,
 					domain,
+					startTime: Date.now(),
 					metadata: {
 						title: evt.title,
 						videoId: evt.videoId,
 					},
-				});
+				}, tabId);
 			}
 			break;
 		}
 
 		case 'end':
+			// Return to provider-specific idle state
+			const idleState = providerName === 'youtube' ? 'youtube-idle' : 'default-provider-idle';
 			updateWidgetState({
-				state: 'idle',
-			});
+				state: idleState,
+				provider: providerName,
+				domain,
+			}, tabId);
 			break;
 
 		case 'progress':
 			// Keep current state but update metadata if needed
+			const currentState = tabWidgetStates[tabId];
 			if (
-				currentWidgetState.state.startsWith('recording-') ||
-				currentWidgetState.state === 'default-tracking'
+				currentState?.state.includes('-tracking') ||
+				currentState?.state === 'default-provider-tracking'
 			) {
 				updateWidgetState({
-					state: currentWidgetState.state,
+					state: currentState.state,
 					metadata: {
-						...currentWidgetState.metadata,
+						...currentState.metadata,
 						title: evt.title,
 						videoId: evt.videoId,
 					},
-				});
+				}, tabId);
 			}
 			break;
 	}
 }
 
 export function initializeWidgetState(): void {
-	updateWidgetState({
-		state: 'idle',
-	});
+	// Initialize with a default state for new tabs
+	// This will be overridden when tabs are activated
 }
 
 export async function handleConsentResponse(
@@ -146,7 +150,7 @@ export async function handleConsentResponse(
 	if (consent) {
 		// Start tracking with consent
 		updateWidgetState({
-			state: 'default-tracking',
+			state: 'default-provider-tracking',
 			provider: 'default',
 			domain,
 			startTime: Date.now(),
@@ -154,35 +158,39 @@ export async function handleConsentResponse(
 				title: tab.title,
 				url: tab.url,
 			},
-		});
+		}, tabId);
 	} else {
-		// Return to idle
+		// Return to default provider idle
 		updateWidgetState({
-			state: 'idle',
-		});
+			state: 'default-provider-idle',
+		}, tabId);
 	}
 }
 
-export function handleStopRecording(_tabId: number): void {
-	// Stop recording and return to idle
+export function handleStopRecording(tabId: number): void {
+	// Stop recording and return to default provider idle
 	updateWidgetState({
-		state: 'idle',
-	});
+		state: 'default-provider-idle',
+	}, tabId);
 
 	// Send end event if there's an active recording
 	// Note: This will need access to tabStates from content-activity module
 	// We'll handle this in the message handlers
 }
 
-export function handleRetry(): void {
-	// Reset to idle state
+export function handleRetry(tabId?: number): void {
+	// Reset to default provider idle state
 	updateWidgetState({
-		state: 'idle',
-	});
+		state: 'default-provider-idle',
+	}, tabId);
 }
 
-export function getCurrentWidgetState(): WidgetStateUpdate {
-	return currentWidgetState;
+export function getCurrentWidgetState(tabId?: number): WidgetStateUpdate {
+	const targetTabId = tabId || currentActiveTabId;
+	if (!targetTabId) {
+		return { state: 'determining-provider' };
+	}
+	return tabWidgetStates[targetTabId] || { state: 'determining-provider' };
 }
 
 export async function startTrackingFromPopup(tabId: number): Promise<void> {
@@ -198,7 +206,7 @@ export async function startTrackingFromPopup(tabId: number): Promise<void> {
 
 	// Start tracking with consent
 	updateWidgetState({
-		state: 'default-tracking',
+		state: 'default-provider-tracking',
 		provider: 'default',
 		domain,
 		startTime: Date.now(),
@@ -206,7 +214,7 @@ export async function startTrackingFromPopup(tabId: number): Promise<void> {
 			title: tab.title,
 			url: tab.url,
 		},
-	});
+	}, tabId);
 }
 
 export async function handleLanguageDetection(
@@ -226,7 +234,7 @@ export async function handleLanguageDetection(
 		detectedLanguage.startsWith(targetLanguage.toLowerCase())
 	) {
 		updateWidgetState({
-			state: 'prompt-user-for-track',
+			state: 'default-provider-prompt-user-for-track',
 			provider: 'default',
 			domain,
 			detectedLanguage,
@@ -234,6 +242,40 @@ export async function handleLanguageDetection(
 				title: tab.title,
 				url: tab.url,
 			},
+		}, tabId);
+	}
+}
+
+/**
+ * Set the currently active tab and send its widget state
+ */
+export function setActiveTab(tabId: number): void {
+	currentActiveTabId = tabId;
+	
+	// Initialize widget state for this tab if it doesn't exist
+	if (!tabWidgetStates[tabId]) {
+		tabWidgetStates[tabId] = { state: 'determining-provider' };
+	}
+	
+	// Send the current state to the newly active tab
+	chrome.tabs
+		.sendMessage(tabId, {
+			type: 'WIDGET_STATE_UPDATE',
+			payload: tabWidgetStates[tabId],
+		})
+		.catch(() => {
+			// Ignore errors for tabs that don't have content scripts
 		});
+}
+
+/**
+ * Clean up widget state when a tab is closed
+ */
+export function cleanupTabState(tabId: number): void {
+	delete tabWidgetStates[tabId];
+	
+	// If this was the active tab, clear the active tab
+	if (currentActiveTabId === tabId) {
+		currentActiveTabId = null;
 	}
 }

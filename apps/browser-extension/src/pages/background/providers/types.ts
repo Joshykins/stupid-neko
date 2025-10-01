@@ -2,8 +2,17 @@
 
 import type { ContentSource } from '../../../../../../convex/schema';
 
+// Provider names - centralized type for all provider identifiers
+export type ProviderName = 'youtube' | 'default';
+
+// Helper function to check if a string is a valid provider name
+export function isValidProviderName(name: string): name is ProviderName {
+	return name === 'youtube' || name === 'default';
+}
+
 export interface ContentMetadata {
 	title?: string;
+	author?: string;
 	description?: string;
 	duration?: number;
 	thumbnail?: string;
@@ -132,14 +141,15 @@ export interface ProviderEventHandlers {
 // Widget state management
 export interface WidgetState {
 	state:
-		| 'idle'
-		| 'awaiting-consent'
-		| 'recording-youtube'
-		| 'recording-default'
-		| 'default-tracking'
-		| 'prompt-user-for-track'
+		| 'default-provider-idle'
+		| 'default-provider-awaiting-consent'
+		| 'default-provider-tracking'
+		| 'default-provider-prompt-user-for-track'
+		| 'youtube-idle'
+		| 'youtube-tracking'
+		| 'determining-provider'
 		| 'error';
-	provider?: string;
+	provider?: ProviderName;
 	domain?: string;
 	metadata?: ContentMetadata;
 	error?: string;
@@ -149,10 +159,12 @@ export interface WidgetState {
 
 export interface WidgetStateUpdate {
 	state: WidgetState['state'];
-	provider?: string;
+	provider?: ProviderName;
 	domain?: string;
 	metadata?: ContentMetadata;
 	error?: string;
+	startTime?: number;
+	detectedLanguage?: string;
 }
 
 /**

@@ -6,7 +6,7 @@ import { onContent } from '../messaging/messagesContentRouter';
 import { callBackground } from '../messaging/messagesContentRouter';
 
 export class WidgetStateManager {
-	private currentState: WidgetState = { state: 'idle' };
+	private currentState: WidgetState = { state: 'determining-provider' };
 	private listeners: Set<(state: WidgetState) => void> = new Set();
 
 	constructor() {
@@ -21,6 +21,22 @@ export class WidgetStateManager {
 			this.updateState(payload);
 			return {};
 		});
+
+		// Also try to get initial state from background
+		this.requestInitialState();
+	}
+
+	private async requestInitialState(): Promise<void> {
+		try {
+			console.log('[WidgetStateManager] Requesting initial state from background...');
+			const currentState = await callBackground('GET_WIDGET_STATE', {});
+			console.log('[WidgetStateManager] Received initial state from background:', currentState);
+			if (currentState) {
+				this.updateState(currentState);
+			}
+		} catch (error) {
+			console.warn('[WidgetStateManager] Failed to get initial state:', error);
+		}
 	}
 
 	/**

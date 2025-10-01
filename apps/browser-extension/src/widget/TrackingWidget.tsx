@@ -1,22 +1,33 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Minimize2 } from 'lucide-react';
 import type { LanguageCode } from '../../../../convex/schema';
-import { calculateStreakBonusPercent } from '../../../../lib/streakBonus';
 import { useAuth } from '../components/hooks/useAuth';
-import { LanguageFlagSVG } from '../components/LanguageFlagSVG';
-import HeatmapProgress from '../components/ui/heatmap-progress';
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from '../components/ui/popover';
-import { Button } from '../components/ui/button';
+import { DevDebugComponent } from './components/DevDebugComponent';
 import {
 	useWidgetState,
 	useUserInfo,
 	useWidgetActions,
 	useWidgetPosition,
 } from './hooks';
+import { getWidgetStateConfig } from './config/widgetStates';
+import {
+	DefaultProviderIdle,
+	YouTubeIdle,
+	DeterminingProvider,
+	DefaultProviderAwaitingConsent,
+	YouTubeTracking,
+	DefaultProviderTracking,
+	DefaultProviderPromptUser,
+	ErrorState,
+	DefaultState,
+} from './components/states';
+import { IconButton } from '../components/ui/IconButton';
 
 type TrackingWidgetProps = {
 	userName?: string;
@@ -48,17 +59,28 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const [iconUrl, setIconUrl] = useState<string>('');
 	const [currentTime, setCurrentTime] = useState(Date.now());
 
+	// Check if we're in dangerous testing mode
+	const isDangerousTesting = import.meta.env.VITE_DANGEROUS_TESTING === 'enabled';
+
 	useEffect(() => {
 		try {
-			setIconUrl(chrome.runtime.getURL('icon-128.png'));
-		} catch {
-			setIconUrl('/icon-128.png');
+			// Use dev icon in dangerous testing mode, otherwise use regular icon
+			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
+			const url = chrome.runtime.getURL(iconName);
+			console.log(`[TrackingWidget] Setting icon: ${iconName}, URL: ${url}, isDangerousTesting: ${isDangerousTesting}`);
+			setIconUrl(url);
+		} catch (error) {
+			console.warn('[TrackingWidget] Failed to get icon URL:', error);
+			// Fallback to regular icon if dev icon fails to load
+			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
+			setIconUrl(`/${iconName}`);
 		}
-	}, []);
+	}, [isDangerousTesting]);
 
 	// Update timer every second when tracking
 	useEffect(() => {
-		if (widgetState.state === 'default-tracking' && widgetState.startTime) {
+		const config = getWidgetStateConfig(widgetState.state);
+		if (config.showTimer && widgetState.startTime) {
 			const interval = setInterval(() => {
 				setCurrentTime(Date.now());
 			}, 1000);
@@ -68,9 +90,20 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	// Auto-expand/collapse based on widget state
 	useEffect(() => {
-		const shouldCollapse = widgetState.state === 'idle';
-		setExpanded(!shouldCollapse);
-	}, [widgetState.state]);
+		// In dangerous testing mode, never collapse the widget
+		if (isDangerousTesting) {
+			setExpanded(true);
+			return;
+		}
+
+		// Use centralized visibility logic
+		const config = getWidgetStateConfig(widgetState.state);
+		if (config.visibility === 'visible') {
+			setExpanded(true);
+		} else {
+			setExpanded(false);
+		}
+	}, [widgetState.state, isDangerousTesting]);
 
 	const contentLabel: string = useMemo(() => {
 		try {
@@ -80,11 +113,11 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 				if (typeof parsed?.title === 'string' && parsed.title.trim().length > 0)
 					return parsed.title.trim();
 			}
-		} catch {}
+		} catch { }
 		try {
 			const title = document.title.replace(/ - YouTube$/, '').trim();
 			if (title) return title;
-		} catch {}
+		} catch { }
 		return 'this content';
 	}, []);
 
@@ -112,20 +145,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		}
 	}, []);
 
-	// Mock stats for now
-	const nekos = 1426;
-	const hours = 1034;
-	const experienceMillions = 1.34;
-	const dailyStreak = 0; // TODO: Get from proper user data source
-
-	const streakPercent = calculateStreakBonusPercent(dailyStreak);
-	const xpBonusPercent = streakPercent;
-	const progressPercent = streakPercent;
-
 	// Enhanced drag handlers with popover management
 	const handleDrag = (
 		_e: unknown,
-		info: { offset: { x: number; y: number } }
+		info: { offset: { x: number; y: number; }; }
 	) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
@@ -139,7 +162,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	const handleDragEnd = async (
 		_e: unknown,
-		info: { offset: { x: number; y: number } }
+		info: { offset: { x: number; y: number; }; }
 	) => {
 		setIsDragging(false);
 		await onDragEnd(_e, info);
@@ -147,247 +170,116 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	// Render content based on widget state
 	const renderStateBasedContent = () => {
+		const renderDebugInfo = () => {
+			if (!isDangerousTesting) return null;
+			return (
+				<DevDebugComponent
+					widgetState={widgetState}
+					userInfo={userInfo}
+					currentTime={currentTime}
+				/>
+			);
+		};
+
 		if (!widgetState) {
 			// Default content when no state is provided
 			return (
-				<>
-					<div className="snbex:mt-3 snbex:text-2xl snbex:font-bold snbex:leading-snug">
-						Hey{' '}
-						<span className="snbex:font-black">
-							{me?.name || userInfo.userName}
-						</span>
-						!{' '}
-						<span className="snbex:opacity-80 snbex:font-semibold">
-							{encouragement}
-						</span>
-					</div>
-
-					<div className="snbex:mt-4">
-						<div className="snbex:flex snbex:items-center snbex:gap-2 snbex:text-sm snbex:font-medium">
-							<span>Daily Streak</span>
-							<span className="snbex:inline-flex snbex:items-center snbex:gap-1 snbex:font-bold">
-								<span role="img" aria-label="fire">
-									🔥
-								</span>
-								<span className="snbex:font-black">{dailyStreak}</span>
-							</span>
-							<span className="snbex:ml-auto snbex:rounded-full snbex:border-2 snbex:border-black snbex:bg-white snbex:px-2 snbex:py-1 snbex:text-xs snbex:font-bold">
-								<span className="snbex:font-black">{xpBonusPercent}%</span> XP
-								Bonus
-							</span>
-						</div>
-						<div className="snbex:mt-2">
-							<HeatmapProgress value={progressPercent} />
-						</div>
-					</div>
-
-					<div className="snbex:mt-4 snbex:text-sm snbex:leading-relaxed">
-						<span className="snbex:font-black">{nekos.toLocaleString()}</span>{' '}
-						nekos watched{' '}
-						<span className="snbex:font-semibold snbex:italic">
-							{contentLabel}
-						</span>{' '}
-						to learn <span className="snbex:font-black">Japanese</span>!
-						Totaling{' '}
-						<span className="snbex:font-black">{hours.toLocaleString()}</span>{' '}
-						tracked hours. And{' '}
-						<span className="snbex:font-black">
-							{experienceMillions.toFixed(2)} million
-						</span>{' '}
-						experience!
-					</div>
-				</>
+				<DefaultState
+					userName={userInfo.userName}
+					targetLanguage={props.languageCode}
+					renderDebugInfo={renderDebugInfo}
+				/>
 			);
 		}
 
 		switch (widgetState.state) {
-			case 'idle':
+			case 'default-provider-idle':
 				return (
-					<div className="snbex:mt-3 snbex:text-center">
-						<div className="snbex:text-lg snbex:font-bold snbex:mb-2">
-							Ready to track content
-						</div>
-						<div className="snbex:text-sm snbex:text-gray-600 snbex:mb-4">
-							Start tracking your learning progress on this site
-						</div>
-						<Button onClick={() => sendConsentResponse(true)} size="sm">
-							Start Tracking
-						</Button>
-					</div>
+					<DefaultProviderIdle
+						widgetState={widgetState}
+						sendConsentResponse={sendConsentResponse}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
-			case 'awaiting-consent':
+			case 'youtube-idle':
 				return (
-					<div className="snbex:mt-3">
-						<div className="snbex:text-lg snbex:font-bold snbex:mb-3 snbex:text-center">
-							Content Tracking Consent
-						</div>
-						<div className="snbex:text-sm snbex:mb-4 snbex:text-center">
-							Allow tracking of content on <strong>{widgetState.domain}</strong>
-							?
-						</div>
-						{widgetState.metadata?.title && (
-							<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-4 snbex:text-center">
-								{String(widgetState.metadata.title)}
-							</div>
-						)}
-						<div className="snbex:flex snbex:gap-2 snbex:justify-center">
-							<Button
-								onClick={() => sendConsentResponse(true)}
-								className="snbex:bg-blue-600 snbex:hover:bg-blue-700"
-								size="sm"
-							>
-								Allow
-							</Button>
-							<Button
-								onClick={() => sendConsentResponse(false)}
-								variant="neutral"
-								size="sm"
-							>
-								Deny
-							</Button>
-						</div>
-					</div>
+					<YouTubeIdle
+						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
-			case 'recording-youtube':
-			case 'recording-default':
+			case 'determining-provider':
 				return (
-					<div className="snbex:mt-3">
-						<div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
-							<div className="snbex:w-3 snbex:h-3 snbex:bg-red-500 snbex:rounded-full snbex:animate-pulse"></div>
-							<div className="snbex:text-base snbex:font-bold">
-								Recording{' '}
-								{widgetState.provider === 'youtube' ? 'YouTube' : 'Content'}
-							</div>
-						</div>
-						<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-2">
-							{widgetState.domain}
-						</div>
-						{widgetState.metadata?.title ? (
-							<div className="snbex:text-sm snbex:font-medium snbex:mb-3 snbex:p-2 snbex:bg-gray-50 snbex:rounded-md">
-								{String(widgetState.metadata.title)}
-							</div>
-						) : null}
-						<Button
-							onClick={stopRecording}
-							variant="destructive"
-							className="snbex:w-full"
-							size="sm"
-						>
-							Stop Recording
-						</Button>
-					</div>
+					<DeterminingProvider
+						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
-			case 'default-tracking':
+			case 'default-provider-awaiting-consent':
 				return (
-					<div className="snbex:mt-3">
-						<div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
-							<div className="snbex:w-3 snbex:h-3 snbex:bg-green-500 snbex:rounded-full snbex:animate-pulse"></div>
-							<div className="snbex:text-base snbex:font-bold">
-								Tracking Content
-							</div>
-						</div>
-						<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-2">
-							{widgetState.domain}
-						</div>
-						{widgetState.metadata?.title ? (
-							<div className="snbex:text-sm snbex:font-medium snbex:mb-2 snbex:p-2 snbex:bg-gray-50 snbex:rounded-md">
-								{String(widgetState.metadata.title)}
-							</div>
-						) : null}
-						{widgetState.metadata?.url ? (
-							<div className="snbex:text-xs snbex:text-gray-400 snbex:mb-3 snbex:truncate">
-								{String(widgetState.metadata.url)}
-							</div>
-						) : null}
-						{widgetState.startTime ? (
-							<div className="snbex:text-xs snbex:text-gray-600 snbex:mb-3">
-								Session:{' '}
-								{Math.floor((currentTime - widgetState.startTime) / 1000)}s
-							</div>
-						) : null}
-						<Button
-							onClick={stopRecording}
-							variant="destructive"
-							className="snbex:w-full"
-							size="sm"
-						>
-							Stop Tracking
-						</Button>
-					</div>
+					<DefaultProviderAwaitingConsent
+						widgetState={widgetState}
+						sendConsentResponse={sendConsentResponse}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
-			case 'prompt-user-for-track':
+			case 'youtube-tracking':
 				return (
-					<div className="snbex:mt-3">
-						<div className="snbex:text-lg snbex:font-bold snbex:mb-3 snbex:text-center">
-							Language Detected!
-						</div>
-						<div className="snbex:text-sm snbex:mb-4 snbex:text-center">
-							We detected content in{' '}
-							<strong>{widgetState.detectedLanguage}</strong> on{' '}
-							<strong>{widgetState.domain}</strong>
-						</div>
-						{widgetState.metadata?.title && (
-							<div className="snbex:text-xs snbex:text-gray-500 snbex:mb-4 snbex:text-center">
-								{String(widgetState.metadata.title)}
-							</div>
-						)}
-						<div className="snbex:text-sm snbex:mb-4 snbex:text-center">
-							Would you like to start tracking this content?
-						</div>
-						<div className="snbex:flex snbex:gap-2 snbex:justify-center">
-							<Button
-								onClick={() => sendConsentResponse(true)}
-								className="snbex:bg-green-600 snbex:hover:bg-green-700"
-								size="sm"
-							>
-								Start Tracking
-							</Button>
-							<Button
-								onClick={() => sendConsentResponse(false)}
-								variant="neutral"
-								size="sm"
-							>
-								Not Now
-							</Button>
-						</div>
-					</div>
+					<YouTubeTracking
+						widgetState={widgetState}
+						currentTime={currentTime}
+						stopRecording={stopRecording}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'default-provider-tracking':
+				return (
+					<DefaultProviderTracking
+						widgetState={widgetState}
+						currentTime={currentTime}
+						stopRecording={stopRecording}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'default-provider-prompt-user-for-track':
+				return (
+					<DefaultProviderPromptUser
+						widgetState={widgetState}
+						sendConsentResponse={sendConsentResponse}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
 			case 'error':
 				return (
-					<div className="snbex:mt-3 snbex:text-center">
-						<div className="snbex:text-lg snbex:font-bold snbex:mb-2 snbex:text-red-600">
-							Error
-						</div>
-						<div className="snbex:text-sm snbex:text-gray-600 snbex:mb-4">
-							{widgetState.error || 'Something went wrong'}
-						</div>
-						<Button
-							onClick={retry}
-							className="snbex:bg-blue-600 snbex:hover:bg-blue-700"
-							size="sm"
-						>
-							Retry
-						</Button>
-					</div>
+					<ErrorState
+						widgetState={widgetState}
+						retry={retry}
+						renderDebugInfo={renderDebugInfo}
+					/>
 				);
 
 			default:
 				return (
-					<div className="snbex:mt-3 snbex:text-center">
-						<div className="snbex:text-sm snbex:text-gray-600">
-							Unknown state: {widgetState.state}
+					<>
+						<div className="snbex:mt-3 snbex:text-center">
+							<div className="snbex:text-sm snbex:text-gray-600">
+								Unknown state: {widgetState.state}
+							</div>
 						</div>
-					</div>
+						{renderDebugInfo()}
+					</>
 				);
 		}
 	};
 
-	const IconButton = (
+	const WidgetButton = (
 		<motion.div
 			ref={containerRef}
 			className={`snbex:pointer-events-auto snbex:select-none snbex:fixed snbex:z-[50000] snbex:transition-opacity ${hovered ? 'snbex:opacity-100' : 'snbex:opacity-70'}`}
@@ -450,10 +342,30 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		</motion.div>
 	);
 
+	// Don't render anything if in hidden states (unless in dangerous testing mode)
+	const config = getWidgetStateConfig(widgetState.state);
+	if (config.visibility === 'hidden' && !isDangerousTesting) {
+		return null;
+	}
+
 	return (
-		<Popover open={expanded} onOpenChange={setExpanded}>
-			<PopoverTrigger asChild>{IconButton}</PopoverTrigger>
-			<PopoverContent>{renderStateBasedContent()}</PopoverContent>
+		<Popover
+			open={expanded}
+			onOpenChange={setExpanded}
+		>
+			<PopoverTrigger asChild>{WidgetButton}</PopoverTrigger>
+			<PopoverContent className='snbex:p-4 snbex:relative'>
+				{/* Minimize button */}
+				<IconButton
+					title="Minimize widget"
+					className="snbex:absolute snbex:top-2 snbex:right-2"
+					onClick={() => setExpanded(false)}
+					borderless
+				>
+					<Minimize2 className="snbex:h-4 snbex:w-4" />
+				</IconButton>
+				{renderStateBasedContent()}
+			</PopoverContent>
 		</Popover>
 	);
 }
