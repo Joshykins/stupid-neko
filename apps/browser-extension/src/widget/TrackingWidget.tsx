@@ -29,6 +29,7 @@ import {
 	DefaultState,
 } from './components/states';
 import { IconButton } from '../components/ui/IconButton';
+import { cn } from '../lib/utils';
 
 type TrackingWidgetProps = {
 	userName?: string;
@@ -67,6 +68,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const [iconUrl, setIconUrl] = useState<string>('');
 	const [currentTime, setCurrentTime] = useState(Date.now());
 
+	//Widget state config
+	const config = getWidgetStateConfig(widgetState.state);
 	// Check if we're in dangerous testing mode
 	const isDangerousTesting = import.meta.env.VITE_DANGEROUS_TESTING === 'enabled';
 
@@ -364,7 +367,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 				<img
 					src={iconUrl}
 					alt="stupid-neko"
-					className="snbex:h-10 snbex:w-10 snbex:rounded-full snbex:border-2 snbex:border-black snbex:shadow-[4px_4px_0_0_#000] snbex:bg-white"
+					className={cn("snbex:h-10 snbex:w-10 snbex:rounded-full snbex:border-2 snbex:border-black snbex:shadow-[4px_4px_0_0_#000] snbex:bg-white",
+						// Make black and white if not tracking
+						!config.isTracking ? 'snbex:grayscale-75' : ''
+					)}
 					draggable={false}
 					onDragStart={e => {
 						e.preventDefault();
@@ -374,7 +380,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						display: 'block',
 					}}
 				/>
-				<span className="snbex:absolute snbex:right-2 snbex:top-2 snbex:inline-flex snbex:items-center snbex:justify-center">
+				<span className={cn("snbex:absolute snbex:right-2 snbex:top-2 snbex:inline-flex snbex:items-center snbex:justify-center transition-opacity duration-300",
+					// Make black and white if not tracking
+					!config.isTracking ? 'snbex:opacity-0' : 'snbex:opacity-100'
+				)}>
 					<span className="snbex:absolute snbex:h-2 snbex:w-2 snbex:rounded-full snbex:bg-red-500" />
 					<span className="snbex:absolute snbex:h-5 snbex:w-5 snbex:rounded-full snbex:bg-red-500/40" />
 				</span>
@@ -383,7 +392,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	);
 
 	// Don't render anything if in hidden states (unless in dangerous testing mode)
-	const config = getWidgetStateConfig(widgetState.state);
 	if (config.visibility === 'hidden' && !isDangerousTesting) {
 		return null;
 	}

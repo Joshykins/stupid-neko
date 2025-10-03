@@ -10,6 +10,8 @@ export interface WidgetStateConfig {
 	openOnLoad: boolean;
 	// Should force the widget to be expanded is no longer closable.
 	forceAlwaysExpanded: boolean;
+	// Whether the widget is tracking content.
+	isTracking: boolean;
 }
 
 export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
@@ -17,35 +19,40 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		state: 'determining-provider',
 		visibility: 'hidden',
 		openOnLoad: false,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	'default-provider-idle': {
 		state: 'default-provider-idle',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	'default-provider-awaiting-consent': {
 		state: 'default-provider-awaiting-consent',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	'default-provider-tracking': {
 		state: 'default-provider-tracking',
 		visibility: 'visible',
 		openOnLoad: false,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: true
 	},
 
 	'default-provider-prompt-user-for-track': {
 		state: 'default-provider-prompt-user-for-track',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	
@@ -53,14 +60,16 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		state: 'youtube-tracking-unverified',
 		visibility: 'hidden',
 		openOnLoad: false,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	'youtube-not-tracking': {
 		state: 'youtube-not-tracking',
 		visibility: 'hidden',
 		openOnLoad: false,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 
@@ -68,14 +77,16 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		state: 'youtube-tracking-verified',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: true
+		forceAlwaysExpanded: true,
+		isTracking: true
 	},
 
 	'error': {
 		state: 'error',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: false
+		forceAlwaysExpanded: false,
+		isTracking: false
 	}
 };
 
