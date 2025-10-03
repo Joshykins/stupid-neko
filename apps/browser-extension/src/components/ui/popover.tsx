@@ -27,14 +27,16 @@ function PopoverContent({
 		<PopoverPrimitive.Portal
 			container={
 				(window as unknown as Record<string, unknown>).__stupidNekoPortalEl as
-					| HTMLElement
-					| undefined
+				| HTMLElement
+				| undefined
 			}
 		>
 			<PopoverPrimitive.Content
 				align={align}
 				sideOffset={sideOffset}
-				asChild
+				forceMount={true}
+				collisionPadding={8}
+				sticky="partial"
 				{...props}
 			>
 				<div
@@ -56,3 +58,4 @@ function PopoverContent({
 }
 
 export { Popover, PopoverTrigger, PopoverContent };
+export const PopoverAnchor = PopoverPrimitive.Anchor;

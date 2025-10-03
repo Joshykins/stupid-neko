@@ -4,7 +4,7 @@ import TrackingWidget from '../../widget/TrackingWidget';
 import styles from './content.css?inline';
 
 import './provider-runtime'; // Initialize provider runtime
-console.debug('[content] Provider runtime initialized');
+// console.debug('[content] Provider runtime initialized');
 
 // Declare Tailwind CSS browser global
 declare global {
@@ -106,6 +106,14 @@ host.id = '__stupid-neko-host';
 document.body.appendChild(host);
 const shadow = host.attachShadow({ mode: 'open' });
 
+// Ensure the host and portal sit above page content
+(host as HTMLElement).style.position = 'fixed';
+(host as HTMLElement).style.top = '0';
+(host as HTMLElement).style.left = '0';
+(host as HTMLElement).style.width = '0';
+(host as HTMLElement).style.height = '0';
+(host as HTMLElement).style.zIndex = '2147483647';
+
 // Shadow root children: style, app root, and portal root for Radix
 const appRoot = document.createElement('div');
 appRoot.id = '__stupid-neko-root';
@@ -115,6 +123,10 @@ portalRoot.id = '__stupid-neko-portal';
 	portalRoot;
 // Ensure overlays are interactive even if CSS isn't loaded yet
 portalRoot.style.pointerEvents = 'auto';
+portalRoot.style.position = 'fixed';
+portalRoot.style.top = '0';
+portalRoot.style.left = '0';
+portalRoot.style.zIndex = '2147483647';
 shadow.appendChild(appRoot);
 shadow.appendChild(portalRoot);
 //REM fix
@@ -146,5 +158,5 @@ async function initializeApp() {
 }
 
 // Start the app
-console.debug('[content] Content script loaded and initializing...');
+// console.debug('[content] Content script loaded and initializing...');
 initializeApp();

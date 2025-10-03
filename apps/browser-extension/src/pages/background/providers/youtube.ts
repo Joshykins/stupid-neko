@@ -35,12 +35,12 @@ const getVideo = (): HTMLVideoElement | null => {
 	for (const selector of selectors) {
 		const video = document.querySelector(selector) as HTMLVideoElement | null;
 		if (video) {
-			console.debug('[content][youtube] found video with selector:', selector);
+			// console.debug('[content][youtube] found video with selector:', selector);
 			return video;
 		}
 	}
 	
-	console.debug('[content][youtube] no video element found with any selector');
+	// console.debug('[content][youtube] no video element found with any selector');
 	return null;
 };
 
@@ -87,13 +87,13 @@ const getCurrentMetadata = (): ContentMetadata => {
 			if (element) {
 				author = element.textContent?.trim();
 				if (author) {
-					console.debug('[content][youtube] found author with selector:', selector, author);
+					// console.debug('[content][youtube] found author with selector:', selector, author);
 					break;
 				}
 			}
 		}
 	} catch (error) {
-		console.debug('[content][youtube] error extracting author:', error);
+		// console.debug('[content][youtube] error extracting author:', error);
 	}
 	
 	return { title, videoId, author };
@@ -119,7 +119,7 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 	}
 
 	try {
-		console.debug('[content][youtube] emit', payload);
+		// console.debug('[content][youtube] emit', payload);
 	} catch {
 		// Ignore console errors
 	}
@@ -129,13 +129,13 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 
 const attach = (p: HTMLVideoElement): void => {
 	const ensureStart = () => {
-		console.debug('[content][youtube] ensureStart called - isPlaying:', isPlaying, 'paused:', p.paused);
+		// console.debug('[content][youtube] ensureStart called - isPlaying:', isPlaying, 'paused:', p.paused);
 		if (!isPlaying && !p.paused) {
-			console.debug('[content][youtube] emitting start event');
+			// console.debug('[content][youtube] emitting start event');
 			isPlaying = true;
 			emit('start');
 		} else {
-			console.debug('[content][youtube] not emitting start - isPlaying:', isPlaying, 'paused:', p.paused);
+			// console.debug('[content][youtube] not emitting start - isPlaying:', isPlaying, 'paused:', p.paused);
 		}
 	};
 
@@ -162,9 +162,9 @@ const attach = (p: HTMLVideoElement): void => {
 	p.addEventListener('ended', onEnded, { passive: true });
 
 	// Check if video is already playing when we attach
-	console.debug('[content][youtube] Video attached - paused:', p.paused, 'isPlaying:', isPlaying);
+	// console.debug('[content][youtube] Video attached - paused:', p.paused, 'isPlaying:', isPlaying);
 	if (!p.paused && !isPlaying) {
-		console.debug('[content][youtube] Video already playing, emitting start event');
+		// console.debug('[content][youtube] Video already playing, emitting start event');
 		isPlaying = true;
 		emit('start');
 	}
@@ -211,10 +211,10 @@ const watchForVideo = (): void => {
 	const currentId = getCurrentVideoId() ?? null;
 	if (currentId !== lastVideoId) {
 		try {
-			console.debug('[content][youtube] nav/videoId change', {
-				from: lastVideoId,
-				to: currentId,
-			});
+			// console.debug('[content][youtube] nav/videoId change', {
+			// 	from: lastVideoId,
+			// 	to: currentId,
+			// });
 		} catch {
 			// Ignore console errors
 		}
@@ -227,9 +227,9 @@ const watchForVideo = (): void => {
 	}
 
 	const p = getVideo();
-	console.debug('[content][youtube] watchForVideo - found video:', !!p, 'current player:', !!player);
+	// console.debug('[content][youtube] watchForVideo - found video:', !!p, 'current player:', !!player);
 	if (p && p !== player) {
-		console.debug('[content][youtube] attaching to new video element');
+		// console.debug('[content][youtube] attaching to new video element');
 		detach();
 		player = p;
 		attach(p);
@@ -239,16 +239,16 @@ const watchForVideo = (): void => {
 // Public API for content script
 export const youtubeContentHandler: ContentHandler = {
 	start: (playbackEventCallback: (event: ContentActivityEvent) => void) => {
-		console.debug('[content][youtube] starting YouTube content handler');
+		// console.debug('[content][youtube] starting YouTube content handler');
 		onPlaybackEvent = playbackEventCallback;
 		isPlaying = false;
 		lastVideoId = getCurrentVideoId() ?? null;
-		console.debug('[content][youtube] initial video ID:', lastVideoId);
+		// console.debug('[content][youtube] initial video ID:', lastVideoId);
 		watchForVideo();
 		watchInterval = window.setInterval(() => watchForVideo(), 1500);
 		onNavigate = () => watchForVideo();
 		document.addEventListener('yt-navigate-finish', onNavigate, true);
-		console.debug('[content][youtube] YouTube content handler started');
+		// console.debug('[content][youtube] YouTube content handler started');
 	},
 
 	stop: () => {

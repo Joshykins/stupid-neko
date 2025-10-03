@@ -49,14 +49,13 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const { sendConsentResponse, stopRecording, retry } = useWidgetActions();
 	const {
 		position,
-		mvLeft,
-		mvTop,
 		controls,
 		dragMovedRef,
 		onDragStart,
 		onDrag,
 		onDragEnd,
 	} = useWidgetPosition();
+
 
 	// Calculate optimal popover side based on widget position
 	const popoverSide = useMemo(() => {
@@ -76,10 +75,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			// Use dev icon in dangerous testing mode, otherwise use regular icon
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			const url = chrome.runtime.getURL(iconName);
-			console.log(`[TrackingWidget] Setting icon: ${iconName}, URL: ${url}, isDangerousTesting: ${isDangerousTesting}`);
+			// console.log(`[TrackingWidget] Setting icon: ${iconName}, URL: ${url}, isDangerousTesting: ${isDangerousTesting}`);
 			setIconUrl(url);
 		} catch (error) {
-			console.warn('[TrackingWidget] Failed to get icon URL:', error);
+			// console.warn('[TrackingWidget] Failed to get icon URL:', error);
 			// Fallback to regular icon if dev icon fails to load
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			setIconUrl(`/${iconName}`);
@@ -88,8 +87,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	// Update timer every second when tracking
 	useEffect(() => {
-		const config = getWidgetStateConfig(widgetState.state);
-		if (config.showTimer && widgetState.startTime) {
+		// Show timer for tracking states
+		const trackingStates = ['default-provider-tracking', 'youtube-tracking-verified'];
+		if (trackingStates.includes(widgetState.state) && widgetState.startTime) {
 			const interval = setInterval(() => {
 				setCurrentTime(Date.now());
 			}, 1000);
@@ -99,20 +99,33 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	// Auto-expand/collapse based on widget state
 	useEffect(() => {
-		// In dangerous testing mode, never collapse the widget
-		if (isDangerousTesting) {
-			setExpanded(true);
-			return;
-		}
-
 		// Use centralized visibility logic
 		const config = getWidgetStateConfig(widgetState.state);
-		if (config.visibility === 'visible') {
+
+		// Handle force always expanded states
+		if (config.forceAlwaysExpanded) {
 			setExpanded(true);
-		} else {
-			setExpanded(false);
+		} else if (config.openOnLoad) {
+			setExpanded(true);
 		}
-	}, [widgetState.state, isDangerousTesting]);
+		// For other states, don't change the expanded state
+		// This prevents the widget from opening/closing when cycling through states
+	}, [widgetState.state]);
+
+	// Handle forceAlwaysExpanded reopening after drag ends
+	// Temporarily disabled to test if this is causing the positioning issue
+	// useEffect(() => {
+	// 	if (!isDragging && widgetState) {
+	// 		const config = getWidgetStateConfig(widgetState.state);
+	// 		if (config.forceAlwaysExpanded && !expanded) {
+	// 			// Small delay to ensure positioning is complete
+	// 			const timer = setTimeout(() => {
+	// 				setExpanded(true);
+	// 			}, 300);
+	// 			return () => clearTimeout(timer);
+	// 		}
+	// 	}
+	// }, [isDragging, widgetState, expanded]);
 
 	const contentLabel: string = useMemo(() => {
 		try {
@@ -161,20 +174,23 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
-		if (dx > 2 || dy > 2) {
+		if (dx > 5 || dy > 5) {
 			setIsDragging(true);
-			// Close popover
-			setExpanded(false);
+			// Temporarily disable popover closing during drag to test positioning
+			// setExpanded(false);
 		}
 		onDrag(_e, info);
 	};
 
-	const handleDragEnd = async (
+	const handleDragEnd = (
 		_e: unknown,
 		info: { offset: { x: number; y: number; }; }
 	) => {
 		setIsDragging(false);
-		await onDragEnd(_e, info);
+		onDragEnd(_e, info);
+
+		// Note: We'll handle forceAlwaysExpanded reopening in a separate effect
+		// to avoid interfering with the positioning animation
 	};
 
 	// Render content based on widget state
@@ -296,18 +312,30 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		}
 	};
 
-	const WidgetButton = (
+	const WidgetContainer = (
 		<motion.div
 			ref={containerRef}
-			className={`snbex:pointer-events-auto snbex:select-none snbex:fixed snbex:z-[50000] snbex:transition-opacity ${hovered ? 'snbex:opacity-100' : 'snbex:opacity-70'}`}
+			className={`snbex:pointer-events-auto snbex:select-none snbex:transition-opacity ${hovered ? 'snbex:opacity-100' : 'snbex:opacity-70'}`}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
+
 			drag
 			dragMomentum={false}
 			dragElastic={0}
-			onDragStart={onDragStart}
+			onDragStart={() => {
+				setIsDragging(true);
+				onDragStart();
+			}}
 			onDrag={handleDrag}
 			onDragEnd={handleDragEnd}
+			onPointerUp={() => {
+				const shouldOpen = !dragMovedRef.current && !isDragging;
+				setTimeout(() => {
+					if (shouldOpen) {
+						handleOpenChange(true);
+					}
+				}, 0);
+			}}
 			// Important: reset transform after drag so subsequent left/top math isn't compounded
 			onUpdate={latest => {
 				// If framer applied a transform via x/y, keep motion left/top as source of truth
@@ -318,17 +346,12 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					// no-op, but hook ensures we can extend if needed
 				}
 			}}
-			onClickCapture={e => {
-				if (isDragging || dragMovedRef.current) {
-					e.preventDefault();
-					e.stopPropagation();
-				}
-			}}
+			// Click handling is done on pointerUp above to avoid drag/click conflicts
 			animate={controls}
 			style={{
 				position: 'fixed',
-				left: mvLeft,
-				top: mvTop,
+				left: position.left,
+				top: position.top,
 				zIndex: 50000,
 				pointerEvents: 'auto',
 				cursor: isDragging ? 'grabbing' : 'grab',
@@ -365,25 +388,41 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		return null;
 	}
 
+	// Handle popover open/close with respect to forceAlwaysExpanded
+	const handleOpenChange = (newOpen: boolean) => {
+		const config = getWidgetStateConfig(widgetState.state);
+		if (config.forceAlwaysExpanded && !newOpen) {
+			// Don't allow closing if forceAlwaysExpanded is true
+			return;
+		}
+		console.log("handleOpenChange", newOpen);
+		setExpanded(newOpen);
+	};
+
+	console.log("expanded", expanded);
 	return (
 		<Popover
 			open={expanded}
-			onOpenChange={setExpanded}
+			onOpenChange={handleOpenChange}
 		>
-			<PopoverTrigger asChild>{WidgetButton}</PopoverTrigger>
+			<PopoverTrigger asChild>
+				{WidgetContainer}
+			</PopoverTrigger>
 			<PopoverContent
 				side={popoverSide}
 				className='snbex:p-4 snbex:relative'
 			>
-				{/* Minimize button */}
-				<IconButton
-					title="Minimize widget"
-					className="snbex:absolute snbex:top-2 snbex:right-2"
-					onClick={() => setExpanded(false)}
-					borderless
-				>
-					<Minimize2 className="snbex:h-4 snbex:w-4" />
-				</IconButton>
+				{/* Minimize button - only show if not forceAlwaysExpanded */}
+				{!getWidgetStateConfig(widgetState.state).forceAlwaysExpanded && (
+					<IconButton
+						title="Minimize widget"
+						className="snbex:absolute snbex:top-2 snbex:right-2"
+						onClick={() => handleOpenChange(false)}
+						borderless
+					>
+						<Minimize2 className="snbex:h-4 snbex:w-4" />
+					</IconButton>
+				)}
 				{renderStateBasedContent()}
 			</PopoverContent>
 		</Popover>

@@ -66,30 +66,16 @@ export function DevDebugComponent({
 								</div>
 
 								<div className="snbex:flex snbex:items-center snbex:gap-2">
-									<span className="snbex:text-white/70">Expandable:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.expandable ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
-										{stateConfig.expandable ? 'Yes' : 'No'}
+									<span className="snbex:text-white/70">Open On Load:</span>
+									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.openOnLoad ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
+										{stateConfig.openOnLoad ? 'Yes' : 'No'}
 									</Badge>
 								</div>
 
 								<div className="snbex:flex snbex:items-center snbex:gap-2">
-									<span className="snbex:text-white/70">Show Timer:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.showTimer ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
-										{stateConfig.showTimer ? 'Yes' : 'No'}
-									</Badge>
-								</div>
-
-								<div className="snbex:flex snbex:items-center snbex:gap-2">
-									<span className="snbex:text-white/70">Show Controls:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.showControls ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
-										{stateConfig.showControls ? 'Yes' : 'No'}
-									</Badge>
-								</div>
-
-								<div className="snbex:flex snbex:items-center snbex:gap-2">
-									<span className="snbex:text-white/70">Requires Interaction:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.requiresUserInteraction ? 'snbex:bg-blue-500/20 snbex:text-blue-200 snbex:border-blue-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
-										{stateConfig.requiresUserInteraction ? 'Yes' : 'No'}
+									<span className="snbex:text-white/70">Force Always Expanded:</span>
+									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.forceAlwaysExpanded ? 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
+										{stateConfig.forceAlwaysExpanded ? 'Yes' : 'No'}
 									</Badge>
 								</div>
 							</div>

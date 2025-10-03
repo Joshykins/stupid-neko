@@ -6,92 +6,76 @@ import type { WidgetState } from '../../pages/background/providers/types';
 export interface WidgetStateConfig {
 	state: WidgetState['state'];
 	visibility: 'visible' | 'hidden';
-	expandable: boolean;
-	showTimer: boolean;
-	showControls: boolean;
-	requiresUserInteraction: boolean;
+	// Expands the widget(if not already) if its visible
+	openOnLoad: boolean;
+	// Should force the widget to be expanded is no longer closable.
+	forceAlwaysExpanded: boolean;
 }
 
 export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 	'determining-provider': {
 		state: 'determining-provider',
 		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
+		openOnLoad: false,
+		forceAlwaysExpanded: false
 	},
 
 	'default-provider-idle': {
 		state: 'default-provider-idle',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false
 	},
 
 	'default-provider-awaiting-consent': {
 		state: 'default-provider-awaiting-consent',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false
 	},
 
 	'default-provider-tracking': {
 		state: 'default-provider-tracking',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: true,
-		showControls: true,
-		requiresUserInteraction: false
+		openOnLoad: false,
+		forceAlwaysExpanded: false
 	},
 
 	'default-provider-prompt-user-for-track': {
 		state: 'default-provider-prompt-user-for-track',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false
+	},
+
+	
+	'youtube-tracking-unverified': {
+		state: 'youtube-tracking-unverified',
+		visibility: 'hidden',
+		openOnLoad: false,
+		forceAlwaysExpanded: false
 	},
 
 	'youtube-not-tracking': {
 		state: 'youtube-not-tracking',
 		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
+		openOnLoad: false,
+		forceAlwaysExpanded: false
 	},
 
-	'youtube-tracking-unverified': {
-		state: 'youtube-tracking-unverified',
-		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
-	},
 
 	'youtube-tracking-verified': {
 		state: 'youtube-tracking-verified',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: true,
-		showControls: true,
-		requiresUserInteraction: false
+		openOnLoad: true,
+		forceAlwaysExpanded: true
 	},
 
 	'error': {
 		state: 'error',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false
 	}
 };
 
