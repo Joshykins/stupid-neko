@@ -20,6 +20,7 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
     renderDebugInfo,
 }) => {
     const userInfo = useUserInfo();
+    const [showStopOptions, setShowStopOptions] = React.useState(false);
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -37,7 +38,7 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
                 {/* Header with tracking indicator */}
                 <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
                     <div className="snbex:text-xl snbex:font-bold">
-                        Tracking Progress...
+                        Tracking {formatTime(getCurrentPosition())} of Progress...
                     </div>
                 </div>
 
@@ -50,33 +51,33 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
                     </div>
                 ) : null}
 
-                {/* Language tag and timer */}
-                <div className="snbex:flex snbex:items-center snbex:justify-between snbex:mb-3">
-                    {/* Language learning tag */}
-                    {userInfo.languageCode && (
-                        <Badge variant="default" className="snbex:gap-1 snbex:bg-white">
-                            <span className="snbex:text-xs snbex:font-medium">
-                                Learning {languageCodeToLabel(userInfo.languageCode)}
-                            </span>
-                        </Badge>
-                    )}
 
-                    {/* Timer */}
-                    {widgetState.startTime && (
-                        <div className="snbex:text-sm snbex:font-medium snbex:text-[#364F6B]">
-                            {formatTime(getCurrentPosition())}
-                        </div>
-                    )}
-                </div>
 
-                {/* Stop tracking button */}
-                <Button
-                    onClick={stopRecording}
-                    className="snbex:w-full snbex:bg-accent"
-                >
-                    <CirclePause className="snbex:w-5 snbex:h-5" />
-                    Stop Tracking
-                </Button>
+                {/* Stop tracking confirmation */}
+                {showStopOptions ? (
+                    <div className="snbex:flex snbex:gap-2">
+                        <Button
+                            onClick={stopRecording}
+                            className="snbex:w-full snbex:bg-foreground snbex:text-background snbex:bg-red-400/50"
+                        >
+                            Never Again
+                        </Button>
+                        <Button
+                            onClick={stopRecording}
+                            className="snbex:w-full snbex:bg-accent"
+                        >
+                            Just This Time
+                        </Button>
+                    </div>
+                ) : (
+                    <Button
+                        onClick={() => setShowStopOptions(true)}
+                        className="snbex:w-full snbex:bg-accent"
+                    >
+                        <CirclePause className="snbex:w-5 snbex:h-5" />
+                        Stop Tracking
+                    </Button>
+                )}
             </div>
             {renderDebugInfo?.()}
         </>

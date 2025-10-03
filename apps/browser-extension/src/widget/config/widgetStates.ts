@@ -77,7 +77,7 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		state: 'youtube-tracking-verified',
 		visibility: 'visible',
 		openOnLoad: true,
-		forceAlwaysExpanded: true,
+		forceAlwaysExpanded: false,
 		isTracking: true
 	},
 

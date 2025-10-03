@@ -43,6 +43,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const [hovered, setHovered] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	const suppressNextClickRef = useRef(false);
 
 	// Use custom hooks for state management
 	const widgetState = useWidgetState();
@@ -189,6 +190,11 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		_e: unknown,
 		info: { offset: { x: number; y: number; }; }
 	) => {
+		// Temporarily suppress the immediate click that can fire after drag release
+		suppressNextClickRef.current = true;
+		setTimeout(() => {
+			suppressNextClickRef.current = false;
+		}, 150);
 		setIsDragging(false);
 		onDragEnd(_e, info);
 
@@ -331,14 +337,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			}}
 			onDrag={handleDrag}
 			onDragEnd={handleDragEnd}
-			onPointerUp={() => {
-				const shouldOpen = !dragMovedRef.current && !isDragging;
-				setTimeout(() => {
-					if (shouldOpen) {
-						handleOpenChange(true);
-					}
-				}, 0);
-			}}
 			// Important: reset transform after drag so subsequent left/top math isn't compounded
 			onUpdate={latest => {
 				// If framer applied a transform via x/y, keep motion left/top as source of truth
@@ -349,7 +347,14 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					// no-op, but hook ensures we can extend if needed
 				}
 			}}
-			// Click handling is done on pointerUp above to avoid drag/click conflicts
+			// Prevent click immediately after drag to avoid unintended popover open
+			onClickCapture={(e) => {
+				if (suppressNextClickRef.current || dragMovedRef.current || isDragging) {
+					suppressNextClickRef.current = false;
+					e.preventDefault();
+					e.stopPropagation();
+				}
+			}}
 			animate={controls}
 			style={{
 				position: 'fixed',
