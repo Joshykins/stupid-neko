@@ -470,9 +470,35 @@ export async function handleTabActivated(tabId: number): Promise<void> {
 		setActiveTab(tabId);
 		
 		const tab = await chrome.tabs.get(tabId);
-		if (tab.url) {
+    if (tab.url) {
 			console.debug(`${DEBUG_LOG_PREFIX} Tab activated with URL:`, tab.url);
-			await handleUrlChange(tabId, tab.url);
+      // If we're already in a tracking state for this tab, avoid resetting the widget state
+      // by re-determining the provider. This prevents flicker and re-verification.
+      try {
+        const { getCurrentWidgetState } = await import('./widget');
+        const currentState = getCurrentWidgetState(tabId);
+        const trackingStates = new Set<
+          | 'default-provider-tracking'
+          | 'youtube-tracking-unverified'
+          | 'youtube-tracking-verified'
+        >([
+          'default-provider-tracking',
+          'youtube-tracking-unverified',
+          'youtube-tracking-verified',
+        ]);
+
+        if (trackingStates.has(currentState.state)) {
+          console.debug(
+            `${DEBUG_LOG_PREFIX} Tab already in tracking state (${currentState.state}) -> skipping provider re-determination`
+          );
+          return;
+        }
+      } catch (e) {
+        // If anything goes wrong, fall back to normal behavior
+        console.debug(`${DEBUG_LOG_PREFIX} Could not read current widget state:`, e);
+      }
+
+      await handleUrlChange(tabId, tab.url);
 		} else {
 			console.debug(`${DEBUG_LOG_PREFIX} Tab activated but no URL found`);
 		}
