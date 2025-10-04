@@ -8,9 +8,10 @@ import { Card } from '../../../components/ui/card';
 import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../../../components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../../components/ui/command';
-import { ChevronsUpDown, Check as CheckIcon, Ban, ExternalLink } from 'lucide-react';
+import { ChevronsUpDown, Check as CheckIcon, Ban, ExternalLink, Trash, Trash2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import Image from 'next/image';
 
@@ -49,11 +50,13 @@ export default function BlacklistedContentPage() {
 function BlacklistManager() {
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
-    const [source, setSource] = useState<string | undefined>(undefined);
+    const [source, setSource] = useState<ContentSource | undefined>(undefined);
     const [cursor, setCursor] = useState<string | undefined>(undefined);
     const [items, setItems] = useState<Array<BlacklistItem>>([]);
     const [autoLoading, setAutoLoading] = useState(false);
     const [lastAutoCursor, setLastAutoCursor] = useState<string | undefined>(undefined);
+    const [refreshFlip, setRefreshFlip] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Debounce search to avoid spamming backend
     // Update the actual query param 300ms after the user stops typing
@@ -64,10 +67,11 @@ function BlacklistManager() {
 
     const data = useQuery(api.browserExtensionFunctions.listUserContentBlacklists, {
         search: search || undefined,
-        source: (source as any) || undefined,
-        // sort removed (defaults to newest in backend)
+        source: source || undefined,
+        // Toggle sort to force refetch without changing result ordering
+        sort: refreshFlip ? 'newest' : undefined,
         cursor: cursor ?? undefined,
-        limit: 20,
+        limit: 6,
     });
     const del = useMutation(api.browserExtensionFunctions.deleteUserContentBlacklist);
 
@@ -77,10 +81,10 @@ function BlacklistManager() {
         setItems([]);
     }, [search, source]);
 
-    // Append or replace accumulated items when new data arrives
+    // Replace items when new data arrives (no accumulation across pages)
     React.useEffect(() => {
         if (!data) return;
-        setItems(prev => (cursor ? [...prev, ...data.items] : data.items));
+        setItems(data.items);
         if (autoLoading) {
             if (data.items.length > 0) {
                 setAutoLoading(false);
@@ -90,6 +94,9 @@ function BlacklistManager() {
             } else {
                 setAutoLoading(false);
             }
+        }
+        if (isRefreshing) {
+            setIsRefreshing(false);
         }
     }, [data]);
 
@@ -106,11 +113,11 @@ function BlacklistManager() {
                 </div>
                 <div className="min-w-48">
                     <Label className="font-heading text-sm">Source</Label>
-                    <SourceCombobox value={source} onChange={setSource} />
+                    <SourceCombobox value={source} onChange={(v) => setSource(v)} />
                 </div>
             </div>
 
-            {!data && (
+            {(!data || isRefreshing) && (
                 <div className="flex items-center justify-center h-[300px]">
                     <div className="text-center">
                         <Image
@@ -145,12 +152,12 @@ function BlacklistManager() {
             )}
 
             {data && items.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 divide-y divide-border/30">
                     {items.map(item => {
                         const key = item.contentKey;
-                        const source = item.contentSource as string;
+                        const itemSource = item.contentSource;
                         const title = item.label || item.contentUrl || key;
-                        const SOURCE_ICON: Record<string, string> = {
+                        const SOURCE_ICON: Record<'youtube' | 'spotify' | 'anki', string> = {
                             youtube: '/brands/youtube.svg',
                             spotify: '/brands/spotify.svg',
                             anki: '/brands/anki.svg',
@@ -158,13 +165,13 @@ function BlacklistManager() {
                         return (
                             <div
                                 key={item._id}
-                                className="group flex items-center justify-between gap-3 p-3 rounded-base transition-all border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow"
+                                className="group flex items-center justify-between gap-3 p-3 transition-all "
                             >
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    {SOURCE_ICON[source] ? (
+                                    {SOURCE_ICON[itemSource as 'youtube' | 'spotify' | 'anki'] ? (
                                         <Image
-                                            src={SOURCE_ICON[source]}
-                                            alt={source}
+                                            src={SOURCE_ICON[itemSource as 'youtube' | 'spotify' | 'anki']}
+                                            alt={itemSource}
                                             width={24}
                                             height={24}
                                             className="inline-block"
@@ -201,21 +208,50 @@ function BlacklistManager() {
                                         </div>
                                         <div className="mt-1 text-xs text-muted-foreground flex gap-1">
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-secondary-background">
-                                                {source}
+                                                {itemSource}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <Button
-                                    variant="destructive"
-                                    onClick={async () => {
-                                        await del({ id: item._id });
-                                        setCursor(undefined);
-                                    }}
-                                >
-                                    Delete
-                                </Button>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            size={'icon'}
+                                            variant="destructive"
+                                        >
+                                            <Trash2 />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Delete this item?</DialogTitle>
+                                            <DialogDescription>
+                                                This action cannot be undone. The item will be removed from your blacklist.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter>
+                                            <DialogClose asChild>
+                                                <Button variant="neutral">Cancel</Button>
+                                            </DialogClose>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={async () => {
+                                                    await del({ id: item._id });
+                                                    // Refresh query: reset pagination and clear current items
+                                                    setItems([]);
+                                                    setLastAutoCursor(undefined);
+                                                    setAutoLoading(false);
+                                                    setCursor(undefined);
+                                                    setRefreshFlip(prev => !prev);
+                                                    setIsRefreshing(true);
+                                                }}
+                                            >
+                                                Confirm delete
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
                         );
                     })}
@@ -256,12 +292,12 @@ function SourceCombobox({
     value,
     onChange,
 }: {
-    value: string | undefined;
-    onChange: (v: string | undefined) => void;
+    value: ContentSource | undefined;
+    onChange: (v: ContentSource | undefined) => void;
 }) {
     const [open, setOpen] = useState(false);
 
-    const items = [
+    const items: Array<{ value: '' | ContentSource; label: string; }> = [
         { value: '', label: 'All' },
         { value: 'website', label: 'Website' },
         { value: 'youtube', label: 'YouTube' },
@@ -270,6 +306,9 @@ function SourceCombobox({
         { value: 'manual', label: 'Manual' },
     ];
     const current = items.find(i => i.value === (value ?? ''));
+
+    const isContentSource = (val: string): val is ContentSource =>
+        ['website', 'youtube', 'spotify', 'anki', 'manual'].includes(val as ContentSource);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -296,7 +335,13 @@ function SourceCombobox({
                                     value={item.value}
                                     onSelect={currentValue => {
                                         const v = currentValue || '';
-                                        onChange(v || undefined);
+                                        if (v === '') {
+                                            onChange(undefined);
+                                        } else if (isContentSource(v)) {
+                                            onChange(v);
+                                        } else {
+                                            onChange(undefined);
+                                        }
                                         setOpen(false);
                                     }}
                                 >
