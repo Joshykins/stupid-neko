@@ -29,6 +29,14 @@ export function useWidgetActions() {
 		}
 	}, []);
 
+	const blacklistContent = useCallback(async () => {
+		try {
+			await callBackground('WIDGET_ACTION', { action: 'blacklist-content' });
+		} catch (error) {
+			console.error('Failed to blacklist content:', error);
+		}
+	}, []);
+
 	const testWidget = useCallback(async () => {
 		try {
 			await callBackground('WIDGET_ACTION', {
@@ -45,5 +53,6 @@ export function useWidgetActions() {
 		stopRecording,
 		retry,
 		testWidget,
+		blacklistContent,
 	};
 }

@@ -42,6 +42,23 @@ export type ContentLabel = {
 export const tabStates: Record<number, TabPlaybackState> = {};
 export const contentLabelsByKey: Record<string, ContentLabel> = {};
 
+type TrackingState =
+    | 'default-provider-tracking'
+    | 'youtube-tracking-unverified'
+    | 'youtube-tracking-verified';
+
+function isTrackingState(
+    state:
+        | import('../../messaging/messages').WidgetStateUpdate['state']
+        | string
+): state is TrackingState {
+    return (
+        state === 'default-provider-tracking' ||
+        state === 'youtube-tracking-unverified' ||
+        state === 'youtube-tracking-verified'
+    );
+}
+
 function deriveContentKey(evt: PlaybackEvent): string | undefined {
 	return extractContentKey(evt.url) || undefined;
 }
@@ -87,9 +104,16 @@ export async function postContentActivityFromPlayback(
 	// Cache label by content key when provided
 	cacheContentLabel(result, contentKey);
 
-	// Handle YouTube state transitions based on result
+	// Handle state transitions based on result (including blacklisted)
 	if (tabId !== undefined) {
-		await updateYouTubeStateFromResult(tabId, result, evt.url);
+		if (result.reason === 'blacklisted') {
+			// Stop tracking immediately if blacklisted
+			const { updateWidgetState } = await import('./widget');
+			const domain = new URL(evt.url).hostname;
+			updateWidgetState({ state: 'youtube-not-tracking', provider: getProviderName(evt.url), domain }, tabId);
+		} else {
+			await updateYouTubeStateFromResult(tabId, result, evt.url);
+		}
 	}
 
 	return result;
@@ -477,17 +501,7 @@ export async function handleTabActivated(tabId: number): Promise<void> {
       try {
         const { getCurrentWidgetState } = await import('./widget');
         const currentState = getCurrentWidgetState(tabId);
-        const trackingStates = new Set<
-          | 'default-provider-tracking'
-          | 'youtube-tracking-unverified'
-          | 'youtube-tracking-verified'
-        >([
-          'default-provider-tracking',
-          'youtube-tracking-unverified',
-          'youtube-tracking-verified',
-        ]);
-
-        if (trackingStates.has(currentState.state)) {
+        if (isTrackingState(currentState.state)) {
           console.debug(
             `${DEBUG_LOG_PREFIX} Tab already in tracking state (${currentState.state}) -> skipping provider re-determination`
           );

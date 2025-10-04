@@ -33,7 +33,7 @@ export const ContentSources = [
 	'spotify',
 	'anki',
 	'manual',
-	'language-detection',
+	'website'
 ] as const;
 export type ContentSource = (typeof ContentSources)[number];
 export const contentSourceValidator = v.union(
@@ -282,6 +282,20 @@ export default defineSchema({
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
 	}).index('by_content_key', ['contentKey']),
+
+	// User-specific content blacklists (Never track again)
+	userContentBlacklists: defineTable({
+		userId: v.id('users'),
+		contentKey: v.string(), // e.g. "youtube:VIDEO_ID", "web:domain/path"
+		// Accept standard sources plus 'website' for generic websites
+		contentSource: v.union(contentSourceValidator),
+		contentUrl: v.optional(v.string()),
+		label: v.optional(v.string()),
+		note: v.optional(v.string()),
+	})
+		.index('by_user', ['userId'])
+		.index('by_user_and_source', ['userId', 'contentSource'])
+		.index('by_user_and_content_key', ['userId', 'contentKey']),
 
 	// Spotify OAuth linkage and token storage
 	spotifyAccounts: defineTable({

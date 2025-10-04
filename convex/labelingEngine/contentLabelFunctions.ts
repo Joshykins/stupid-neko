@@ -25,7 +25,7 @@ export const getContentLabelByContentKey = async ({
 		| 'spotify'
 		| 'anki'
 		| 'manual'
-		| 'language-detection';
+		| 'website';
 	contentUrl?: string;
 	contentMediaType?: 'audio' | 'video' | 'text';
 	title?: string;
@@ -69,7 +69,7 @@ export const getOrCreateContentLabel = async ({
 	ctx: MutationCtx;
 	args: {
 		contentKey: string; // e.g. "youtube:VIDEO_ID"
-		contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'language-detection';
+		contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website';
 		contentUrl?: string;
 	};
 }): Promise<{

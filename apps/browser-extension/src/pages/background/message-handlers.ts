@@ -1,6 +1,7 @@
 // Message handlers for background script
 
 import { on } from '../../messaging/messagesBackgroundRouter';
+import { api } from '../../../../../convex/_generated/api';
 import { getAuthState, refreshAuth } from './auth';
 import { contentLabelsByKey } from './content-activity-router';
 import {
@@ -19,6 +20,7 @@ import {
 	handleContentActivityEvent,
 } from './content-activity-router';
 import type { PlaybackEvent } from '../../messaging/messages';
+import { tryCatch } from '../../../../../lib/tryCatch';
 
 const DEBUG_LOG_PREFIX = '[bg:handlers]';
 
@@ -80,6 +82,50 @@ export function registerMessageHandlers(): void {
 			case 'consent-response':
 				await handleConsentResponse(payload, tabId);
 				break;
+
+			case 'blacklist-content': {
+				// Create a user blacklist entry for current content and stop recording
+				const state = tabStates[tabId];
+				const last = state?.lastEvent;
+				if (!last) break;
+				const { extractContentKey, getProviderName } = await import('./determineProvider');
+				const contentKey = extractContentKey(last.url);
+				if (contentKey) {
+					const { convex, getIntegrationId } = await import('./auth');
+					const integrationId = await getIntegrationId();
+					if (convex && integrationId) {
+						const { error } = await tryCatch(
+							convex.mutation(
+								api.browserExtensionFunctions.createUserContentBlacklistFromIntegration,
+								{
+									integrationId,
+									contentKey,
+										source: (() => {
+											const p = getProviderName(last.url);
+											return p === 'default' ? 'website' : (p as 'youtube' | 'spotify' | 'anki' | 'manual'  | 'website');
+										})(),
+									url: last.url,
+									label: state?.lastEvent?.title,
+								}
+							)
+						);
+						if (error) {
+							console.error(`${DEBUG_LOG_PREFIX} failed to blacklist content:`, error);
+						}
+					}
+				}
+				// Stop recording after blacklisting
+				handleStopRecording(tabId);
+				if (state?.isPlaying && state?.lastEvent) {
+					const endEvt: PlaybackEvent = {
+						...state.lastEvent,
+						event: 'end',
+						ts: Date.now(),
+					};
+					postContentActivityFromPlayback(endEvt);
+				}
+				break;
+			}
 
 			case 'stop-recording': {
 				handleStopRecording(tabId);

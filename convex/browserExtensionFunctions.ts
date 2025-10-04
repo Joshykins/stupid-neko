@@ -15,6 +15,7 @@ import {
 import { recordContentActivity } from './labelingEngine/contentActivityFunctions';
 import { getContentLabelByContentKey } from './labelingEngine/contentLabelFunctions';
 import { getCurrentTargetLanguage } from './userFunctions';
+import { getAuthUserId } from '@convex-dev/auth/server';
 
 export const meFromIntegration = query({
 	args: { integrationId: v.string() },
@@ -63,7 +64,8 @@ export const markIntegrationKeyAsUsedFromExtension = mutation({
 export const recordContentActivityFromIntegration = mutation({
 	args: {
 		integrationId: v.string(),
-		source: contentSourceValidator,
+        // Allow 'web'site to flow through since we may record activities for generic sites
+        source: v.union(contentSourceValidator),
 		activityType: v.union(
 			v.literal('heartbeat'),
 			v.literal('start'),
@@ -132,6 +134,137 @@ export const recordContentActivityFromIntegration = mutation({
 		});
 		return { ...result, contentLabel, currentTargetLanguage };
 	},
+});
+
+export const createUserContentBlacklistFromIntegration = mutation({
+    args: {
+        integrationId: v.string(),
+        contentKey: v.string(),
+        // Allow web in addition to known sources
+        source: v.union(contentSourceValidator),
+        url: v.optional(v.string()),
+        label: v.optional(v.string()),
+        note: v.optional(v.string()),
+    },
+    returns: v.object({ ok: v.boolean(), created: v.boolean() }),
+    handler: async (ctx, args) => {
+        const user = await getUserByIntegrationKey({
+            ctx,
+            args: { integrationId: args.integrationId },
+        });
+        const userId = user._id;
+
+        // Check existing
+        const existing = await ctx.db
+            .query('userContentBlacklists')
+            .withIndex('by_user_and_content_key', q =>
+                q.eq('userId', userId).eq('contentKey', args.contentKey)
+            )
+            .unique();
+        if (existing) return { ok: true, created: false };
+
+        await ctx.db.insert('userContentBlacklists', {
+            userId,
+            contentKey: args.contentKey,
+            contentSource: args.source,
+            contentUrl: args.url,
+            label: args.label,
+            note: args.note,
+        });
+        return { ok: true, created: true };
+    },
+});
+
+export const listUserContentBlacklists = query({
+    args: {
+        search: v.optional(v.string()),
+        source: v.optional(v.union(contentSourceValidator)),
+        sort: v.optional(v.union(v.literal('newest'), v.literal('oldest'))),
+        cursor: v.optional(v.string()),
+        limit: v.optional(v.number()),
+    },
+    returns: v.object({
+        items: v.array(
+            v.object({
+                _id: v.id('userContentBlacklists'),
+                _creationTime: v.number(),
+                contentKey: v.string(),
+                contentSource: v.union(contentSourceValidator),
+                contentUrl: v.optional(v.string()),
+                label: v.optional(v.string()),
+                note: v.optional(v.string()),
+            })
+        ),
+        continueCursor: v.optional(v.string()),
+        isDone: v.boolean(),
+    }),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error('Unauthorized');
+
+        const limit = Math.max(1, Math.min(100, args.limit ?? 20));
+
+        // Start from by_user index
+        let q = ctx.db.query('userContentBlacklists').withIndex('by_user', q => q.eq('userId', userId));
+
+        // Filter by source if provided
+        if (args.source) {
+            q = ctx.db
+                .query('userContentBlacklists')
+                .withIndex('by_user_and_source', q =>
+                    q
+                        .eq('userId', userId)
+                        .eq(
+                            'contentSource',
+                            args.source as 'manual' | 'youtube' | 'spotify' | 'anki' | 'website'
+                        )
+                );
+        }
+
+        // Sorting by creation time
+        const order = args.sort === 'oldest' ? 'asc' : 'desc';
+        const page = await q.order(order).paginate({ cursor: args.cursor ?? null, numItems: limit });
+
+        // In-memory search filter (contentKey, label, url)
+        const term = (args.search ?? '').trim().toLowerCase();
+        const filtered = term
+            ? page.page.filter(it =>
+                it.contentKey.toLowerCase().includes(term) ||
+                (it.label ?? '').toLowerCase().includes(term) ||
+                (it.contentUrl ?? '').toLowerCase().includes(term)
+            )
+            : page.page;
+
+        // Project only fields declared in returns validator
+        const items = filtered.map(it => ({
+            _id: it._id,
+            _creationTime: it._creationTime,
+            contentKey: it.contentKey,
+            contentSource: it.contentSource as typeof it.contentSource,
+            contentUrl: it.contentUrl,
+            label: it.label,
+            note: it.note,
+        }));
+
+        return {
+            items,
+            continueCursor: page.continueCursor ?? undefined,
+            isDone: page.isDone,
+        };
+    },
+});
+
+export const deleteUserContentBlacklist = mutation({
+    args: { id: v.id('userContentBlacklists') },
+    returns: v.null(),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error('Unauthorized');
+        const row = await ctx.db.get(args.id);
+        if (!row || row.userId !== userId) throw new Error('Not found');
+        await ctx.db.delete(args.id);
+        return null;
+    },
 });
 
 

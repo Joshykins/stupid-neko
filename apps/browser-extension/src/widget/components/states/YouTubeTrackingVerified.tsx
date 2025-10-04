@@ -5,6 +5,7 @@ import { languageCodeToLabel } from '../../../../../../lib/languages';
 import { CirclePause } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { useUserInfo } from '../../hooks/useUserInfo';
+import { useWidgetActions } from '../../hooks/useWidgetActions';
 
 interface YouTubeTrackingVerifiedProps {
     widgetState: WidgetState;
@@ -20,6 +21,7 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
     renderDebugInfo,
 }) => {
     const userInfo = useUserInfo();
+    const { blacklistContent } = useWidgetActions();
     const [showStopOptions, setShowStopOptions] = React.useState(false);
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -57,7 +59,9 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
                 {showStopOptions ? (
                     <div className="snbex:flex snbex:gap-2">
                         <Button
-                            onClick={stopRecording}
+                            onClick={() => {
+                                blacklistContent();
+                            }}
                             className="snbex:w-full snbex:bg-foreground snbex:text-background snbex:bg-red-400/50"
                         >
                             Never Again

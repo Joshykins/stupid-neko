@@ -114,7 +114,7 @@ const checkLanguageMatch = (targetLanguage?: string): void => {
 		if (onPlaybackEvent) {
 			const metadata = getCurrentMetadata();
 			const payload: ContentActivityEvent = {
-				source: 'language-detection',
+				source: 'website',
 				event: 'language-detected',
 				url: location.href,
 				ts: Date.now(),

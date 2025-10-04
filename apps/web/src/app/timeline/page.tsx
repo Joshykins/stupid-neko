@@ -3,7 +3,6 @@ import { AddManualActvitiyCard } from '../../components/cards/manual-activity-ca
 import StreakDisplayCard from '../../components/cards/streaks-card/StreakDisplayCard';
 import { StreakVacationCard } from '../../components/cards/streaks-card/StreakVacationCard';
 import { UserProgressCard } from '../../components/cards/UserProgressCard';
-import IntegrationsCard from '../../components/dashboard/IntegrationsCard';
 import TrackedHistoryCard from '../../components/dashboard/TrackedHistoryCard';
 import { WeeklyBarsCard } from '../../components/marketing/WeeklyBarsCard';
 import UserXPChart from '../../components/userXPChart';

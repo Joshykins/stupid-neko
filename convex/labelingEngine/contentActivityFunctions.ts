@@ -11,9 +11,9 @@ export const recordContentActivity = async ({
 	args,
 }: {
 	ctx: MutationCtx;
-	args: {
-		userId: Id<'users'>;
-		source: 'youtube' | 'spotify' | 'anki' | 'manual' | 'language-detection';
+        args: {
+        userId: Id<'users'>;
+        source: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website' ;
 		activityType: 'heartbeat' | 'start' | 'pause' | 'end';
 		contentKey: string;
 		url?: string;
@@ -43,6 +43,22 @@ export const recordContentActivity = async ({
 
 	const occurredAt = await getEffectiveNow(ctx);
 
+    // Short-circuit if user has blacklisted this content
+    const existingBlacklist = await ctx.db
+        .query('userContentBlacklists')
+        .withIndex('by_user_and_content_key', q =>
+            q.eq('userId', userId).eq('contentKey', contentKey)
+        )
+        .unique();
+    if (existingBlacklist) {
+        return {
+            ok: true,
+            saved: false,
+            reason: 'blacklisted',
+            contentKey,
+        };
+    }
+
 	// Inspect existing content label
 	const label = await ctx.db
 		.query('contentLabels')
@@ -67,7 +83,7 @@ export const recordContentActivity = async ({
 					| 'spotify'
 					| 'anki'
 					| 'manual'
-					| 'language-detection',
+					| 'website',
 				contentUrl: args.url,
 			}
 		});
