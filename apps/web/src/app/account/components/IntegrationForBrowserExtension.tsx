@@ -162,15 +162,15 @@ export default function IntegrationForBrowserExtension() {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Manage Browser Extension</DialogTitle>
-                        <DialogDescription>
-                            <div className="space-y-3">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
-                                    <span className="text-xs p-0 font-medium text-background">Connected and tracking web activity</span>
-                                </div>
-                            </div>
-                        </DialogDescription>
+                        <DialogDescription>Connected and tracking web activity</DialogDescription>
                     </DialogHeader>
+
+                    <div className="space-y-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
+                            <span className="text-xs p-0 font-medium text-background">Connected and tracking web activity</span>
+                        </div>
+                    </div>
 
                     <div className="space-y-6">
                         <div className="space-y-3">

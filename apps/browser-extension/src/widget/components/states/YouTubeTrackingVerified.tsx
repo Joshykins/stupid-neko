@@ -62,7 +62,7 @@ export const YouTubeTrackingVerified: React.FC<YouTubeTrackingVerifiedProps> = (
                             onClick={() => {
                                 blacklistContent();
                             }}
-                            className="snbex:w-full snbex:bg-foreground snbex:text-background snbex:bg-red-400/50"
+                            className="snbex:w-full snbex:bg-foreground snbex:text-background snbex:text-white snbex:bg-red-600"
                         >
                             Never Again
                         </Button>

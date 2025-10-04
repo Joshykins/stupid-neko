@@ -168,14 +168,22 @@ export async function handleConsentResponse(
 }
 
 export function handleStopRecording(tabId: number): void {
-	// Stop recording and return to default provider idle
-	updateWidgetState({
-		state: 'default-provider-idle',
-	}, tabId);
+    // Stop recording and return to provider-specific idle state
+    const current = tabWidgetStates[tabId];
+    const provider = current?.provider as ProviderName | undefined;
+    const domain = current?.domain;
 
-	// Send end event if there's an active recording
-	// Note: This will need access to tabStates from content-activity module
-	// We'll handle this in the message handlers
+    const idleState = provider === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+
+    updateWidgetState({
+        state: idleState,
+        provider,
+        domain,
+    }, tabId);
+
+    // Send end event if there's an active recording
+    // Note: This will need access to tabStates from content-activity module
+    // We'll handle this in the message handlers
 }
 
 export function handleRetry(tabId?: number): void {
