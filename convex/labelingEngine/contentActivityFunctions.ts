@@ -43,18 +43,18 @@ export const recordContentActivity = async ({
 
 	const occurredAt = await getEffectiveNow(ctx);
 
-    // Short-circuit if user has blacklisted this content
-    const existingBlacklist = await ctx.db
-        .query('userContentBlacklists')
+    // Short-circuit if user has a blocking policy for this content
+    const existingBlockingPolicy = await ctx.db
+        .query('userContentLabelPolicies')
         .withIndex('by_user_and_content_key', q =>
             q.eq('userId', userId).eq('contentKey', contentKey)
         )
         .unique();
-    if (existingBlacklist) {
+    if (existingBlockingPolicy && existingBlockingPolicy.policyKind === 'block') {
         return {
             ok: true,
             saved: false,
-            reason: 'blacklisted',
+            reason: 'blocked_by_policy',
             contentKey,
         };
     }

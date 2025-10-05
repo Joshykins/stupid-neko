@@ -13,7 +13,7 @@ export default function AccountLayout({
 }) {
     const pathname = usePathname();
     const isProfile = pathname === '/account';
-    const isBlacklisted = pathname?.startsWith('/account/blacklisted');
+    const isPolicies = pathname?.startsWith('/account/content-policies');
 
     return (
         <div>
@@ -25,10 +25,10 @@ export default function AccountLayout({
                             Profile
                         </Link>
                     </Button>
-                    <Button asChild variant={isBlacklisted ? 'default' : 'neutral'} className="overflow-hidden ml-8">
-                        <Link href="/account/blacklisted">
+                    <Button asChild variant={isPolicies ? 'default' : 'neutral'} className="overflow-hidden ml-8">
+                        <Link href="/account/content-policies">
                             <Ban className="mr-2 h-4 w-4" />
-                            Blacklisted Content
+                            Content Policies
                         </Link>
                     </Button>
                 </div>

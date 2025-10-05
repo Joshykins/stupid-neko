@@ -133,7 +133,14 @@ const attach = (p: HTMLVideoElement): void => {
 		if (!isPlaying && !p.paused) {
 			// console.debug('[content][youtube] emitting start event');
 			isPlaying = true;
-			emit('start');
+            emit('start');
+            try {
+                const videoId = getCurrentVideoId();
+                const key = videoId ? `snbex_youtube_baseline_${videoId}` : 'snbex_youtube_baseline';
+                const startCT = Math.floor(p.currentTime || 0);
+                const payload = { startCT, startTS: Date.now() } as const;
+                localStorage.setItem(key, JSON.stringify(payload));
+            } catch {}
 		} else {
 			// console.debug('[content][youtube] not emitting start - isPlaying:', isPlaying, 'paused:', p.paused);
 		}

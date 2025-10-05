@@ -1,23 +1,23 @@
 import React from 'react';
 import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
+import { useWidgetActions } from '../../hooks/useWidgetActions';
 
 interface DefaultProviderTrackingProps {
     widgetState: WidgetState;
     currentTime: number;
-    stopRecording: () => void;
     renderDebugInfo?: () => React.ReactNode;
 }
 
 export const DefaultProviderTracking: React.FC<DefaultProviderTrackingProps> = ({
     widgetState,
     currentTime,
-    stopRecording,
     renderDebugInfo,
 }) => {
+    const { defaultStopRecording } = useWidgetActions();
     return (
         <>
-            <div className="snbex:mt-3">
+            <div >
                 <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
                     <div className="snbex:w-3 snbex:h-3 snbex:bg-green-500 snbex:rounded-full snbex:animate-pulse"></div>
                     <div className="snbex:text-base snbex:font-bold">
@@ -44,7 +44,7 @@ export const DefaultProviderTracking: React.FC<DefaultProviderTrackingProps> = (
                     </div>
                 ) : null}
                 <Button
-                    onClick={stopRecording}
+                    onClick={defaultStopRecording}
                     variant="destructive"
                     className="snbex:w-full"
                     size="sm"

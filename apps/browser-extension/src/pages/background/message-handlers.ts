@@ -19,7 +19,7 @@ import {
 	postContentActivityFromPlayback,
 	handleContentActivityEvent,
 } from './content-activity-router';
-import type { PlaybackEvent } from '../../messaging/messages';
+import type { PlaybackEvent, WidgetStateUpdate } from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
 
 const DEBUG_LOG_PREFIX = '[bg:handlers]';
@@ -78,13 +78,52 @@ export function registerMessageHandlers(): void {
 			return { success: false, error: 'Invalid action or tab ID' };
 		}
 
-		switch (action) {
+		// Normalize provider-scoped actions like "youtube.stop-recording" or "default.dont-track"
+		const normalizedAction = action.includes('.')
+			? action.split('.').slice(1).join('.')
+			: action;
+
+		switch (normalizedAction) {
+			case 'open-always-track-question': {
+				const { updateWidgetState } = await import('./widget');
+				updateWidgetState({ state: 'default-provider-always-track-question' }, tabId);
+				break;
+			}
+
+			case 'dont-track': {
+				const { updateWidgetState } = await import('./widget');
+				updateWidgetState({ state: 'default-provider-not-tracking' }, tabId);
+				break;
+			}
+
+			case 'question-track-once': {
+				const { updateWidgetState } = await import('./widget');
+				updateWidgetState({ state: 'default-provider-tracking', startTime: Date.now() }, tabId);
+				break;
+			}
+
+			case 'question-always-track': {
+				const { updateWidgetState } = await import('./widget');
+				updateWidgetState({ state: 'default-provider-tracking', startTime: Date.now() }, tabId);
+				break;
+			}
+
+			case 'track-anyway': {
+				const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+				const current = getCurrentWidgetState(tabId);
+				if (current.provider === 'youtube') {
+					updateWidgetState({ state: 'youtube-tracking-verified', startTime: Date.now() }, tabId);
+				} else {
+					updateWidgetState({ state: 'default-provider-always-track-question' }, tabId);
+				}
+				break;
+			}
 			case 'consent-response':
 				await handleConsentResponse(payload, tabId);
 				break;
 
-			case 'blacklist-content': {
-				// Create a user blacklist entry for current content and stop recording
+            case 'block-content': {
+                // Create a user content label blocking policy for current content and stop recording
 				const state = tabStates[tabId];
 				const last = state?.lastEvent;
 				if (!last) break;
@@ -96,7 +135,7 @@ export function registerMessageHandlers(): void {
 					if (convex && integrationId) {
 						const { error } = await tryCatch(
 							convex.mutation(
-								api.browserExtensionFunctions.createUserContentBlacklistFromIntegration,
+                                api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
 								{
 									integrationId,
 									contentKey,
@@ -106,16 +145,28 @@ export function registerMessageHandlers(): void {
 										})(),
 									url: last.url,
 									label: state?.lastEvent?.title,
+                                    policyKind: 'block',
 								}
 							)
 						);
 						if (error) {
-							console.error(`${DEBUG_LOG_PREFIX} failed to blacklist content:`, error);
+                            console.error(`${DEBUG_LOG_PREFIX} failed to create block policy for content:`, error);
 						}
 					}
 				}
-				// Stop recording after blacklisting
+				// Stop recording after creating block policy
 				handleStopRecording(tabId);
+				// Show content blocked state with metadata
+				{
+					const { updateWidgetState } = await import('./widget');
+					updateWidgetState({
+						state: 'content-blocked',
+						metadata: {
+							title: state?.lastEvent?.title,
+							url: state?.lastEvent?.url,
+						},
+					}, tabId);
+				}
 				if (state?.isPlaying && state?.lastEvent) {
 					const endEvt: PlaybackEvent = {
 						...state.lastEvent,
@@ -129,11 +180,24 @@ export function registerMessageHandlers(): void {
 
 			case 'stop-recording': {
 				handleStopRecording(tabId);
+				const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+				const current = getCurrentWidgetState(tabId);
+				const stateKey: WidgetStateUpdate['state'] = current.provider === 'youtube'
+					? 'youtube-provider-tracking-stopped'
+					: 'default-provider-tracking-stopped';
+                // Preserve last known title/url as subtitle metadata for stopped state
+                const state = tabStates[tabId];
+                updateWidgetState({
+                    state: stateKey,
+                    metadata: {
+                        title: state?.lastEvent?.title,
+                        url: state?.lastEvent?.url,
+                    },
+                }, tabId);
 				// Send end event if there's an active recording
-				const state = tabStates[tabId];
-				if (state?.isPlaying && state?.lastEvent) {
+                if (state?.isPlaying && state?.lastEvent) {
 					const endEvt: PlaybackEvent = {
-						...state.lastEvent,
+                        ...state.lastEvent,
 						event: 'end',
 						ts: Date.now(),
 					};

@@ -16,18 +16,20 @@ import {
 	useWidgetPosition,
 } from './hooks';
 import { getWidgetStateConfig } from './config/widgetStates';
-import {
-	DefaultProviderIdle,
-	YouTubeNotTracking,
-	YouTubeTrackingUnverified,
-	YouTubeTrackingVerified,
-	DeterminingProvider,
-	DefaultProviderAwaitingConsent,
-	DefaultProviderTracking,
-	DefaultProviderPromptUser,
-	ErrorState,
-	DefaultState,
-} from './components/states';
+import { DefaultProviderIdle } from './components/states/DefaultProviderIdle';
+import { YouTubeNotTracking } from './components/states/YouTubeNotTracking';
+import { YouTubeTrackingUnverified } from './components/states/YouTubeTrackingUnverified';
+import { YouTubeTrackingVerified } from './components/states/YouTubeTrackingVerified';
+import { DeterminingProvider } from './components/states/DeterminingProvider';
+import { DefaultProviderTracking } from './components/states/DefaultProviderTracking';
+import { ErrorState } from './components/states/ErrorState';
+import { DefaultState } from './components/states/DefaultState';
+import { DefaultProviderIdleDetected } from './components/states/DefaultProviderIdleDetected';
+import { DefaultProviderAlwaysTrackQuestion } from './components/states/DefaultProviderAlwaysTrackQuestion';
+import { DefaultProviderTrackingStopped } from './components/states/DefaultProviderTrackingStopped';
+import { YouTubeProviderTrackingStopped } from './components/states/YouTubeProviderTrackingStopped';
+import { ContentBlocked } from './components/states/ContentBlocked';
+import { DefaultProviderNotTracking } from './components/states/DefaultProviderNotTracking';
 import { IconButton } from '../components/ui/IconButton';
 import { cn } from '../lib/utils';
 
@@ -48,7 +50,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// Use custom hooks for state management
 	const widgetState = useWidgetState();
 	const userInfo = useUserInfo(props);
-	const { sendConsentResponse, stopRecording, retry } = useWidgetActions();
+	const { } = useWidgetActions();
 	const {
 		position,
 		controls,
@@ -227,11 +229,17 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		}
 
 		switch (widgetState.state) {
+			case 'content-blocked':
+				return (
+					<ContentBlocked
+						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
 			case 'default-provider-idle':
 				return (
 					<DefaultProviderIdle
 						widgetState={widgetState}
-						sendConsentResponse={sendConsentResponse}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -257,7 +265,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					<YouTubeTrackingVerified
 						widgetState={widgetState}
 						currentTime={currentTime}
-						stopRecording={stopRecording}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -270,11 +277,18 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					/>
 				);
 
-			case 'default-provider-awaiting-consent':
+			case 'default-provider-idle-detected':
 				return (
-					<DefaultProviderAwaitingConsent
+					<DefaultProviderIdleDetected
 						widgetState={widgetState}
-						sendConsentResponse={sendConsentResponse}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'default-provider-always-track-question':
+				return (
+					<DefaultProviderAlwaysTrackQuestion
+						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -284,16 +298,30 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					<DefaultProviderTracking
 						widgetState={widgetState}
 						currentTime={currentTime}
-						stopRecording={stopRecording}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
 
-			case 'default-provider-prompt-user-for-track':
+			case 'default-provider-tracking-stopped':
 				return (
-					<DefaultProviderPromptUser
+					<DefaultProviderTrackingStopped
 						widgetState={widgetState}
-						sendConsentResponse={sendConsentResponse}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'youtube-provider-tracking-stopped':
+				return (
+					<YouTubeProviderTrackingStopped
+						widgetState={widgetState}
+						renderDebugInfo={renderDebugInfo}
+					/>
+				);
+
+			case 'default-provider-not-tracking':
+				return (
+					<DefaultProviderNotTracking
+						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
@@ -302,7 +330,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 				return (
 					<ErrorState
 						widgetState={widgetState}
-						retry={retry}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);

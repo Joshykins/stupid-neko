@@ -1,22 +1,22 @@
 import React from 'react';
 import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
+import { useWidgetActions } from '../../hooks/useWidgetActions';
 
 interface DefaultProviderIdleProps {
     widgetState: WidgetState;
-    sendConsentResponse: (consent: boolean) => void;
     renderDebugInfo?: () => React.ReactNode;
 }
 
 export const DefaultProviderIdle: React.FC<DefaultProviderIdleProps> = ({
     widgetState,
-    sendConsentResponse,
     renderDebugInfo,
 }) => {
+    const { defaultOpenAlwaysTrackQuestion, defaultDontTrack } = useWidgetActions();
     return (
         <>
-            <div className="snbex:mt-3 snbex:text-center">
-                <div className="snbex:flex snbex:items-center snbex:justify-center snbex:gap-2 snbex:mb-2">
+            <div >
+                <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-2">
                     <svg
                         className="snbex:w-5 snbex:h-5 snbex:text-blue-600"
                         fill="none"
@@ -44,9 +44,14 @@ export const DefaultProviderIdle: React.FC<DefaultProviderIdleProps> = ({
                         {widgetState.domain}
                     </div>
                 )}
-                <Button onClick={() => sendConsentResponse(true)} size="sm">
-                    Start Tracking
-                </Button>
+                <div className="snbex:flex snbex:gap-2">
+                    <Button variant="neutral" size="sm" onClick={() => defaultDontTrack()}>
+                        Dont Track
+                    </Button>
+                    <Button size="sm" onClick={() => defaultOpenAlwaysTrackQuestion()}>
+                        Track This!
+                    </Button>
+                </div>
             </div>
             {renderDebugInfo?.()}
         </>

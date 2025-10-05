@@ -136,7 +136,7 @@ export const recordContentActivityFromIntegration = mutation({
 	},
 });
 
-export const createUserContentBlacklistFromIntegration = mutation({
+export const createUserContentLabelPolicyFromIntegration = mutation({
     args: {
         integrationId: v.string(),
         contentKey: v.string(),
@@ -145,6 +145,7 @@ export const createUserContentBlacklistFromIntegration = mutation({
         url: v.optional(v.string()),
         label: v.optional(v.string()),
         note: v.optional(v.string()),
+        policyKind: v.optional(v.union(v.literal('allow'), v.literal('block'))),
     },
     returns: v.object({ ok: v.boolean(), created: v.boolean() }),
     handler: async (ctx, args) => {
@@ -156,15 +157,16 @@ export const createUserContentBlacklistFromIntegration = mutation({
 
         // Check existing
         const existing = await ctx.db
-            .query('userContentBlacklists')
+            .query('userContentLabelPolicies')
             .withIndex('by_user_and_content_key', q =>
                 q.eq('userId', userId).eq('contentKey', args.contentKey)
             )
             .unique();
         if (existing) return { ok: true, created: false };
 
-        await ctx.db.insert('userContentBlacklists', {
+        await ctx.db.insert('userContentLabelPolicies', {
             userId,
+            policyKind: args.policyKind ?? 'block',
             contentKey: args.contentKey,
             contentSource: args.source,
             contentUrl: args.url,
@@ -175,19 +177,56 @@ export const createUserContentBlacklistFromIntegration = mutation({
     },
 });
 
-export const listUserContentBlacklists = query({
+export const createUserContentLabelPolicy = mutation({
+    args: {
+        contentKey: v.string(),
+        policyKind: v.union(v.literal('allow'), v.literal('block')),
+        source: v.union(contentSourceValidator),
+        url: v.optional(v.string()),
+        label: v.optional(v.string()),
+        note: v.optional(v.string()),
+    },
+    returns: v.object({ ok: v.boolean(), created: v.boolean() }),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error('Unauthorized');
+
+        const existing = await ctx.db
+            .query('userContentLabelPolicies')
+            .withIndex('by_user_and_content_key', q =>
+                q.eq('userId', userId).eq('contentKey', args.contentKey)
+            )
+            .unique();
+        if (existing) return { ok: true, created: false };
+
+        await ctx.db.insert('userContentLabelPolicies', {
+            userId,
+            policyKind: args.policyKind,
+            contentKey: args.contentKey,
+            contentSource: args.source,
+            contentUrl: args.url,
+            label: args.label,
+            note: args.note,
+        });
+        return { ok: true, created: true };
+    },
+});
+
+export const listUserContentLabelPolicies = query({
     args: {
         search: v.optional(v.string()),
         source: v.optional(v.union(contentSourceValidator)),
         sort: v.optional(v.union(v.literal('newest'), v.literal('oldest'))),
         cursor: v.optional(v.string()),
         limit: v.optional(v.number()),
+        policyKind: v.optional(v.union(v.literal('allow'), v.literal('block'))),
     },
     returns: v.object({
         items: v.array(
             v.object({
-                _id: v.id('userContentBlacklists'),
+                _id: v.id('userContentLabelPolicies'),
                 _creationTime: v.number(),
+                policyKind: v.union(v.literal('allow'), v.literal('block')),
                 contentKey: v.string(),
                 contentSource: v.union(contentSourceValidator),
                 contentUrl: v.optional(v.string()),
@@ -204,13 +243,13 @@ export const listUserContentBlacklists = query({
 
         const limit = Math.max(1, Math.min(100, args.limit ?? 20));
 
-        // Start from by_user index
-        let q = ctx.db.query('userContentBlacklists').withIndex('by_user', q => q.eq('userId', userId));
+        // Base query: by_user
+        let q = ctx.db.query('userContentLabelPolicies').withIndex('by_user', q => q.eq('userId', userId));
 
         // Filter by source if provided
         if (args.source) {
             q = ctx.db
-                .query('userContentBlacklists')
+                .query('userContentLabelPolicies')
                 .withIndex('by_user_and_source', q =>
                     q
                         .eq('userId', userId)
@@ -219,6 +258,13 @@ export const listUserContentBlacklists = query({
                             args.source as 'manual' | 'youtube' | 'spotify' | 'anki' | 'website'
                         )
                 );
+        }
+
+        // Filter by policy kind if provided
+        if (args.policyKind) {
+            q = ctx.db
+                .query('userContentLabelPolicies')
+                .withIndex('by_user_and_policy_kind', q => q.eq('userId', userId).eq('policyKind', args.policyKind as 'allow' | 'block'));
         }
 
         // Sorting by creation time
@@ -239,6 +285,7 @@ export const listUserContentBlacklists = query({
         const items = filtered.map(it => ({
             _id: it._id,
             _creationTime: it._creationTime,
+            policyKind: it.policyKind as typeof it.policyKind,
             contentKey: it.contentKey,
             contentSource: it.contentSource as typeof it.contentSource,
             contentUrl: it.contentUrl,
@@ -254,8 +301,8 @@ export const listUserContentBlacklists = query({
     },
 });
 
-export const deleteUserContentBlacklist = mutation({
-    args: { id: v.id('userContentBlacklists') },
+export const deleteUserContentLabelPolicy = mutation({
+    args: { id: v.id('userContentLabelPolicies') },
     returns: v.null(),
     handler: async (ctx, args) => {
         const userId = await getAuthUserId(ctx);
@@ -264,6 +311,29 @@ export const deleteUserContentBlacklist = mutation({
         if (!row || row.userId !== userId) throw new Error('Not found');
         await ctx.db.delete(args.id);
         return null;
+    },
+});
+
+export const getUserContentLabelPolicyForKey = query({
+    args: { contentKey: v.string() },
+    returns: v.union(
+        v.object({
+            _id: v.id('userContentLabelPolicies'),
+            policyKind: v.union(v.literal('allow'), v.literal('block')),
+        }),
+        v.null()
+    ),
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error('Unauthorized');
+        const existing = await ctx.db
+            .query('userContentLabelPolicies')
+            .withIndex('by_user_and_content_key', q =>
+                q.eq('userId', userId).eq('contentKey', args.contentKey)
+            )
+            .unique();
+        if (!existing) return null;
+        return { _id: existing._id, policyKind: existing.policyKind };
     },
 });
 

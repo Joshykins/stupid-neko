@@ -42,6 +42,23 @@ export async function updateWidgetStateForEvent(
 	evt: PlaybackEvent,
 	tabId: number
 ): Promise<void> {
+    // Do not override a blocked state with transient playback events
+    const current = tabWidgetStates[tabId];
+    if (current?.state === 'content-blocked') {
+        console.debug(`${DEBUG_LOG_PREFIX} ignoring event due to content-blocked state`, evt);
+        return;
+    }
+    // Treat provider "tracking-stopped" states as stable; ignore transient events
+    if (
+        current?.state === 'youtube-provider-tracking-stopped' ||
+        current?.state === 'default-provider-tracking-stopped'
+    ) {
+        console.debug(`${DEBUG_LOG_PREFIX} ignoring event due to provider-tracking-stopped state`, {
+            state: current?.state,
+            evt,
+        });
+        return;
+    }
 	const meta = getMetaForUrl(evt.url);
 	const providerName = meta.id;
 	const domain = new URL(evt.url).hostname;
@@ -54,38 +71,39 @@ export async function updateWidgetStateForEvent(
 	switch (evt.event) {
 		case 'start': {
 			if (providerName === 'default') {
-				// For default provider, check if we have consent
-				if (tabState?.hasConsent) {
-					updateWidgetState({
-						state: 'default-provider-tracking',
-						provider: providerName,
-						domain,
-						startTime: Date.now(),
-						metadata: {
-							title: evt.title,
-							url: evt.url,
-						},
-					}, tabId);
-				} else {
-					// No consent yet, show provider-specific idle state
-					updateWidgetState({
-						state: 'default-provider-idle',
-						provider: providerName,
-						domain,
-						metadata: {
-							title: evt.title,
-							url: evt.url,
-						},
-					}, tabId);
-				}
+                // For default provider, check if we have consent
+                if (tabState?.hasConsent) {
+                    updateWidgetState({
+                        state: 'default-provider-tracking',
+                        provider: providerName,
+                        domain,
+                        startTime: Date.now(),
+                        metadata: {
+                            title: evt.title,
+                            url: evt.url,
+                        },
+                    }, tabId);
+                } else {
+                    // No consent yet, show provider-specific idle state
+                    updateWidgetState({
+                        state: 'default-provider-idle',
+                        provider: providerName,
+                        domain,
+                        metadata: {
+                            title: evt.title,
+                            url: evt.url,
+                        },
+                    }, tabId);
+                }
 			} else {
-				// Non-default providers (like YouTube)
-				const stateKey = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'default-provider-tracking';
+				// Non-default providers (YouTube)
+				const prev = tabWidgetStates[tabId];
+				const keepVerified = prev?.state === 'youtube-tracking-verified';
 				updateWidgetState({
-					state: stateKey,
+					state: keepVerified ? prev!.state : 'youtube-tracking-unverified',
 					provider: providerName,
 					domain,
-					startTime: Date.now(),
+					startTime: prev?.startTime ?? Date.now(),
 					metadata: {
 						title: evt.title,
 						videoId: evt.videoId,
@@ -96,8 +114,8 @@ export async function updateWidgetStateForEvent(
 		}
 
 		case 'end':
-			// Return to provider-specific idle state
-			const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+            // Return to provider-specific idle state
+            const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-not-tracking';
 			updateWidgetState({
 				state: idleState,
 				provider: providerName,
@@ -108,10 +126,10 @@ export async function updateWidgetStateForEvent(
 		case 'progress':
 			// Keep current state but update metadata if needed
 			const currentState = tabWidgetStates[tabId];
-			if (
-				currentState?.state.includes('-tracking') ||
-				currentState?.state === 'default-provider-tracking'
-			) {
+            if (
+                currentState?.state.includes('-tracking') ||
+                currentState?.state === 'default-provider-tracking'
+            ) {
 				updateWidgetState({
 					state: currentState.state,
 					metadata: {
@@ -237,21 +255,21 @@ export async function handleLanguageDetection(
 	const domain = new URL(tab.url).hostname;
 
 	// Check if detected language matches target language
-	if (
-		targetLanguage &&
-		detectedLanguage.startsWith(targetLanguage.toLowerCase())
-	) {
-		updateWidgetState({
-			state: 'default-provider-prompt-user-for-track',
-			provider: 'default',
-			domain,
-			detectedLanguage,
-			metadata: {
-				title: tab.title,
-				url: tab.url,
-			},
-		}, tabId);
-	}
+    if (
+        targetLanguage &&
+        detectedLanguage.startsWith(targetLanguage.toLowerCase())
+    ) {
+        updateWidgetState({
+            state: 'default-provider-idle-detected',
+            provider: 'default',
+            domain,
+            detectedLanguage,
+            metadata: {
+                title: tab.title,
+                url: tab.url,
+            },
+        }, tabId);
+    }
 }
 
 /**

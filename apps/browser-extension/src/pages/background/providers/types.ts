@@ -142,12 +142,16 @@ export interface ProviderEventHandlers {
 export interface WidgetState {
 	state:
 		| 'default-provider-idle'
-		| 'default-provider-awaiting-consent'
+		| 'default-provider-idle-detected'
+		| 'default-provider-always-track-question'
 		| 'default-provider-tracking'
-		| 'default-provider-prompt-user-for-track'
+		| 'default-provider-tracking-stopped'
+		| 'default-provider-not-tracking'
 		| 'youtube-not-tracking'
 		| 'youtube-tracking-unverified'
 		| 'youtube-tracking-verified'
+        | 'youtube-provider-tracking-stopped'
+        | 'content-blocked'
 		| 'determining-provider'
 		| 'error';
 	provider?: ProviderName;

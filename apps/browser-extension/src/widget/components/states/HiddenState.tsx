@@ -16,7 +16,7 @@ export const HiddenState: React.FC<HiddenStateProps> = ({
 }) => {
     return (
         <>
-            <div className="snbex:mt-3">
+            <div >
                 <div className="snbex:text-lg snbex:font-bold snbex:mb-2">
                     {title}
                 </div>

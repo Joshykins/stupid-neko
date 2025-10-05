@@ -16,9 +16,10 @@ import { cn } from '../../../lib/utils';
 import Image from 'next/image';
 
 type ContentSource = 'website' | 'youtube' | 'spotify' | 'anki' | 'manual';
-type BlacklistItem = {
-    _id: Id<'userContentBlacklists'>;
+type PolicyItem = {
+    _id: Id<'userContentLabelPolicies'>;
     _creationTime: number;
+    policyKind: 'allow' | 'block';
     contentKey: string;
     contentSource: ContentSource;
     contentUrl?: string;
@@ -26,33 +27,34 @@ type BlacklistItem = {
     note?: string;
 };
 
-export default function BlacklistedContentPage() {
+export default function ContentPoliciesPage() {
     return (
-        <div className="pt-10">
+        <div className="pt-4">
             <div className="mx-auto max-w-3xl">
                 <Card className="p-6">
-                    <div className="flex items-center gap-6">
-                        <Ban className="size-6 mt-1" />
+                    <div className="flex items-center gap-6 pb-4">
+                        <Ban className="size-12 mt-1" />
                         <div>
                             <h1 className="font-display text-3xl font-black text-main-foreground">
-                                Blacklisted content
+                                Content policies
                             </h1>
-                            <p className="text-sm text-main-foreground/70 mt-1">Items you’ve opted not to track will ignored from automatic tracking.</p>
+                            <p className="text-sm text-main-foreground/70 mt-1">Configured automatic tracking behavior for specific contentKeys.Manage 'allow' (auto-start) and 'block' (never track) policies.</p>
                         </div>
                     </div>
-                    <BlacklistManager />
+                    <PoliciesManager />
                 </Card>
             </div>
         </div>
     );
 }
 
-function BlacklistManager() {
+function PoliciesManager() {
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [source, setSource] = useState<ContentSource | undefined>(undefined);
+    const [policyKind, setPolicyKind] = useState<'allow' | 'block' | undefined>('block');
     const [cursor, setCursor] = useState<string | undefined>(undefined);
-    const [items, setItems] = useState<Array<BlacklistItem>>([]);
+    const [items, setItems] = useState<Array<PolicyItem>>([]);
     const [autoLoading, setAutoLoading] = useState(false);
     const [lastAutoCursor, setLastAutoCursor] = useState<string | undefined>(undefined);
     const [refreshFlip, setRefreshFlip] = useState(false);
@@ -65,21 +67,22 @@ function BlacklistManager() {
         return () => clearTimeout(handle);
     }, [searchInput]);
 
-    const data = useQuery(api.browserExtensionFunctions.listUserContentBlacklists, {
+    const data = useQuery(api.browserExtensionFunctions.listUserContentLabelPolicies, {
         search: search || undefined,
         source: source || undefined,
+        policyKind: policyKind || undefined,
         // Toggle sort to force refetch without changing result ordering
         sort: refreshFlip ? 'newest' : undefined,
         cursor: cursor ?? undefined,
         limit: 6,
     });
-    const del = useMutation(api.browserExtensionFunctions.deleteUserContentBlacklist);
+    const del = useMutation(api.browserExtensionFunctions.deleteUserContentLabelPolicy);
 
     // Reset pagination and accumulated items when filters change
     React.useEffect(() => {
         setCursor(undefined);
         setItems([]);
-    }, [search, source]);
+    }, [search, source, policyKind]);
 
     // Replace items when new data arrives (no accumulation across pages)
     React.useEffect(() => {
@@ -115,6 +118,10 @@ function BlacklistManager() {
                     <Label className="font-heading text-sm">Source</Label>
                     <SourceCombobox value={source} onChange={(v) => setSource(v)} />
                 </div>
+                <div className="min-w-48">
+                    <Label className="font-heading text-sm">Policy</Label>
+                    <PolicyCombobox value={policyKind} onChange={(v) => setPolicyKind(v)} />
+                </div>
             </div>
 
             {(!data || isRefreshing) && (
@@ -128,7 +135,7 @@ function BlacklistManager() {
                             height={140}
                         />
                         <div className="mt-2 text-sm text-muted-foreground">
-                            Fetching your blacklist…
+                            Fetching your policies…
                         </div>
                     </div>
                 </div>
@@ -145,7 +152,7 @@ function BlacklistManager() {
                             height={140}
                         />
                         <div className="mt-2 text-sm text-muted-foreground">
-                            No blacklisted items yet.
+                            No policies yet.
                         </div>
                     </div>
                 </div>
@@ -227,7 +234,7 @@ function BlacklistManager() {
                                         <DialogHeader>
                                             <DialogTitle>Delete this item?</DialogTitle>
                                             <DialogDescription>
-                                                This action cannot be undone. The item will be removed from your blacklist.
+                                                This action cannot be undone. The policy will be removed.
                                             </DialogDescription>
                                         </DialogHeader>
                                         <DialogFooter>
@@ -338,6 +345,74 @@ function SourceCombobox({
                                         if (v === '') {
                                             onChange(undefined);
                                         } else if (isContentSource(v)) {
+                                            onChange(v);
+                                        } else {
+                                            onChange(undefined);
+                                        }
+                                        setOpen(false);
+                                    }}
+                                >
+                                    {item.label}
+                                    <CheckIcon
+                                        className={cn(
+                                            'ml-auto',
+                                            (value ?? '') === item.value ? 'opacity-100' : 'opacity-0'
+                                        )}
+                                    />
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function PolicyCombobox({
+    value,
+    onChange,
+}: {
+    value: 'allow' | 'block' | undefined;
+    onChange: (v: 'allow' | 'block' | undefined) => void;
+}) {
+    const [open, setOpen] = useState(false);
+
+    const items: Array<{ value: '' | 'allow' | 'block'; label: string; }> = [
+        { value: '', label: 'All' },
+        { value: 'allow', label: 'Allow (auto-start)' },
+        { value: 'block', label: 'Block (never track)' },
+    ];
+    const current = items.find(i => i.value === (value ?? ''));
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="neutral"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full bg-white justify-between md:max-w-[220px]"
+                >
+                    {current?.label ?? 'All'}
+                    <ChevronsUpDown />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-(--radix-popover-trigger-width) border-0 p-0">
+                <Command className="**:data-[slot=command-input-wrapper]:h-11">
+                    <CommandInput placeholder="Filter policy..." />
+                    <CommandList className="p-1">
+                        <CommandEmpty>No policy found.</CommandEmpty>
+                        <CommandGroup>
+                            {items.map(item => (
+                                <CommandItem
+                                    key={item.value}
+                                    value={item.value}
+                                    onSelect={currentValue => {
+                                        const v = currentValue || '';
+                                        if (v === '') {
+                                            onChange(undefined);
+                                        } else if (v === 'allow' || v === 'block') {
                                             onChange(v);
                                         } else {
                                             onChange(undefined);

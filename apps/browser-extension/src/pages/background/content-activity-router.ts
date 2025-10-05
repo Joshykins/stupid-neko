@@ -104,14 +104,22 @@ export async function postContentActivityFromPlayback(
 	// Cache label by content key when provided
 	cacheContentLabel(result, contentKey);
 
-	// Handle state transitions based on result (including blacklisted)
+    // Handle state transitions based on result (including blocked by policy)
 	if (tabId !== undefined) {
-		if (result.reason === 'blacklisted') {
-			// Stop tracking immediately if blacklisted
-			const { updateWidgetState } = await import('./widget');
-			const domain = new URL(evt.url).hostname;
-			updateWidgetState({ state: 'youtube-not-tracking', provider: getProviderName(evt.url), domain }, tabId);
-		} else {
+        if (result.reason === 'blocked_by_policy') {
+            // Show content blocked state and stop tracking
+            const { updateWidgetState } = await import('./widget');
+            const domain = new URL(evt.url).hostname;
+            updateWidgetState({
+                state: 'content-blocked',
+                provider: getProviderName(evt.url),
+                domain,
+                metadata: {
+                    title: evt.title,
+                    url: evt.url,
+                },
+            }, tabId);
+        } else {
 			await updateYouTubeStateFromResult(tabId, result, evt.url);
 		}
 	}
@@ -130,7 +138,7 @@ export function cacheContentLabel(
 }
 
 export function updateTabState(tabId: number, payload: PlaybackEvent): void {
-	const prev = tabStates[tabId] || {
+    const prev = tabStates[tabId] || {
 		lastEvent: null,
 		isPlaying: false,
 		consentByDomain: {},
@@ -189,7 +197,17 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 		}, 100);
 	}
 
-	switch (payload.event) {
+    // If widget is showing content-blocked, avoid mutating isPlaying/lastEvent to prevent flicker
+    try {
+        const { getCurrentWidgetState } = require('./widget');
+        const currentWidget = getCurrentWidgetState(tabId);
+        if (currentWidget?.state === 'content-blocked') {
+            tabStates[tabId] = prev;
+            return;
+        }
+    } catch {}
+
+    switch (payload.event) {
 		case 'start':
 			newState = {
 				lastEvent: payload,
@@ -240,7 +258,16 @@ export async function handleContentActivityPosting(
 	tabId: number,
 	payload: PlaybackEvent
 ): Promise<void> {
-	const state = tabStates[tabId];
+    const state = tabStates[tabId];
+    // Do not post or change state if UI is showing content-blocked
+    try {
+        const { getCurrentWidgetState } = await import('./widget');
+        const current = getCurrentWidgetState(tabId);
+        if (current?.state === 'content-blocked') {
+            console.debug(`${DEBUG_LOG_PREFIX} skipping posting due to content-blocked`);
+            return;
+        }
+    } catch {}
 	const isDefaultProvider = getProviderName(payload.url) === 'default';
 	const isYouTubeProvider = getProviderName(payload.url) === 'youtube';
 
@@ -287,16 +314,34 @@ export async function updateYouTubeStateFromResult(
 
 	// Import updateWidgetState function
 	const { updateWidgetState } = await import('./widget');
+    // Do not override a stable stopped state
+    try {
+        const { getCurrentWidgetState } = await import('./widget');
+        const current = getCurrentWidgetState(tabId);
+        if (current?.state === 'youtube-provider-tracking-stopped') {
+            console.debug(`${DEBUG_LOG_PREFIX} skip YouTube state update due to stopped state`);
+            return;
+        }
+    } catch {}
 	const domain = new URL(url).hostname;
 	
-	// Determine YouTube state based on result
+    // Determine YouTube state based on result
 	let newState: 'youtube-not-tracking' | 'youtube-tracking-unverified' | 'youtube-tracking-verified';
 	let contentLanguage: string | undefined;
 	let targetLanguage: string | undefined;
 	
-	if (result.isWaitingOnLabeling) {
+    if (result.isWaitingOnLabeling) {
 		// Still waiting for content labeling
-		newState = 'youtube-tracking-unverified';
+        // Preserve verified if already verified to avoid UI flicker back to analyzing
+        try {
+            const { getCurrentWidgetState } = await import('./widget');
+            const current = getCurrentWidgetState(tabId);
+            newState = current.state === 'youtube-tracking-verified'
+                ? 'youtube-tracking-verified'
+                : 'youtube-tracking-unverified';
+        } catch {
+            newState = 'youtube-tracking-unverified';
+        }
 		console.debug(`${DEBUG_LOG_PREFIX} YouTube state: waiting for labeling`);
 	} else if (result.contentLabel && result.currentTargetLanguage) {
 		// Check if content label matches target language
@@ -496,14 +541,18 @@ export async function handleTabActivated(tabId: number): Promise<void> {
 		const tab = await chrome.tabs.get(tabId);
     if (tab.url) {
 			console.debug(`${DEBUG_LOG_PREFIX} Tab activated with URL:`, tab.url);
-      // If we're already in a tracking state for this tab, avoid resetting the widget state
+      // If we're already in a tracking or blocked state for this tab, avoid resetting the widget state
       // by re-determining the provider. This prevents flicker and re-verification.
       try {
         const { getCurrentWidgetState } = await import('./widget');
         const currentState = getCurrentWidgetState(tabId);
-        if (isTrackingState(currentState.state)) {
+        if (
+          isTrackingState(currentState.state) ||
+          currentState.state === 'content-blocked' ||
+          currentState.state === 'youtube-provider-tracking-stopped'
+        ) {
           console.debug(
-            `${DEBUG_LOG_PREFIX} Tab already in tracking state (${currentState.state}) -> skipping provider re-determination`
+            `${DEBUG_LOG_PREFIX} Tab already in stable state (${currentState.state}) -> skipping provider re-determination`
           );
           return;
         }

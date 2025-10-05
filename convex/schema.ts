@@ -283,9 +283,10 @@ export default defineSchema({
 		processedAt: v.optional(v.number()),
 	}).index('by_content_key', ['contentKey']),
 
-	// User-specific content blacklists (Never track again)
-	userContentBlacklists: defineTable({
+	// User-specific content label policies (allow/block)
+	userContentLabelPolicies: defineTable({
 		userId: v.id('users'),
+		policyKind: v.union(v.literal('allow'), v.literal('block')),
 		contentKey: v.string(), // e.g. "youtube:VIDEO_ID", "web:domain/path"
 		// Accept standard sources plus 'website' for generic websites
 		contentSource: v.union(contentSourceValidator),
@@ -295,6 +296,7 @@ export default defineSchema({
 	})
 		.index('by_user', ['userId'])
 		.index('by_user_and_source', ['userId', 'contentSource'])
+		.index('by_user_and_policy_kind', ['userId', 'policyKind'])
 		.index('by_user_and_content_key', ['userId', 'contentKey']),
 
 	// Spotify OAuth linkage and token storage

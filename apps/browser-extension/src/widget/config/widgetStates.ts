@@ -26,33 +26,50 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 	'default-provider-idle': {
 		state: 'default-provider-idle',
 		visibility: 'visible',
-		openOnLoad: true,
+		openOnLoad: false,
 		forceAlwaysExpanded: false,
 		isTracking: false
 	},
 
-	'default-provider-awaiting-consent': {
-		state: 'default-provider-awaiting-consent',
+	// New default provider states
+	'default-provider-idle-detected': {
+		state: 'default-provider-idle-detected',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
+	},
+
+	'default-provider-always-track-question': {
+		state: 'default-provider-always-track-question',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
 	'default-provider-tracking': {
 		state: 'default-provider-tracking',
 		visibility: 'visible',
-		openOnLoad: false,
+		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: true
 	},
 
-	'default-provider-prompt-user-for-track': {
-		state: 'default-provider-prompt-user-for-track',
+	'default-provider-tracking-stopped': {
+		state: 'default-provider-tracking-stopped',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
+	},
+
+	'default-provider-not-tracking': {
+		state: 'default-provider-not-tracking',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
 	
@@ -79,6 +96,24 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: true
+	},
+
+	// New: YouTube provider stopped state
+	'youtube-provider-tracking-stopped': {
+		state: 'youtube-provider-tracking-stopped',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
+	},
+
+	// New: Content blocked by policy
+	'content-blocked': {
+		state: 'content-blocked',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
 	'error': {
