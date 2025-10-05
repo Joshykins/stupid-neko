@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '../ui/button';
 import { useState } from 'react';
 import { callBackground } from '../../messaging/messagesContentRouter';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('popup', 'popup:main-view');
 
 interface MainViewProps {
 	onOpenSettings?: () => void;
@@ -23,10 +25,10 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 		try {
 			const result = await callBackground('START_TRACKING', {});
 			if (!result.success) {
-				console.error('Failed to start tracking:', result.error);
+				log.error('Failed to start tracking:', result.error);
 			}
 		} catch (error) {
-			console.error('Error starting tracking:', error);
+			log.error('Error starting tracking:', error);
 		} finally {
 			setIsStarting(false);
 		}

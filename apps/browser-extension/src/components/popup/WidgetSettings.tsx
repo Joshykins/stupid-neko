@@ -1,5 +1,7 @@
 import { Switch } from '../ui/switch';
 import { useStorage } from '../hooks/useStorage';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('popup', 'popup:widget-settings');
 
 export function WidgetSettings() {
 	const { value: widgetEnabled, setValue: setWidgetEnabled } = useStorage(
@@ -11,7 +13,7 @@ export function WidgetSettings() {
 		try {
 			await setWidgetEnabled(enabled);
 		} catch (error) {
-			console.error('Failed to save widget setting:', error);
+			log.error('Failed to save widget setting:', error);
 		}
 	};
 

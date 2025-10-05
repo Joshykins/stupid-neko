@@ -1,10 +1,11 @@
-import { convex, getIntegrationId } from './auth';
+import { convex, getIntegrationId, getAuthState } from './auth';
 import type { ContentActivityEvent, ProviderName } from './providers/types';
 import type { PlaybackEvent } from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
 import { api } from '../../../../../convex/_generated/api';
-import { getMetaForUrl, extractContentKey, getProviderName } from './determineProvider';
 import { sendToTab } from '../../messaging/messagesBackgroundRouter';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('service-worker', 'content-activity:router');
 
 const DEBUG_LOG_PREFIX = '[bg:content-router]';
 
@@ -31,7 +32,7 @@ export type ContentActivityResult = {
 	reason?: string;
 	contentKey?: string;
 	contentLabel?: unknown;
-	currentTargetLanguage?: { languageCode?: string } | null;
+	currentTargetLanguage?: { languageCode?: string; } | null;
 };
 
 export type ContentLabel = {
@@ -43,24 +44,36 @@ export const tabStates: Record<number, TabPlaybackState> = {};
 export const contentLabelsByKey: Record<string, ContentLabel> = {};
 
 type TrackingState =
-    | 'default-provider-tracking'
-    | 'youtube-tracking-unverified'
-    | 'youtube-tracking-verified';
+	| 'default-provider-tracking'
+	| 'youtube-tracking-unverified'
+	| 'youtube-tracking-verified';
 
 function isTrackingState(
-    state:
-        | import('../../messaging/messages').WidgetStateUpdate['state']
-        | string
+	state:
+		| import('../../messaging/messages').WidgetStateUpdate['state']
+		| string
 ): state is TrackingState {
-    return (
-        state === 'default-provider-tracking' ||
-        state === 'youtube-tracking-unverified' ||
-        state === 'youtube-tracking-verified'
-    );
+	return (
+		state === 'default-provider-tracking' ||
+		state === 'youtube-tracking-unverified' ||
+		state === 'youtube-tracking-verified'
+	);
 }
 
 function deriveContentKey(evt: PlaybackEvent): string | undefined {
-	return extractContentKey(evt.url) || undefined;
+	try {
+		// Lazy load to avoid pulling provider registry in background paths unnecessarily
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		const { extractContentKey } = require('./determineProvider');
+		return extractContentKey(evt.url) || undefined;
+	} catch {
+		try {
+			const u = new URL(evt.url);
+			return `website:${u.hostname}${u.pathname}`;
+		} catch {
+			return undefined;
+		}
+	}
 }
 
 export async function postContentActivityFromPlayback(
@@ -76,7 +89,7 @@ export async function postContentActivityFromPlayback(
 	const contentKey = deriveContentKey(evt);
 
 	if (!contentKey) {
-		console.warn(`${DEBUG_LOG_PREFIX} missing contentKey, skipping post`, evt);
+		log.warn('missing contentKey, skipping post', evt);
 		return { ok: false, saved: false };
 	}
 
@@ -95,31 +108,39 @@ export async function postContentActivityFromPlayback(
 	);
 
 	if (error) {
-		console.warn(`${DEBUG_LOG_PREFIX} failed posting content activity`, error);
+		log.warn('failed posting content activity', error);
 		return null;
 	}
 
-	console.log(`${DEBUG_LOG_PREFIX} posted content activity (convex)`, result);
+	log.info('posted content activity (convex)', result);
 
 	// Cache label by content key when provided
 	cacheContentLabel(result, contentKey);
 
-    // Handle state transitions based on result (including blocked by policy)
+	// Handle state transitions based on result (including blocked by policy)
 	if (tabId !== undefined) {
-        if (result.reason === 'blocked_by_policy') {
-            // Show content blocked state and stop tracking
-            const { updateWidgetState } = await import('./widget');
-            const domain = new URL(evt.url).hostname;
-            updateWidgetState({
-                state: 'content-blocked',
-                provider: getProviderName(evt.url),
-                domain,
-                metadata: {
-                    title: evt.title,
-                    url: evt.url,
-                },
-            }, tabId);
-        } else {
+		if (result.reason === 'blocked_by_policy') {
+			// Show content blocked state and stop tracking
+			const { updateWidgetState } = await import('./widget');
+			const domain = new URL(evt.url).hostname;
+			updateWidgetState({
+				state: 'content-blocked',
+				provider: (() => {
+					try {
+						// eslint-disable-next-line @typescript-eslint/no-var-requires
+						const { getProviderName } = require('./determineProvider');
+						return getProviderName(evt.url);
+					} catch {
+						return 'default';
+					}
+				})(),
+				domain,
+				metadata: {
+					title: evt.title,
+					url: evt.url,
+				},
+			}, tabId);
+		} else {
 			await updateYouTubeStateFromResult(tabId, result, evt.url);
 		}
 	}
@@ -138,14 +159,19 @@ export function cacheContentLabel(
 }
 
 export function updateTabState(tabId: number, payload: PlaybackEvent): void {
-    const prev = tabStates[tabId] || {
+	const prev = tabStates[tabId] || {
 		lastEvent: null,
 		isPlaying: false,
 		consentByDomain: {},
 	};
 	const nextKey = deriveContentKey(payload);
 	const contentChanged = nextKey && nextKey !== prev.lastContentKey;
-	const providerName = getProviderName(payload.url);
+	let providerName: ProviderName = 'default';
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		const { getProviderName } = require('./determineProvider');
+		providerName = getProviderName(payload.url);
+	} catch { }
 	const currentDomain = new URL(payload.url).hostname;
 	const domainChanged = currentDomain !== prev.currentDomain;
 
@@ -169,7 +195,7 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				// Check if the tab supports content scripts before trying to send messages
 				const tab = await chrome.tabs.get(tabId);
 				if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-					console.debug(`${DEBUG_LOG_PREFIX} Skipping provider restart for system page: ${tab.url}`);
+					log.debug(`Skipping provider restart for system page: ${tab.url}`);
 					return;
 				}
 
@@ -178,7 +204,6 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				// Get target language if we have consent for this domain
 				let targetLanguage: string | undefined;
 				if (prev.consentByDomain?.[currentDomain]) {
-					const { getAuthState } = await import('./auth');
 					const authState = await getAuthState();
 					targetLanguage = authState.me?.languageCode;
 				}
@@ -189,25 +214,22 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				});
 			} catch (error) {
 				// This is expected for some tabs, don't treat as error
-				console.debug(
-					`${DEBUG_LOG_PREFIX} Content script not ready for tab ${tabId}:`,
-					error
-				);
+				log.debug(`Content script not ready for tab ${tabId}: ${String(error)}`);
 			}
 		}, 100);
 	}
 
-    // If widget is showing content-blocked, avoid mutating isPlaying/lastEvent to prevent flicker
-    try {
-        const { getCurrentWidgetState } = require('./widget');
-        const currentWidget = getCurrentWidgetState(tabId);
-        if (currentWidget?.state === 'content-blocked') {
-            tabStates[tabId] = prev;
-            return;
-        }
-    } catch {}
+	// If widget is showing content-blocked, avoid mutating isPlaying/lastEvent to prevent flicker
+	try {
+		const { getCurrentWidgetState } = require('./widget');
+		const currentWidget = getCurrentWidgetState(tabId);
+		if (currentWidget?.state === 'content-blocked') {
+			tabStates[tabId] = prev;
+			return;
+		}
+	} catch { }
 
-    switch (payload.event) {
+	switch (payload.event) {
 		case 'start':
 			newState = {
 				lastEvent: payload,
@@ -258,36 +280,53 @@ export async function handleContentActivityPosting(
 	tabId: number,
 	payload: PlaybackEvent
 ): Promise<void> {
-    const state = tabStates[tabId];
-    // Do not post or change state if UI is showing content-blocked
-    try {
-        const { getCurrentWidgetState } = await import('./widget');
-        const current = getCurrentWidgetState(tabId);
-        if (current?.state === 'content-blocked') {
-            console.debug(`${DEBUG_LOG_PREFIX} skipping posting due to content-blocked`);
-            return;
-        }
-    } catch {}
-	const isDefaultProvider = getProviderName(payload.url) === 'default';
-	const isYouTubeProvider = getProviderName(payload.url) === 'youtube';
+	const state = tabStates[tabId];
+	// Do not post or change state if UI is showing content-blocked
+	try {
+		const { getCurrentWidgetState } = await import('./widget');
+		const current = getCurrentWidgetState(tabId);
+		if (current?.state === 'content-blocked') {
+			log.debug('skipping posting due to content-blocked');
+			return;
+		}
+	} catch { }
+	let isDefaultProvider = true;
+	let isYouTubeProvider = false;
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		const { getProviderName } = require('./determineProvider');
+		const name = getProviderName(payload.url);
+		isDefaultProvider = name === 'default';
+		isYouTubeProvider = name === 'youtube';
+	} catch { }
 
-	// For default provider, check consent first
-	if (isDefaultProvider && !state?.hasConsent) {
-		console.debug(
-			`${DEBUG_LOG_PREFIX} default provider without consent - skipping post`
-		);
-		return;
+	// For default provider, check consent first (include domain policy consent)
+	if (isDefaultProvider) {
+		const domain = (() => { try { return new URL(payload.url).hostname; } catch { return undefined; } })();
+		const effectiveConsent =
+			(state?.hasConsent === true) ||
+			(!!domain && state?.consentByDomain?.[domain] === true);
+		if (!effectiveConsent) {
+			log.debug('default provider without consent - skipping post');
+			return;
+		}
+		// Backfill consent/currentDomain if inferred from policy to reduce future skips
+		if (domain && state) {
+			if (!state.hasConsent) state.hasConsent = true;
+			if (!state.currentDomain) state.currentDomain = domain;
+			tabStates[tabId] = state;
+		}
 	}
 
 	// For YouTube provider, always post content activities
 	if (isYouTubeProvider) {
-		console.debug(`${DEBUG_LOG_PREFIX} YouTube provider -> posting`);
+		log.debug('YouTube provider -> posting');
 		await postContentActivityFromPlayback(payload, tabId);
 		return;
 	}
 
 	if (payload.event === 'start' || state?.allowPost === undefined) {
-		console.debug(`${DEBUG_LOG_PREFIX} probing start -> backend detection`);
+		log.debug('probing start -> backend detection');
 
 		const { data: result } = await tryCatch(
 			postContentActivityFromPlayback(payload, tabId)
@@ -297,10 +336,10 @@ export async function handleContentActivityPosting(
 
 		updateAllowPostFromResult(tabId, result);
 	} else if (state?.allowPost) {
-		console.debug(`${DEBUG_LOG_PREFIX} allowPost -> posting`);
+		log.debug('allowPost -> posting');
 		await postContentActivityFromPlayback(payload, tabId);
 	} else {
-		console.debug(`${DEBUG_LOG_PREFIX} skip posting (allowPost=false)`);
+		log.debug('skip posting (allowPost=false)');
 	}
 }
 
@@ -309,54 +348,59 @@ export async function updateYouTubeStateFromResult(
 	result: ContentActivityResult,
 	url: string
 ): Promise<void> {
-	const providerName = getProviderName(url);
+	let providerName: ProviderName = 'default';
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		const { getProviderName } = require('./determineProvider');
+		providerName = getProviderName(url);
+	} catch { }
 	if (providerName !== 'youtube') return;
 
 	// Import updateWidgetState function
 	const { updateWidgetState } = await import('./widget');
-    // Do not override a stable stopped state
-    try {
-        const { getCurrentWidgetState } = await import('./widget');
-        const current = getCurrentWidgetState(tabId);
-        if (current?.state === 'youtube-provider-tracking-stopped') {
-            console.debug(`${DEBUG_LOG_PREFIX} skip YouTube state update due to stopped state`);
-            return;
-        }
-    } catch {}
+	// Do not override a stable stopped state
+	try {
+		const { getCurrentWidgetState } = await import('./widget');
+		const current = getCurrentWidgetState(tabId);
+		if (current?.state === 'youtube-provider-tracking-stopped') {
+			log.debug('skip YouTube state update due to stopped state');
+			return;
+		}
+	} catch { }
 	const domain = new URL(url).hostname;
-	
-    // Determine YouTube state based on result
+
+	// Determine YouTube state based on result
 	let newState: 'youtube-not-tracking' | 'youtube-tracking-unverified' | 'youtube-tracking-verified';
 	let contentLanguage: string | undefined;
 	let targetLanguage: string | undefined;
-	
-    if (result.isWaitingOnLabeling) {
+
+	if (result.isWaitingOnLabeling) {
 		// Still waiting for content labeling
-        // Preserve verified if already verified to avoid UI flicker back to analyzing
-        try {
-            const { getCurrentWidgetState } = await import('./widget');
-            const current = getCurrentWidgetState(tabId);
-            newState = current.state === 'youtube-tracking-verified'
-                ? 'youtube-tracking-verified'
-                : 'youtube-tracking-unverified';
-        } catch {
-            newState = 'youtube-tracking-unverified';
-        }
-		console.debug(`${DEBUG_LOG_PREFIX} YouTube state: waiting for labeling`);
+		// Preserve verified if already verified to avoid UI flicker back to analyzing
+		try {
+			const { getCurrentWidgetState } = await import('./widget');
+			const current = getCurrentWidgetState(tabId);
+			newState = current.state === 'youtube-tracking-verified'
+				? 'youtube-tracking-verified'
+				: 'youtube-tracking-unverified';
+		} catch {
+			newState = 'youtube-tracking-unverified';
+		}
+		log.debug('YouTube state: waiting for labeling');
 	} else if (result.contentLabel && result.currentTargetLanguage) {
 		// Check if content label matches target language
 		const contentLabel = result.contentLabel as any;
 		targetLanguage = result.currentTargetLanguage.languageCode;
-		
+
 		// Check for content language in the contentLabel object
 		contentLanguage = contentLabel?.contentLanguageCode || contentLabel?.languageCode || contentLabel?.detectedLanguage;
-		
-		console.debug(`${DEBUG_LOG_PREFIX} YouTube language check:`, {
+
+		log.debug('YouTube language check:', {
 			contentLanguage,
 			targetLanguage,
 			contentLabel: contentLabel
 		});
-		
+
 		if (contentLanguage === targetLanguage) {
 			newState = 'youtube-tracking-verified';
 		} else {
@@ -365,10 +409,10 @@ export async function updateYouTubeStateFromResult(
 	} else {
 		// No content label available yet, keep as unverified
 		newState = 'youtube-tracking-unverified';
-		console.debug(`${DEBUG_LOG_PREFIX} YouTube state: no content label available`);
+		log.debug('YouTube state: no content label available');
 	}
 
-	console.debug(`${DEBUG_LOG_PREFIX} YouTube state transition:`, {
+	log.debug('YouTube state transition:', {
 		from: 'current state',
 		to: newState,
 		contentLanguage,
@@ -391,23 +435,17 @@ export function updateAllowPostFromResult(
 
 	if (result.saved) {
 		tabStates[tabId].allowPost = true;
-		console.debug(`${DEBUG_LOG_PREFIX} backend says saved -> allowPost=true`);
+		log.debug('backend says saved -> allowPost=true');
 	} else if (result.reason === 'not_target_language') {
 		tabStates[tabId].allowPost = false;
-		console.debug(
-			`${DEBUG_LOG_PREFIX} backend says not target -> allowPost=false`
-		);
+		log.debug('backend says not target -> allowPost=false');
 	} else if (result.isWaitingOnLabeling) {
 		tabStates[tabId].allowPost = true; // keep posting while labeling processes
-		console.debug(
-			`${DEBUG_LOG_PREFIX} backend waiting on labeling -> allowPost=true`
-		);
+		log.debug('backend waiting on labeling -> allowPost=true');
 	} else {
 		// default conservative: do not block
 		tabStates[tabId].allowPost = true;
-		console.debug(
-			`${DEBUG_LOG_PREFIX} backend unknown result -> allowPost=true`
-		);
+		log.debug('backend unknown result -> allowPost=true');
 	}
 }
 
@@ -427,11 +465,7 @@ export function updateConsentForDomain(
 		}
 
 		tabStates[tabId] = state;
-		console.debug(`${DEBUG_LOG_PREFIX} updated consent for domain`, {
-			tabId,
-			domain,
-			hasConsent,
-		});
+		log.debug('updated consent for domain', { tabId, domain, hasConsent });
 	}
 }
 
@@ -444,10 +478,7 @@ export function handleTabRemoved(tabId: number): void {
 			ts: Date.now(),
 		};
 
-		console.debug(`${DEBUG_LOG_PREFIX} tab removed, sending end`, {
-			tabId,
-			endEvt,
-		});
+		log.debug('tab removed, sending end', { tabId, endEvt });
 		postContentActivityFromPlayback(endEvt);
 	}
 
@@ -473,7 +504,7 @@ export function handleLanguageDetection(
 	state.detectedLanguage = event.metadata?.detectedLanguage as string;
 	tabStates[tabId] = state;
 
-	console.debug(`${DEBUG_LOG_PREFIX} language detected:`, {
+	log.debug('language detected:', {
 		tabId,
 		detectedLanguage: state.detectedLanguage,
 		targetLanguage: event.metadata?.targetLanguage,
@@ -520,10 +551,59 @@ export async function handleUrlChange(
 	url: string
 ): Promise<void> {
 	try {
-		const { determineAndActivateProvider } = await import('./determineProvider');
-		await determineAndActivateProvider(tabId, url);
+		const domain = new URL(url).hostname;
+		const { updateWidgetState } = await import('./widget');
+		// Enter determining state
+		updateWidgetState({ state: 'determining-provider', domain }, tabId);
+
+		// Lightweight provider detection without importing registry
+		const providerId: ProviderName = (() => {
+			try {
+				const h = new URL(url).hostname.toLowerCase();
+				if (/(^|\.)youtube\.com$/.test(h) || /(^|\.)youtu\.be$/.test(h)) return 'youtube';
+			} catch { }
+			return 'default';
+		})();
+
+		// Get user's target language
+		const authState = await getAuthState();
+		const targetLanguage = authState.me?.languageCode;
+
+		// For default provider, check domain policy to possibly auto-track
+		let alreadyTracking = false;
+		if (providerId === 'default') {
+			try {
+				const { checkDomainPolicyAllowed } = await import('./domainPolicy');
+				const res = await checkDomainPolicyAllowed(domain);
+				if (res?.allowed) {
+					const state = tabStates[tabId] || { consentByDomain: {} };
+					state.consentByDomain = state.consentByDomain || {};
+					state.consentByDomain[domain] = true;
+					if (state.currentDomain === domain) state.hasConsent = true;
+					tabStates[tabId] = state;
+					updateWidgetState({
+						state: 'default-provider-tracking',
+						provider: 'default',
+						domain,
+						startTime: Date.now(),
+					}, tabId);
+					alreadyTracking = true;
+				}
+			} catch { }
+		}
+
+		// If not already tracking due to allow policy, set idle state
+		if (!alreadyTracking) {
+			const idleState = providerId === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+			updateWidgetState({ state: idleState, provider: providerId, domain }, tabId);
+		}
+
+		// Activate provider content script
+		try {
+			await sendToTab(tabId, 'ACTIVATE_PROVIDER', { providerId, targetLanguage });
+		} catch { }
 	} catch (error) {
-		console.warn(`${DEBUG_LOG_PREFIX} failed to handle URL change:`, error);
+		log.warn('failed to handle URL change:', error);
 	}
 }
 
@@ -532,41 +612,39 @@ export async function handleUrlChange(
  */
 export async function handleTabActivated(tabId: number): Promise<void> {
 	try {
-		console.debug(`${DEBUG_LOG_PREFIX} handleTabActivated called for tab:`, tabId);
-		
+		log.debug('handleTabActivated called for tab:', tabId);
+
 		// Set this tab as the active tab for widget state management
 		const { setActiveTab } = await import('./widget');
 		setActiveTab(tabId);
-		
-		const tab = await chrome.tabs.get(tabId);
-    if (tab.url) {
-			console.debug(`${DEBUG_LOG_PREFIX} Tab activated with URL:`, tab.url);
-      // If we're already in a tracking or blocked state for this tab, avoid resetting the widget state
-      // by re-determining the provider. This prevents flicker and re-verification.
-      try {
-        const { getCurrentWidgetState } = await import('./widget');
-        const currentState = getCurrentWidgetState(tabId);
-        if (
-          isTrackingState(currentState.state) ||
-          currentState.state === 'content-blocked' ||
-          currentState.state === 'youtube-provider-tracking-stopped'
-        ) {
-          console.debug(
-            `${DEBUG_LOG_PREFIX} Tab already in stable state (${currentState.state}) -> skipping provider re-determination`
-          );
-          return;
-        }
-      } catch (e) {
-        // If anything goes wrong, fall back to normal behavior
-        console.debug(`${DEBUG_LOG_PREFIX} Could not read current widget state:`, e);
-      }
 
-      await handleUrlChange(tabId, tab.url);
+		const tab = await chrome.tabs.get(tabId);
+		if (tab.url) {
+			log.debug('Tab activated with URL:', tab.url);
+			// If we're already in a tracking or blocked state for this tab, avoid resetting the widget state
+			// by re-determining the provider. This prevents flicker and re-verification.
+			try {
+				const { getCurrentWidgetState } = await import('./widget');
+				const currentState = getCurrentWidgetState(tabId);
+				if (
+					isTrackingState(currentState.state) ||
+					currentState.state === 'content-blocked' ||
+					currentState.state === 'youtube-provider-tracking-stopped'
+				) {
+					log.debug(`Tab already in stable state (${currentState.state}) -> skipping provider re-determination`);
+					return;
+				}
+			} catch (e) {
+				// If anything goes wrong, fall back to normal behavior
+				log.debug('Could not read current widget state:', e);
+			}
+
+			await handleUrlChange(tabId, tab.url);
 		} else {
-			console.debug(`${DEBUG_LOG_PREFIX} Tab activated but no URL found`);
+			log.debug('Tab activated but no URL found');
 		}
 	} catch (error) {
-		console.warn(`${DEBUG_LOG_PREFIX} failed to handle tab activation:`, error);
+		log.warn('failed to handle tab activation:', error);
 	}
 }
 
@@ -575,25 +653,25 @@ export async function handleTabActivated(tabId: number): Promise<void> {
  */
 export async function handleTabUpdated(
 	tabId: number,
-	changeInfo: { url?: string; status?: string }
+	changeInfo: { url?: string; status?: string; }
 ): Promise<void> {
-	console.debug(`${DEBUG_LOG_PREFIX} handleTabUpdated called:`, { tabId, changeInfo });
+	log.debug('handleTabUpdated called:', { tabId, changeInfo });
 	if (changeInfo.url) {
-		console.debug(`${DEBUG_LOG_PREFIX} URL changed to:`, changeInfo.url);
+		log.debug('URL changed to:', changeInfo.url);
 		await handleUrlChange(tabId, changeInfo.url);
 	} else if (changeInfo.status === 'complete') {
 		// When tab status becomes 'complete', check if we need to activate a provider
-		console.debug(`${DEBUG_LOG_PREFIX} Tab completed, checking if provider activation needed`);
+		log.debug('Tab completed, checking if provider activation needed');
 		try {
 			const tab = await chrome.tabs.get(tabId);
 			if (tab.url && tab.url.includes('youtube.com')) {
-				console.debug(`${DEBUG_LOG_PREFIX} YouTube tab completed, activating provider`);
+				log.debug('YouTube tab completed, activating provider');
 				await handleUrlChange(tabId, tab.url);
 			}
 		} catch (error) {
-			console.debug(`${DEBUG_LOG_PREFIX} Failed to check tab URL on completion:`, error);
+			log.debug('Failed to check tab URL on completion:', error);
 		}
 	} else {
-		console.debug(`${DEBUG_LOG_PREFIX} No URL change detected`);
+		log.debug('No URL change detected');
 	}
 }

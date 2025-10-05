@@ -1,6 +1,8 @@
 // This file is used to register handlers for messages from the content script
 
 import type { MsgKey, Req, Res, MessageMap } from './messages';
+import { createLogger } from '../lib/logger';
+const log = createLogger('service-worker', 'messaging:bg');
 
 type Handler<K extends MsgKey> = (
 	req: MessageMap[K]['req'],
@@ -51,10 +53,10 @@ export function sendToTab<K extends MsgKey>(
 			if (lastErr) {
 				// Handle specific cases where content script might not be ready
 				const errorMessage = lastErr.message || 'Unknown error';
-				if (errorMessage.includes('Receiving end does not exist') || 
+				if (errorMessage.includes('Receiving end does not exist') ||
 					errorMessage.includes('Could not establish connection')) {
 					// This is expected for some tabs, don't treat as error
-					console.debug(`[messaging] Content script not ready for tab ${tabId}: ${errorMessage}`);
+					log.debug(`Content script not ready for tab ${tabId}: ${errorMessage}`);
 					return reject(new Error(errorMessage)); // Reject so retry mechanism can work
 				}
 				return reject(new Error(errorMessage));

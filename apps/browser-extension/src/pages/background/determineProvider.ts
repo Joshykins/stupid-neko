@@ -5,6 +5,13 @@ import { getMetaForUrl } from '../providers/registry';
 import type { ProviderName } from './providers/types';
 import { sendToTab } from '../../messaging/messagesBackgroundRouter';
 import { updateWidgetState } from './widget';
+import { getAuthState } from './auth';
+
+import { createLogger } from '../../lib/logger';
+const logDefault = createLogger('service-worker', 'providers:default');
+const logYoutube = createLogger('service-worker', 'providers:youtube');
+const logActivation = createLogger('service-worker', 'providers:activation');
+const logDetermine = createLogger('service-worker', 'providers:determine');
 
 const DEBUG_LOG_PREFIX = '[bg:determine-provider]';
 
@@ -26,7 +33,7 @@ export function setDeterminingProviderState(domain?: string, tabId?: number): vo
 export function transitionFromDeterminingProvider(providerName: ProviderName, domain: string, tabId?: number): void {
 	// Transition from determining-provider to appropriate provider idle state
 	const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
-	
+
 	updateWidgetState({
 		state: idleState,
 		provider: providerName,
@@ -44,7 +51,7 @@ export async function determineAndActivateProvider(
 ): Promise<void> {
 	try {
 		const domain = new URL(url).hostname;
-		
+
 		// Set determining-provider state while we figure out which provider to use
 		setDeterminingProviderState(domain, tabId);
 
@@ -53,30 +60,65 @@ export async function determineAndActivateProvider(
 		const providerId = meta.id;
 
 		// Get user's target language from auth state
-		const { getAuthState } = await import('./auth');
 		const authState = await getAuthState();
 		const targetLanguage = authState.me?.languageCode;
 
-		// Transition to appropriate provider idle state
-		transitionFromDeterminingProvider(providerId, domain, tabId);
+		// If default provider, check domain policy (hashed domain allow/block)
+		let defaultAllowed = false;
+		if (providerId === 'default') {
+			try {
+				// Avoid re-check if already tracking on the same domain
+				const { tabStates } = await import('./content-activity-router');
+				const current = tabStates[tabId];
+				if (!(current?.isPlaying && current?.currentDomain === domain)) {
+					const { checkDomainPolicyAllowed } = await import('./domainPolicy');
+					const res = await checkDomainPolicyAllowed(domain);
+					if (res) {
+						const { updateConsentForDomain } = await import('./content-activity-router');
+						// Treat allow policy as implicit consent; block leaves consent false
+						updateConsentForDomain(tabId, domain, res.allowed);
+						if (res.allowed) {
+							defaultAllowed = true;
+							const { updateWidgetState } = await import('./widget');
+							updateWidgetState({
+								state: 'default-provider-tracking',
+								provider: 'default',
+								domain,
+								startTime: Date.now(),
+							}, tabId);
+						}
+					}
+				}
+			} catch (e) {
+				logDefault.debug('domain policy check failed', e);
+			}
+		}
+
+		// Transition to appropriate provider idle state unless we already started tracking via allow policy
+		if (!(providerId === 'default' && defaultAllowed)) {
+			transitionFromDeterminingProvider(providerId, domain, tabId);
+		}
 
 		// Check if the tab supports content scripts before trying to send messages
 		try {
 			const tab = await chrome.tabs.get(tabId);
 			if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-				console.debug(`${DEBUG_LOG_PREFIX} Skipping content script activation for system page: ${tab.url}`);
+				logActivation.debug(`Skipping content script activation for system page: ${tab.url}`);
 				return;
 			}
 		} catch (error) {
-			console.debug(`${DEBUG_LOG_PREFIX} Could not get tab info for ${tabId}:`, error);
+			logActivation.debug(`Could not get tab info for ${tabId}: ${String(error)}`);
 			return;
 		}
 
 		// Activate the provider in the content script with retry
-		console.debug(`${DEBUG_LOG_PREFIX} Starting retry activation for provider: ${providerId}`);
+		{
+			const logger = providerId === 'default' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
+			logger?.debug('Starting retry activation for provider:', providerId);
+		}
 		await retryActivateProvider(tabId, providerId, targetLanguage, url);
 	} catch (error) {
-		console.warn(`${DEBUG_LOG_PREFIX} failed to determine provider:`, error);
+		logDetermine.warn('failed to determine provider:', error);
 		throw error;
 	}
 }
@@ -121,43 +163,41 @@ async function retryActivateProvider(
 	url: string,
 	maxRetries: number = 5
 ): Promise<void> {
-	const { sendToTab } = await import('../../messaging/messagesBackgroundRouter');
-	
-		for (let attempt = 1; attempt <= maxRetries; attempt++) {
-			try {
-				console.debug(`${DEBUG_LOG_PREFIX} Attempting to send ACTIVATE_PROVIDER message (attempt ${attempt}/${maxRetries})`);
-				await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
-					providerId,
-					targetLanguage,
-				});
+	const logger = providerId === 'default' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
 
-				console.debug(
-					`${DEBUG_LOG_PREFIX} activated provider: ${providerId} for URL: ${url} (attempt ${attempt})`
-				);
-				return; // Success!
-			} catch (error) {
-				const isLastAttempt = attempt === maxRetries;
-				const errorMessage = error instanceof Error ? error.message : String(error);
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		try {
+			logger?.debug(`Attempting to send ACTIVATE_PROVIDER message (attempt ${attempt}/${maxRetries})`);
+			await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
+				providerId,
+				targetLanguage,
+			});
 
-				console.debug(`${DEBUG_LOG_PREFIX} Attempt ${attempt} failed:`, errorMessage);
+			logger?.debug(`activated provider: ${providerId} for URL: ${url} (attempt ${attempt})`);
+			return; // Success!
+		} catch (error) {
+			const isLastAttempt = attempt === maxRetries;
+			const errorMessage = error instanceof Error ? error.message : String(error);
 
-				if (errorMessage.includes('Receiving end does not exist') ||
-					errorMessage.includes('Could not establish connection')) {
+			logger?.debug(`Attempt ${attempt} failed: ${errorMessage}`);
 
-					if (isLastAttempt) {
-						console.debug(`${DEBUG_LOG_PREFIX} Content script not ready for tab ${tabId} after ${maxRetries} attempts:`, errorMessage);
-						return; // Give up gracefully
-					}
+			if (errorMessage.includes('Receiving end does not exist') ||
+				errorMessage.includes('Could not establish connection')) {
 
-					// Wait with exponential backoff before retrying
-					const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-					console.debug(`${DEBUG_LOG_PREFIX} Content script not ready, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
-					await new Promise(resolve => setTimeout(resolve, delay));
-				} else {
-					// Non-connection error, don't retry
-					console.debug(`${DEBUG_LOG_PREFIX} Failed to activate provider:`, errorMessage);
-					return;
+				if (isLastAttempt) {
+					logger?.debug(`Content script not ready for tab ${tabId} after ${maxRetries} attempts: ${errorMessage}`);
+					return; // Give up gracefully
 				}
+
+				// Wait with exponential backoff before retrying
+				const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+				logger?.debug(`Content script not ready, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+				await new Promise(resolve => setTimeout(resolve, delay));
+			} else {
+				// Non-connection error, don't retry
+				logger?.debug(`Failed to activate provider: ${errorMessage}`);
+				return;
 			}
 		}
+	}
 }

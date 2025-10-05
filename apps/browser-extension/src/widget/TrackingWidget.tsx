@@ -32,6 +32,8 @@ import { ContentBlocked } from './components/states/ContentBlocked';
 import { DefaultProviderNotTracking } from './components/states/DefaultProviderNotTracking';
 import { IconButton } from '../components/ui/IconButton';
 import { cn } from '../lib/utils';
+import { createLogger } from '../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 type TrackingWidgetProps = {
 	userName?: string;
@@ -81,10 +83,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			// Use dev icon in dangerous testing mode, otherwise use regular icon
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			const url = chrome.runtime.getURL(iconName);
-			// console.log(`[TrackingWidget] Setting icon: ${iconName}, URL: ${url}, isDangerousTesting: ${isDangerousTesting}`);
 			setIconUrl(url);
 		} catch (error) {
-			// console.warn('[TrackingWidget] Failed to get icon URL:', error);
 			// Fallback to regular icon if dev icon fails to load
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			setIconUrl(`/${iconName}`);
@@ -435,11 +435,11 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			// Don't allow closing if forceAlwaysExpanded is true
 			return;
 		}
-		console.log("handleOpenChange", newOpen);
+		log.debug('handleOpenChange', newOpen);
 		setExpanded(newOpen);
 	};
 
-	console.log("expanded", expanded);
+	log.debug('expanded', expanded);
 	return (
 		<Popover
 			open={expanded}

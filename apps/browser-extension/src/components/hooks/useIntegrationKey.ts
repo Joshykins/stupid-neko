@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react';
 import { useStorage } from './useStorage';
 import { callBackground } from '../../messaging/messagesContentRouter';
 
+import { createLogger } from '../../lib/logger';
+const log = createLogger('popup', 'settings:integration-key');
+
 export function useIntegrationKey() {
 	const { value: integrationId, setValue: setIntegrationId } = useStorage(
 		'integrationId',
@@ -29,16 +32,16 @@ export function useIntegrationKey() {
 			setSaving(true);
 
 			try {
-				console.log('[useIntegrationKey] Saving integration key:', trimmedKey);
+				log.info('Saving integration key:', trimmedKey);
 
 				// Save to storage
 				await setIntegrationId(trimmedKey);
-				console.log('[useIntegrationKey] Saved to storage successfully');
+				log.info('Saved to storage successfully');
 
 				// Refresh auth state with timeout
 				const response = await new Promise<{
 					ok: boolean;
-					auth?: { isAuthed: boolean; me: unknown };
+					auth?: { isAuthed: boolean; me: unknown; };
 				}>((resolve, reject) => {
 					const timeout = setTimeout(() => {
 						reject(
@@ -51,7 +54,7 @@ export function useIntegrationKey() {
 					callBackground('REFRESH_AUTH', {})
 						.then(resp => {
 							clearTimeout(timeout);
-							console.log('[useIntegrationKey] Auth response:', resp);
+							log.info('Auth response:', resp);
 							resolve({
 								ok: resp.ok,
 								auth: resp.auth,
@@ -59,7 +62,7 @@ export function useIntegrationKey() {
 						})
 						.catch(error => {
 							clearTimeout(timeout);
-							console.error('[useIntegrationKey] Auth error:', error);
+							log.error('Auth error:', error);
 							reject(error);
 						});
 				});
@@ -68,17 +71,17 @@ export function useIntegrationKey() {
 					response.ok && response.auth?.isAuthed && response.auth?.me;
 
 				if (isAuthenticated) {
-					console.log('[useIntegrationKey] Authentication successful');
+					log.info('Authentication successful');
 					setSaving(false);
 					return true;
 				} else {
-					console.log('[useIntegrationKey] Authentication failed:', response);
+					log.info('Authentication failed:', response);
 					setError('Invalid Integration ID. Please verify and try again.');
 					setSaving(false);
 					return false;
 				}
 			} catch (err) {
-				console.error('[useIntegrationKey] Error during save:', err);
+				log.error('Error during save:', err);
 				const errorMessage =
 					err instanceof Error ? err.message : 'Failed to save Integration ID.';
 				setError(errorMessage);

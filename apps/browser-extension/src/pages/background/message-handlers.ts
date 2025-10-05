@@ -1,8 +1,8 @@
 // Message handlers for background script
 
-import { on } from '../../messaging/messagesBackgroundRouter';
+import { on, sendToTab } from '../../messaging/messagesBackgroundRouter';
 import { api } from '../../../../../convex/_generated/api';
-import { getAuthState, refreshAuth } from './auth';
+import { convex, getIntegrationId, getAuthState, refreshAuth } from './auth';
 import { contentLabelsByKey } from './content-activity-router';
 import {
 	updateWidgetStateForEvent,
@@ -18,9 +18,14 @@ import {
 	tabStates,
 	postContentActivityFromPlayback,
 	handleContentActivityEvent,
+	updateConsentForDomain,
 } from './content-activity-router';
 import type { PlaybackEvent, WidgetStateUpdate } from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
+import { updateWidgetState } from './widget';
+import { getHashedDomainContentKey } from './domainPolicy';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('service-worker', 'handlers:bg');
 
 const DEBUG_LOG_PREFIX = '[bg:handlers]';
 
@@ -51,10 +56,7 @@ export function registerMessageHandlers(): void {
 			await startTrackingFromPopup(tabId);
 			return { success: true };
 		} catch (error) {
-			console.error(
-				`${DEBUG_LOG_PREFIX} failed to start tracking from popup:`,
-				error
-			);
+			log.error('failed to start tracking from popup:', error);
 			return { success: false, error: String(error) };
 		}
 	});
@@ -69,10 +71,7 @@ export function registerMessageHandlers(): void {
 	// Widget handlers
 	on('WIDGET_ACTION', async ({ action, payload }, sender) => {
 		const tabId = sender.tab?.id;
-		console.debug(`${DEBUG_LOG_PREFIX} received WIDGET_ACTION`, {
-			action,
-			payload,
-		});
+		log.debug('received WIDGET_ACTION', { action, payload });
 
 		if (!action || typeof tabId !== 'number') {
 			return { success: false, error: 'Invalid action or tab ID' };
@@ -103,8 +102,59 @@ export function registerMessageHandlers(): void {
 			}
 
 			case 'question-always-track': {
-				const { updateWidgetState } = await import('./widget');
-				updateWidgetState({ state: 'default-provider-tracking', startTime: Date.now() }, tabId);
+				// Create a domain-level ALLOW policy using hashed domain contentKey
+				try {
+					const tab = await chrome.tabs.get(tabId);
+					const url = tab.url || '';
+					const domain = url ? new URL(url).hostname : undefined;
+					if (domain) {
+						const contentKey = await getHashedDomainContentKey(domain);
+						const integrationId = await getIntegrationId();
+						if (convex && integrationId) {
+							const { error } = await tryCatch(
+								convex.mutation(
+									api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
+									{
+										integrationId,
+										contentKey,
+										source: 'website',
+										url,
+										label: domain,
+										policyKind: 'allow',
+									}
+								)
+							);
+							if (error) {
+								log.warn('failed to create allow policy for domain:', error);
+							}
+						}
+						// DB is authoritative; no cache update needed
+						// Set consent inline
+						const state = tabStates[tabId] || { consentByDomain: {} };
+						state.consentByDomain = state.consentByDomain || {};
+						state.consentByDomain[domain] = true;
+						if (state.currentDomain === domain) state.hasConsent = true;
+						tabStates[tabId] = state;
+
+						// Update widget immediately
+						updateWidgetState({
+							state: 'default-provider-tracking',
+							startTime: Date.now(),
+							provider: 'default',
+							domain,
+							metadata: { title: tab.title, url },
+						}, tabId);
+
+						// Activate provider in content script
+						const authState = await getAuthState();
+						await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
+							providerId: 'default',
+							targetLanguage: authState.me?.languageCode,
+						});
+					}
+				} catch (e) {
+					log.warn('always-track flow failed:', e);
+				}
 				break;
 			}
 
@@ -122,35 +172,34 @@ export function registerMessageHandlers(): void {
 				await handleConsentResponse(payload, tabId);
 				break;
 
-            case 'block-content': {
-                // Create a user content label blocking policy for current content and stop recording
+			case 'block-content': {
+				// Create a user content label blocking policy for current content and stop recording
 				const state = tabStates[tabId];
 				const last = state?.lastEvent;
 				if (!last) break;
 				const { extractContentKey, getProviderName } = await import('./determineProvider');
 				const contentKey = extractContentKey(last.url);
 				if (contentKey) {
-					const { convex, getIntegrationId } = await import('./auth');
 					const integrationId = await getIntegrationId();
 					if (convex && integrationId) {
 						const { error } = await tryCatch(
 							convex.mutation(
-                                api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
+								api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
 								{
 									integrationId,
 									contentKey,
-										source: (() => {
-											const p = getProviderName(last.url);
-											return p === 'default' ? 'website' : (p as 'youtube' | 'spotify' | 'anki' | 'manual'  | 'website');
-										})(),
+									source: (() => {
+										const p = getProviderName(last.url);
+										return p === 'default' ? 'website' : (p as 'youtube' | 'spotify' | 'anki' | 'manual' | 'website');
+									})(),
 									url: last.url,
 									label: state?.lastEvent?.title,
-                                    policyKind: 'block',
+									policyKind: 'block',
 								}
 							)
 						);
 						if (error) {
-                            console.error(`${DEBUG_LOG_PREFIX} failed to create block policy for content:`, error);
+							log.error('failed to create block policy for content:', error);
 						}
 					}
 				}
@@ -185,19 +234,19 @@ export function registerMessageHandlers(): void {
 				const stateKey: WidgetStateUpdate['state'] = current.provider === 'youtube'
 					? 'youtube-provider-tracking-stopped'
 					: 'default-provider-tracking-stopped';
-                // Preserve last known title/url as subtitle metadata for stopped state
-                const state = tabStates[tabId];
-                updateWidgetState({
-                    state: stateKey,
-                    metadata: {
-                        title: state?.lastEvent?.title,
-                        url: state?.lastEvent?.url,
-                    },
-                }, tabId);
+				// Preserve last known title/url as subtitle metadata for stopped state
+				const state = tabStates[tabId];
+				updateWidgetState({
+					state: stateKey,
+					metadata: {
+						title: state?.lastEvent?.title,
+						url: state?.lastEvent?.url,
+					},
+				}, tabId);
 				// Send end event if there's an active recording
-                if (state?.isPlaying && state?.lastEvent) {
+				if (state?.isPlaying && state?.lastEvent) {
 					const endEvt: PlaybackEvent = {
-                        ...state.lastEvent,
+						...state.lastEvent,
 						event: 'end',
 						ts: Date.now(),
 					};
@@ -211,7 +260,7 @@ export function registerMessageHandlers(): void {
 				break;
 
 			default:
-				console.warn(`${DEBUG_LOG_PREFIX} unknown widget action:`, action);
+				log.warn('unknown widget action:', action);
 				return { success: false, error: `Unknown widget action: ${action}` };
 		}
 
@@ -223,7 +272,7 @@ export function registerMessageHandlers(): void {
 	on('PLAYBACK_EVENT', async ({ payload }, sender) => {
 		if (!payload) return {};
 
-		console.debug(`${DEBUG_LOG_PREFIX} received PLAYBACK_EVENT`, payload);
+		log.debug('received PLAYBACK_EVENT', payload);
 
 		const tabId = sender.tab?.id;
 		if (typeof tabId !== 'number') return {};
@@ -244,10 +293,7 @@ export function registerMessageHandlers(): void {
 	on('CONTENT_ACTIVITY_EVENT', async ({ payload }, sender) => {
 		if (!payload) return {};
 
-		console.debug(
-			`${DEBUG_LOG_PREFIX} received CONTENT_ACTIVITY_EVENT`,
-			payload
-		);
+		log.debug('received CONTENT_ACTIVITY_EVENT', payload);
 
 		const tabId = sender.tab?.id;
 		if (typeof tabId !== 'number') return {};

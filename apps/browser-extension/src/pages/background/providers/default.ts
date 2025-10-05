@@ -5,6 +5,8 @@ import type {
 } from './types';
 
 // Default content handler - runs in content script context
+import { createLogger } from '../../../lib/logger';
+const log = createLogger('content', 'providers:default');
 let isActive = false;
 let startTime: number | null = null;
 let activityTimer: number | null = null;
@@ -72,7 +74,7 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 
 	const metadata = getCurrentMetadata();
 	const payload: ContentActivityEvent = {
-		source: 'manual',
+		source: 'website',
 		event,
 		url: location.href,
 		ts: Date.now(),
@@ -87,7 +89,7 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 	}
 
 	try {
-		console.debug('[content][default] emit', payload);
+		log.debug('emit', payload);
 	} catch {
 		// Ignore console errors
 	}
@@ -96,12 +98,12 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 };
 
 const setupActivityTracking = (): void => {
-	// Emit progress events every 30 seconds
-	activityTimer = window.setInterval(() => {
-		if (isActive) {
-			emit('progress');
-		}
-	}, 30000);
+	// Disable automatic content-script heartbeats for default provider.
+	// Heartbeats will be emitted from the widget while tracking for privacy control.
+	if (activityTimer) {
+		window.clearInterval(activityTimer);
+		activityTimer = null;
+	}
 };
 
 // Function to check if page matches target language and emit detection event

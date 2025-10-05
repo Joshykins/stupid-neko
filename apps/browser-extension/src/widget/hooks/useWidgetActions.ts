@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { callBackground } from '../../messaging/messagesContentRouter';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 export function useWidgetActions() {
     // Provider-scoped actions (new, preferred)
@@ -9,7 +11,7 @@ export function useWidgetActions() {
                 action: 'default.open-always-track-question',
             });
         } catch (error) {
-            console.error('Failed to open always-track question (default):', error);
+            log.error('Failed to open always-track question (default):', error);
         }
     }, []);
 
@@ -17,7 +19,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'default.dont-track' });
         } catch (error) {
-            console.error('Failed to set dont-track (default):', error);
+            log.error('Failed to set dont-track (default):', error);
         }
     }, []);
 
@@ -25,7 +27,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'default.question-track-once' });
         } catch (error) {
-            console.error('Failed to start tracking once (default):', error);
+            log.error('Failed to start tracking once (default):', error);
         }
     }, []);
 
@@ -33,7 +35,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'default.question-always-track' });
         } catch (error) {
-            console.error('Failed to always track (default):', error);
+            log.error('Failed to always track (default):', error);
         }
     }, []);
 
@@ -41,7 +43,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'default.stop-recording' });
         } catch (error) {
-            console.error('Failed to stop recording (default):', error);
+            log.error('Failed to stop recording (default):', error);
         }
     }, []);
 
@@ -49,7 +51,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'default.track-anyway' });
         } catch (error) {
-            console.error('Failed to track anyway (default):', error);
+            log.error('Failed to track anyway (default):', error);
         }
     }, []);
 
@@ -57,7 +59,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'youtube.stop-recording' });
         } catch (error) {
-            console.error('Failed to stop recording (YouTube):', error);
+            log.error('Failed to stop recording (YouTube):', error);
         }
     }, []);
 
@@ -65,7 +67,7 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'youtube.block-content' });
         } catch (error) {
-            console.error('Failed to block content (YouTube):', error);
+            log.error('Failed to block content (YouTube):', error);
         }
     }, []);
 
@@ -73,14 +75,14 @@ export function useWidgetActions() {
         try {
             await callBackground('WIDGET_ACTION', { action: 'youtube.track-anyway' });
         } catch (error) {
-            console.error('Failed to track anyway (YouTube):', error);
+            log.error('Failed to track anyway (YouTube):', error);
         }
     }, []);
 
 
 
-	return {
-		// Provider-scoped actions
+    return {
+        // Provider-scoped actions
         defaultOpenAlwaysTrackQuestion,
         defaultDontTrack,
         defaultQuestionTrackOnce,
@@ -91,5 +93,5 @@ export function useWidgetActions() {
         youtubeBlockContent,
         youtubeTrackAnyway,
 
-	};
+    };
 }

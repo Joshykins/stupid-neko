@@ -1,8 +1,7 @@
 // Background script entry point
 
-console.log('background script loaded');
-
 // Import modules
+import { createLogger } from '../../lib/logger';
 import { invalidateAuthCache } from './auth';
 import {
 	handleTabActivated,
@@ -11,6 +10,9 @@ import {
 } from './content-activity-router';
 import { registerMessageHandlers } from './message-handlers';
 import { initializeWidgetState } from './widget';
+
+const log = createLogger('service-worker', 'handlers:bg');
+log.info('background script loaded');
 
 // Initialize background script modules
 
@@ -23,12 +25,12 @@ chrome.tabs.onRemoved.addListener(tabId => {
 });
 
 chrome.tabs.onActivated.addListener(activeInfo => {
-	console.debug('[bg] Tab activated:', activeInfo.tabId);
+	log.debug('Tab activated:', activeInfo.tabId);
 	handleTabActivated(activeInfo.tabId);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-	console.debug('[bg] Tab updated:', tabId, changeInfo);
+	log.debug('Tab updated:', tabId, changeInfo);
 	handleTabUpdated(tabId, changeInfo);
 });
 

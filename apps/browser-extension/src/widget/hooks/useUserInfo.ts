@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { LanguageCode } from '../../../../convex/schema';
 import { callBackground } from '../../messaging/messagesContentRouter';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 type UserInfo = {
 	userName: string;
@@ -48,7 +50,7 @@ export function useUserInfo(props: UseUserInfoProps = {}) {
 					languageCode: languageCode || 'ja',
 				});
 			} catch (error) {
-				console.warn('[useUserInfo] Failed to load user info:', error);
+				log.warn('Failed to load user info:', error);
 			}
 		};
 

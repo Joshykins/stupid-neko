@@ -1,12 +1,14 @@
 import { useAnimation } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 const ICON_PX = 40;
 const H_PAD = 32;
 const V_PAD = 32;
 const SNAP_THRESHOLD = 32;
 
-type Position = { left: number; top: number };
+type Position = { left: number; top: number; };
 
 function clampToViewport(left: number, top: number): Position {
 	const maxLeft = Math.max(H_PAD, window.innerWidth - ICON_PX - H_PAD);
@@ -34,35 +36,35 @@ function snapToEdges(p: Position): Position {
 function savePosition(p: Position) {
 	try {
 		chrome.storage.sync.set({ trackingWidgetPos: p });
-	} catch {}
+	} catch { }
 }
 
 export function useWidgetPosition() {
-    const [position, setPosition] = useState<Position>(() => ({
-        left: 18,
-        top: 100,
-    }));
+	const [position, setPosition] = useState<Position>(() => ({
+		left: 18,
+		top: 100,
+	}));
 
-    const controls = useAnimation();
-    const startRef = useRef<Position | null>(null);
-    const dragMovedRef = useRef(false);
+	const controls = useAnimation();
+	const startRef = useRef<Position | null>(null);
+	const dragMovedRef = useRef(false);
 
 	// Load saved position on mount
 	useEffect(() => {
-        (async () => {
-            try {
-                const result = await chrome.storage.sync.get(['trackingWidgetPos']);
-                if (result.trackingWidgetPos) {
-                    const saved = result.trackingWidgetPos as Position;
-                    const clamped = clampToViewport(saved.left, saved.top);
-                    const snapped = snapToEdges(clamped);
-                    setPosition(snapped);
-                }
-            } catch {}
-        })();
+		(async () => {
+			try {
+				const result = await chrome.storage.sync.get(['trackingWidgetPos']);
+				if (result.trackingWidgetPos) {
+					const saved = result.trackingWidgetPos as Position;
+					const clamped = clampToViewport(saved.left, saved.top);
+					const snapped = snapToEdges(clamped);
+					setPosition(snapped);
+				}
+			} catch { }
+		})();
 	}, []);
 
-    // Re-clamp and keep against edge on resize
+	// Re-clamp and keep against edge on resize
 	useEffect(() => {
 		const onResize = () => {
 			const snapped = snapToEdges(clampToViewport(position.left, position.top));
@@ -70,16 +72,16 @@ export function useWidgetPosition() {
 		};
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
-    }, [position.left, position.top]);
+	}, [position.left, position.top]);
 
-    const onDragStart = () => {
-        dragMovedRef.current = false;
-        startRef.current = { left: position.left, top: position.top };
-        // Ensure framer takes control only while pointer is down
-        // (Framer handles this internally; we just reset our flags here)
-    };
+	const onDragStart = () => {
+		dragMovedRef.current = false;
+		startRef.current = { left: position.left, top: position.top };
+		// Ensure framer takes control only while pointer is down
+		// (Framer handles this internally; we just reset our flags here)
+	};
 
-	const onDrag = (_e: any, info: { offset: { x: number; y: number } }) => {
+	const onDrag = (_e: any, info: { offset: { x: number; y: number; }; }) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
 		if (dx > 2 || dy > 2) {
@@ -87,24 +89,24 @@ export function useWidgetPosition() {
 		}
 	};
 
-    const onDragEnd = async (
+	const onDragEnd = async (
 		_e: any,
-		info: { offset: { x: number; y: number } }
+		info: { offset: { x: number; y: number; }; }
 	) => {
-        const start = startRef.current || {
-            left: position.left,
-            top: position.top,
-        };
+		const start = startRef.current || {
+			left: position.left,
+			top: position.top,
+		};
 		const nextLeft = start.left + (info?.offset?.x || 0);
 		const nextTop = start.top + (info?.offset?.y || 0);
 		const clamped = clampToViewport(nextLeft, nextTop);
 		const snapped = snapToEdges(clamped);
 
-		console.log('=== DRAG END DEBUG ===');
-		console.log('1. Start position:', start);
-		console.log('2. Drag offset:', { x: info?.offset?.x || 0, y: info?.offset?.y || 0 });
-		console.log('3. Let-go position:', { left: nextLeft, top: nextTop });
-		console.log('4. Snapped position:', snapped);
+		log.debug('=== DRAG END DEBUG ===');
+		log.debug('1. Start position:', start);
+		log.debug('2. Drag offset:', { x: info?.offset?.x || 0, y: info?.offset?.y || 0 });
+		log.debug('3. Let-go position:', { left: nextLeft, top: nextTop });
+		log.debug('4. Snapped position:', snapped);
 
 		// Clear drag flag after a tick so pointerUp can detect drag state properly
 		setTimeout(() => {
@@ -113,18 +115,18 @@ export function useWidgetPosition() {
 
 		// Animate absolute left/top; reset transforms to zero to avoid additive jumps
 		await controls.start({
-            x: 0,
-            y: 0,
-            left: snapped.left,
-            top: snapped.top,
-            transition: { type: 'spring', stiffness: 500, damping: 40 },
-        });
+			x: 0,
+			y: 0,
+			left: snapped.left,
+			top: snapped.top,
+			transition: { type: 'spring', stiffness: 500, damping: 40 },
+		});
 
-        setPosition(snapped);
-        savePosition(snapped);
+		setPosition(snapped);
+		savePosition(snapped);
 
 		startRef.current = null;
-		console.log('=== END DRAG DEBUG ===');
+		log.debug('=== END DRAG DEBUG ===');
 	};
 
 	return {

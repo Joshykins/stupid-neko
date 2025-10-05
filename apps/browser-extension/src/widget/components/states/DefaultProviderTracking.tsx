@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
 import { useWidgetActions } from '../../hooks/useWidgetActions';
+import { Globe2 } from 'lucide-react';
+import { callBackground } from '../../../messaging/messagesContentRouter';
 
 interface DefaultProviderTrackingProps {
     widgetState: WidgetState;
@@ -15,39 +17,50 @@ export const DefaultProviderTracking: React.FC<DefaultProviderTrackingProps> = (
     renderDebugInfo,
 }) => {
     const { defaultStopRecording } = useWidgetActions();
+
+    const elapsedLabel = useMemo(() => {
+        const start = widgetState.startTime ?? 0;
+        const elapsedMs = Math.max(0, currentTime - start);
+        const totalSeconds = Math.floor(elapsedMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const secondsPadded = seconds < 10 ? `0${seconds}` : `${seconds}`;
+        return `${minutes}:${secondsPadded}`;
+    }, [currentTime, widgetState.startTime]);
+
+    // Send heartbeats while tracking on the active tab
+    useEffect(() => {
+        if (widgetState.state !== 'default-provider-tracking') return;
+
+        const intervalId = window.setInterval(() => {
+            void callBackground('PLAYBACK_EVENT', {
+                payload: {
+                    source: 'website',
+                    event: 'progress',
+                    url: window.location.href,
+                    ts: Date.now(),
+                },
+            }).catch(() => { });
+        }, 5000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [widgetState.state]);
     return (
         <>
             <div >
-                <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-3">
-                    <div className="snbex:w-3 snbex:h-3 snbex:bg-green-500 snbex:rounded-full snbex:animate-pulse"></div>
-                    <div className="snbex:text-base snbex:font-bold">
-                        Tracking Content
+                <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-2">
+                    <Globe2 className="snbex:w-6 snbex:h-6" />
+                    <div className="snbex:text-lg snbex:font-bold">
+                        Tracking {elapsedLabel} of Progress...
                     </div>
                 </div>
-                <div className="snbex:text-xs snbex:text-gray-500 snbex:mb-2">
-                    {widgetState.domain}
-                </div>
-                {widgetState.metadata?.title ? (
-                    <div className="snbex:text-sm snbex:font-medium snbex:mb-2 snbex:p-2 snbex:bg-gray-50 snbex:rounded-md">
-                        {String(widgetState.metadata.title)}
-                    </div>
-                ) : null}
-                {widgetState.metadata?.url ? (
-                    <div className="snbex:text-xs snbex:text-gray-400 snbex:mb-3 snbex:truncate">
-                        {String(widgetState.metadata.url)}
-                    </div>
-                ) : null}
-                {widgetState.startTime ? (
-                    <div className="snbex:text-xs snbex:text-gray-600 snbex:mb-3">
-                        Session:{' '}
-                        {Math.floor((currentTime - widgetState.startTime) / 1000)}s
-                    </div>
-                ) : null}
+                <div className="snbex:text-sm snbex:font-medium snbex:text-background snbex:mb-4">Tracking your time across <span className="snbex:font-bold">{widgetState.domain}</span></div>
+
                 <Button
                     onClick={defaultStopRecording}
-                    variant="destructive"
-                    className="snbex:w-full"
-                    size="sm"
+                    className="snbex:w-full snbex:bg-accent mt-3"
                 >
                     Stop Tracking
                 </Button>

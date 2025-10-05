@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('popup', 'popup:hooks');
 
 type StorageKeys = 'integrationId' | 'widgetEnabled';
 
@@ -15,7 +17,7 @@ export function useStorage<T>(key: StorageKeys, defaultValue: T) {
 					setLoading(false);
 				});
 			} catch (error) {
-				console.error(`Failed to load ${key}:`, error);
+				log.error(`Failed to load ${key}:`, error);
 				setValue(defaultValue);
 				setLoading(false);
 			}
@@ -37,7 +39,7 @@ export function useStorage<T>(key: StorageKeys, defaultValue: T) {
 			});
 			setValue(newValue);
 		} catch (error) {
-			console.error(`Failed to save ${key}:`, error);
+			log.error(`Failed to save ${key}:`, error);
 			throw error;
 		}
 	};

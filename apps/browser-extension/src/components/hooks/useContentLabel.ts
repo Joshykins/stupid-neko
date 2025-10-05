@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { callBackground } from '../../messaging/messagesContentRouter';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('popup', 'popup:content-label');
 
 export function useContentLabel(contentKey: string | null | undefined) {
 	const [label, setLabel] = useState<any | null>(null);
@@ -21,7 +23,7 @@ export function useContentLabel(contentKey: string | null | undefined) {
 				setLoading(false);
 			} catch (error) {
 				if (!mounted) return;
-				console.error('Failed to get content label:', error);
+				log.error('Failed to get content label:', error);
 				setLoading(false);
 			}
 		}

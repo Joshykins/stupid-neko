@@ -337,4 +337,30 @@ export const getUserContentLabelPolicyForKey = query({
     },
 });
 
+// Query a user's content label policy for a specific contentKey using an integrationId (browser extension)
+export const getUserContentLabelPolicyForKeyFromIntegration = query({
+    args: { integrationId: v.string(), contentKey: v.string() },
+    returns: v.union(
+        v.object({
+            _id: v.id('userContentLabelPolicies'),
+            policyKind: v.union(v.literal('allow'), v.literal('block')),
+        }),
+        v.null()
+    ),
+    handler: async (ctx, args) => {
+        const user = await getUserByIntegrationKey({
+            ctx,
+            args: { integrationId: args.integrationId },
+        });
+        const existing = await ctx.db
+            .query('userContentLabelPolicies')
+            .withIndex('by_user_and_content_key', q =>
+                q.eq('userId', user._id).eq('contentKey', args.contentKey)
+            )
+            .unique();
+        if (!existing) return null;
+        return { _id: existing._id, policyKind: existing.policyKind };
+    },
+});
+
 

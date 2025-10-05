@@ -2,9 +2,10 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import TrackingWidget from '../../widget/TrackingWidget';
 import styles from './content.css?inline';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 import './provider-runtime'; // Initialize provider runtime
-// console.debug('[content] Provider runtime initialized');
 
 // Declare Tailwind CSS browser global
 declare global {
@@ -158,5 +159,5 @@ async function initializeApp() {
 }
 
 // Start the app
-// console.debug('[content] Content script loaded and initializing...');
+log.info('Content script loaded and initializing...');
 initializeApp();
