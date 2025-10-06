@@ -7,24 +7,8 @@ const log = createLogger('service-worker', 'providers:determine');
 
 type PolicyKind = 'allow' | 'block';
 
-function toHex(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let hex = '';
-    for (let i = 0; i < bytes.length; i++) {
-        hex += bytes[i].toString(16).padStart(2, '0');
-    }
-    return hex;
-}
-
-export async function hashDomain(domain: string): Promise<string> {
-    const normalized = domain.trim().toLowerCase();
-    const data = new TextEncoder().encode(normalized);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return toHex(digest);
-}
-
-function buildDomainContentKey(domainHashHex: string): string {
-    return `website-domain:${domainHashHex}`;
+export function getDomainContentKey(domain: string): string {
+    return `website:${domain.trim().toLowerCase()}`;
 }
 
 export async function checkDomainPolicyAllowed(domain: string): Promise<{ allowed: boolean; policy: PolicyKind | null; contentKey: string; } | null> {
@@ -33,8 +17,7 @@ export async function checkDomainPolicyAllowed(domain: string): Promise<{ allowe
     const integrationId = await getIntegrationId();
     if (!integrationId) return null;
 
-    const hash = await hashDomain(domain);
-    const contentKey = buildDomainContentKey(hash);
+    const contentKey = getDomainContentKey(domain);
 
     const { data: res, error } = await tryCatch(
         convex.query(api.browserExtension.websiteProviderFunctions.checkIfWebsiteIsAlwaysToBeTracked, {
@@ -50,9 +33,4 @@ export async function checkDomainPolicyAllowed(domain: string): Promise<{ allowe
 
     const allowed = !!res?.allowed;
     return { allowed, policy: allowed ? 'allow' : null, contentKey };
-}
-
-export async function getHashedDomainContentKey(domain: string): Promise<string> {
-    const hash = await hashDomain(domain);
-    return buildDomainContentKey(hash);
 }

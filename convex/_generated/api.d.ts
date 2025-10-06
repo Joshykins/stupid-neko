@@ -25,6 +25,7 @@ import type * as integrationKeyFunctions from "../integrationKeyFunctions.js";
 import type * as labelingEngine_contentActivityFunctions from "../labelingEngine/contentActivityFunctions.js";
 import type * as labelingEngine_contentLabelActions from "../labelingEngine/contentLabelActions.js";
 import type * as labelingEngine_contentLabelFunctions from "../labelingEngine/contentLabelFunctions.js";
+import type * as labelingEngine_integrations_websiteProcessing from "../labelingEngine/integrations/websiteProcessing.js";
 import type * as labelingEngine_integrations_youtubeProcessing from "../labelingEngine/integrations/youtubeProcessing.js";
 import type * as onboardingFunctions from "../onboardingFunctions.js";
 import type * as preReleaseCodeFunctions from "../preReleaseCodeFunctions.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "labelingEngine/contentActivityFunctions": typeof labelingEngine_contentActivityFunctions;
   "labelingEngine/contentLabelActions": typeof labelingEngine_contentLabelActions;
   "labelingEngine/contentLabelFunctions": typeof labelingEngine_contentLabelFunctions;
+  "labelingEngine/integrations/websiteProcessing": typeof labelingEngine_integrations_websiteProcessing;
   "labelingEngine/integrations/youtubeProcessing": typeof labelingEngine_integrations_youtubeProcessing;
   onboardingFunctions: typeof onboardingFunctions;
   preReleaseCodeFunctions: typeof preReleaseCodeFunctions;

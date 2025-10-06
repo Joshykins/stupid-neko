@@ -10,15 +10,20 @@ export const tick = internalAction({
 	args: {},
 	returns: v.null(),
 	handler: async ctx => {
-		// Process content activities in small batches for scalability
-		await ctx.runMutation(
+		// Process only users who have pending content activities
+		const userIds = await ctx.runQuery(
 			internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
-				.translateBatch,
-			{
-				limit: 50, // Small batch size for better performance
-			}
+				.findUsersWithPendingContentActivities,
+			{ maxScan: 500, maxUsers: 50 }
 		);
-		
+		for (const userId of userIds) {
+			await ctx.runMutation(
+				internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
+					.processActivitiesForUser,
+				{ userId, limit: 200 }
+			);
+		}
+
 		// Nudge all users once per tick (bounded)
 		const users = await ctx.runQuery(
 			internal.userFunctions.listAllUsersForCron,

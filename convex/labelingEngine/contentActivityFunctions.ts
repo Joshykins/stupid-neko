@@ -11,9 +11,9 @@ export const recordContentActivity = async ({
 	args,
 }: {
 	ctx: MutationCtx;
-        args: {
-        userId: Id<'users'>;
-        source: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website' ;
+	args: {
+		userId: Id<'users'>;
+		source: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website';
 		activityType: 'heartbeat' | 'start' | 'pause' | 'end';
 		contentKey: string;
 		url?: string;
@@ -43,21 +43,21 @@ export const recordContentActivity = async ({
 
 	const occurredAt = await getEffectiveNow(ctx);
 
-    // Short-circuit if user has a blocking policy for this content
-    const existingBlockingPolicy = await ctx.db
-        .query('userContentLabelPolicies')
-        .withIndex('by_user_and_content_key', q =>
-            q.eq('userId', userId).eq('contentKey', contentKey)
-        )
-        .unique();
-    if (existingBlockingPolicy && existingBlockingPolicy.policyKind === 'block') {
-        return {
-            ok: true,
-            saved: false,
-            reason: 'blocked_by_policy',
-            contentKey,
-        };
-    }
+	// Short-circuit if user has a blocking policy for this content
+	const existingBlockingPolicy = await ctx.db
+		.query('userContentLabelPolicies')
+		.withIndex('by_user_and_content_key', q =>
+			q.eq('userId', userId).eq('contentKey', contentKey)
+		)
+		.unique();
+	if (existingBlockingPolicy && existingBlockingPolicy.policyKind === 'block') {
+		return {
+			ok: true,
+			saved: false,
+			reason: 'blocked_by_policy',
+			contentKey,
+		};
+	}
 
 	// Inspect existing content label
 	const label = await ctx.db
@@ -87,6 +87,8 @@ export const recordContentActivity = async ({
 				contentUrl: args.url,
 			}
 		});
+		// Mark user as having pending content activities
+		await ctx.db.patch(userId, { hasPendingContentActivities: true });
 		return {
 			ok: true,
 			saved: true,
@@ -106,6 +108,8 @@ export const recordContentActivity = async ({
 			occurredAt,
 			isWaitingOnLabeling: true,
 		});
+		// Mark user as having pending content activities
+		await ctx.db.patch(userId, { hasPendingContentActivities: true });
 		return {
 			ok: true,
 			saved: true,
@@ -138,6 +142,9 @@ export const recordContentActivity = async ({
 		occurredAt,
 		isWaitingOnLabeling: false,
 	});
+
+	// Mark user as having pending content activities
+	await ctx.db.patch(userId, { hasPendingContentActivities: true });
 	return {
 		ok: true,
 		saved: true,

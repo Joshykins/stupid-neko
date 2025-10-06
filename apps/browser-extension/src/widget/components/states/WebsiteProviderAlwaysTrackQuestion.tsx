@@ -25,7 +25,7 @@ export const WebsiteProviderAlwaysTrackQuestion: React.FC<Props> = ({
                 </div>
                 <div className="snbex:text-sm snbex:font-medium snbex:text-background snbex:mb-4">Do you want to track your time across <span className="snbex:font-bold">{widgetState.domain}</span> automatically or just this time?</div>
                 <div className="snbex:grid snbex:grid-cols-2 snbex:gap-2">
-                    <Button className="snbex:bg-accent snbex:col-span-1" onClick={defaultQuestionAlwaysTrack}>Always track</Button>
+                    <Button variant={'neutral'} className="snbex:bg-accent snbex:col-span-1 " onClick={defaultQuestionAlwaysTrack}>Always track</Button>
                     <Button variant={'neutral'} className="snbex:col-span-1" onClick={defaultQuestionTrackOnce}>Just this time</Button>
                 </div>
             </div>

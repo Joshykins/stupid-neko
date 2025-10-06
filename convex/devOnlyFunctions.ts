@@ -102,11 +102,11 @@ export const stepDevDate = mutation({
 				const weights =
 					sum > 0
 						? {
-								manual: pm / sum,
-								youtube: py / sum,
-								spotify: ps / sum,
-								anki: pa / sum,
-							}
+							manual: pm / sum,
+							youtube: py / sum,
+							spotify: ps / sum,
+							anki: pa / sum,
+						}
 						: { manual: 0.25, youtube: 0.25, spotify: 0.25, anki: 0.25 };
 
 				// Helper to sample a source by weight
@@ -132,8 +132,8 @@ export const stepDevDate = mutation({
 
 				for (let i = 0; i < count; i++) {
 					const source = pickSource();
-					const durationInMinutes =
-						Math.floor(Math.random() * (maxM - minM + 1)) + minM;
+					const durationInMs =
+						(Math.floor(Math.random() * (maxM - minM + 1)) + minM) * 60 * 1000;
 					const title =
 						source === 'anki'
 							? 'Anki review'
@@ -146,7 +146,7 @@ export const stepDevDate = mutation({
 						ctx,
 						args: {
 							title,
-							durationInMinutes,
+							durationInMs,
 							occurredAt: next,
 							languageCode: languageCode as LanguageCode,
 							contentCategories:
@@ -218,11 +218,11 @@ export const seedAtDevDate = mutation({
 		const weights =
 			sum > 0
 				? {
-						manual: pm / sum,
-						youtube: py / sum,
-						spotify: ps / sum,
-						anki: pa / sum,
-					}
+					manual: pm / sum,
+					youtube: py / sum,
+					spotify: ps / sum,
+					anki: pa / sum,
+				}
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
@@ -238,8 +238,8 @@ export const seedAtDevDate = mutation({
 		let inserted = 0;
 		for (let i = 0; i < items; i++) {
 			const source = pickSource();
-			const durationInMinutes =
-				Math.floor(Math.random() * (maxM - minM + 1)) + minM;
+			const durationInMs =
+				(Math.floor(Math.random() * (maxM - minM + 1)) + minM) * 60 * 1000;
 			const title =
 				source === 'anki'
 					? 'Anki review'
@@ -252,7 +252,7 @@ export const seedAtDevDate = mutation({
 				ctx,
 				args: {
 					title,
-					durationInMinutes,
+					durationInMs,
 					occurredAt: nowEffective,
 					languageCode: languageCode as LanguageCode,
 					contentCategories:
@@ -325,11 +325,11 @@ export const seedToTargetAtDevDate = mutation({
 		const weights =
 			sum > 0
 				? {
-						manual: pm / sum,
-						youtube: py / sum,
-						spotify: ps / sum,
-						anki: pa / sum,
-					}
+					manual: pm / sum,
+					youtube: py / sum,
+					spotify: ps / sum,
+					anki: pa / sum,
+				}
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
@@ -368,7 +368,7 @@ export const seedToTargetAtDevDate = mutation({
 				ctx,
 				args: {
 					title,
-					durationInMinutes: chunk,
+					durationInMs: chunk * 60 * 1000,
 					occurredAt: nowEffective,
 					languageCode: languageCode as LanguageCode,
 					contentCategories:

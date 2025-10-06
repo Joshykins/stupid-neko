@@ -159,7 +159,13 @@ export interface WidgetState {
 	metadata?: ContentMetadata;
 	error?: string;
 	startTime?: number;
+	// Playback/session fields (optional)
+	isPlaying?: boolean;
+	playbackStatus?: 'playing' | 'paused' | 'ended';
+	sessionActiveMs?: number; // accumulated active play time in ms
+	sessionStartedAt?: number; // wall-clock ms when current play segment started
 	detectedLanguage?: string;
+	autoStartedByPolicy?: boolean;
 }
 
 export interface WidgetStateUpdate {
@@ -169,7 +175,13 @@ export interface WidgetStateUpdate {
 	metadata?: ContentMetadata;
 	error?: string;
 	startTime?: number;
+	// Playback/session fields (optional)
+	isPlaying?: boolean;
+	playbackStatus?: 'playing' | 'paused' | 'ended';
+	sessionActiveMs?: number;
+	sessionStartedAt?: number;
 	detectedLanguage?: string;
+	autoStartedByPolicy?: boolean;
 }
 
 /**

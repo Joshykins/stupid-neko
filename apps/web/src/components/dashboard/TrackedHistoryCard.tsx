@@ -113,7 +113,7 @@ const TrackedHistoryItem = ({
 
 	const SOURCE_STYLES: Record<
 		string,
-		{ dot: string; border: string; badge: string }
+		{ dot: string; border: string; badge: string; }
 	> = React.useMemo(
 		() => ({
 			youtube: {
@@ -152,11 +152,11 @@ const TrackedHistoryItem = ({
 	const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
 
 	// Derive presentation fields
-	const legacyDurationSeconds = (item as { durationInSeconds?: number })
+	const legacyDurationSeconds = (item as { durationInSeconds?: number; })
 		.durationInSeconds;
 	const durationMs =
-		(item as { durationMs?: number }).durationMs ??
-		(item as { durationInMs?: number }).durationInMs ??
+		(item as { durationMs?: number; }).durationMs ??
+		(item as { durationInMs?: number; }).durationInMs ??
 		(typeof legacyDurationSeconds === 'number'
 			? legacyDurationSeconds * 1000
 			: undefined) ??
@@ -171,7 +171,7 @@ const TrackedHistoryItem = ({
 				<TooltipTrigger asChild>
 					<div
 						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
-						// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
+					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
 							{key === 'manual' ? (

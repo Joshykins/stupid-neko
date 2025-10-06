@@ -21,7 +21,7 @@ import { Label } from '../../ui/label';
 
 type FormValues = {
     title: string;
-    durationInMinutes: number;
+    durationInMs: number;
     description?: string;
     externalUrl?: string;
 };
@@ -30,7 +30,7 @@ type FavoriteData = {
     title: string;
     description?: string;
     externalUrl?: string;
-    defaultDurationInMinutes: number;
+    defaultDurationInMs: number;
 };
 
 type AddActivityDialogProps = {
@@ -56,7 +56,7 @@ export function AddActivityDialog({
     const form = useForm<FormValues>({
         defaultValues: {
             title: '',
-            durationInMinutes: 10,
+            durationInMs: 10 * 60 * 1000,
             description: '',
             externalUrl: '',
         },
@@ -67,13 +67,13 @@ export function AddActivityDialog({
         if (autoFillData) {
             form.reset({
                 title: autoFillData.title,
-                durationInMinutes: autoFillData.defaultDurationInMinutes,
+                durationInMs: autoFillData.defaultDurationInMs,
                 description: autoFillData.description || '',
                 externalUrl: autoFillData.externalUrl || '',
             });
 
             // Set custom time fields
-            const totalMinutes = autoFillData.defaultDurationInMinutes;
+            const totalMinutes = Math.max(0, Math.round((autoFillData.defaultDurationInMs || 0) / 60000));
             setCustomHours(Math.floor(totalMinutes / 60));
             setCustomMinutes(totalMinutes % 60);
             setUseCustomMinutes(false);
@@ -103,7 +103,7 @@ export function AddActivityDialog({
         setIsSubmitting(true);
         await addManual({
             title: form.getValues('title'),
-            durationInMinutes: form.getValues('durationInMinutes'),
+            durationInMs: form.getValues('durationInMs'),
             description: form.getValues('description'),
             externalUrl: form.getValues('externalUrl'),
         });
@@ -142,7 +142,7 @@ export function AddActivityDialog({
                                         key={m}
                                         type="button"
                                         onClick={() => {
-                                            form.setValue('durationInMinutes', m, {
+                                            form.setValue('durationInMs', m * 60 * 1000, {
                                                 shouldDirty: true,
                                                 shouldValidate: true,
                                             });
@@ -150,7 +150,7 @@ export function AddActivityDialog({
                                         }}
                                         className={buttonVariants({
                                             variant:
-                                                form.watch('durationInMinutes') === m &&
+                                                Math.round((form.watch('durationInMs') || 0) / 60000) === m &&
                                                     !useCustomMinutes
                                                     ? 'default'
                                                     : 'neutral',
@@ -170,7 +170,7 @@ export function AddActivityDialog({
                                     onClick={() => {
                                         setUseCustomMinutes(true);
                                         const total = customHours * 60 + customMinutes;
-                                        form.setValue('durationInMinutes', total, {
+                                        form.setValue('durationInMs', total * 60 * 1000, {
                                             shouldDirty: true,
                                             shouldValidate: true,
                                         });
@@ -199,7 +199,7 @@ export function AddActivityDialog({
                                                 );
                                                 setCustomHours(h);
                                                 const total = h * 60 + customMinutes;
-                                                form.setValue('durationInMinutes', total, {
+                                                form.setValue('durationInMs', total * 60 * 1000, {
                                                     shouldDirty: true,
                                                     shouldValidate: true,
                                                 });
@@ -222,7 +222,7 @@ export function AddActivityDialog({
                                                 );
                                                 setCustomMinutes(m);
                                                 const total = customHours * 60 + m;
-                                                form.setValue('durationInMinutes', total, {
+                                                form.setValue('durationInMs', total * 60 * 1000, {
                                                     shouldDirty: true,
                                                     shouldValidate: true,
                                                 });

@@ -104,6 +104,21 @@ export const WebsiteProviderTracking: React.FC<WebsiteProviderTrackingProps> = (
                 </div>
                 <div className="snbex:text-sm snbex:font-medium snbex:text-background snbex:mb-4">Tracking your time across <span className="snbex:font-bold">{widgetState.domain}</span></div>
 
+                {widgetState.autoStartedByPolicy && (
+                    <div className="snbex:text-xs snbex:py-2 snbex:mb-4">
+                        Started automatically due to your content policy for this website.{' '}
+                        <a
+                            href="https://www.stupidneko.com/account/content-policies"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="snbex:text-blue-600 snbex:underline"
+                        >
+                            Manage content policies
+                        </a>
+                    </div>
+                )}
+
+
                 <Button
                     onClick={defaultStopRecording}
                     className="snbex:w-full snbex:bg-accent mt-3"

@@ -20,9 +20,11 @@ const DEBUG_LOG_PREFIX = '[bg:determine-provider]';
  * This is called when starting the provider determination process
  */
 export function setDeterminingProviderState(domain?: string, tabId?: number): void {
+	// Explicitly clear startTime to avoid cross-domain timer carryover while determining provider
 	updateWidgetState({
 		state: 'determining-provider',
 		domain,
+		startTime: undefined,
 	}, tabId);
 }
 
@@ -32,7 +34,7 @@ export function setDeterminingProviderState(domain?: string, tabId?: number): vo
  */
 export function transitionFromDeterminingProvider(providerName: ProviderName, domain: string, tabId?: number): void {
 	// Transition from determining-provider to appropriate provider idle state
-	const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'website-provider-idle';
+	const idleState = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-idle';
 
 	updateWidgetState({
 		state: idleState,
@@ -63,9 +65,9 @@ export async function determineAndActivateProvider(
 		const authState = await getAuthState();
 		const targetLanguage = authState.me?.languageCode;
 
-		// If default provider, check domain policy (hashed domain allow/block)
+		// If default provider (website-provider), check domain policy (hashed domain allow/block)
 		let defaultAllowed = false;
-		if (providerId === 'default') {
+		if (providerId === 'website-provider') {
 			try {
 				// Avoid re-check if already tracking on the same domain
 				const { tabStates } = await import('./content-activity-router');
@@ -77,15 +79,20 @@ export async function determineAndActivateProvider(
 						const { updateConsentForDomain } = await import('./content-activity-router');
 						// Treat allow policy as implicit consent; block leaves consent false
 						updateConsentForDomain(tabId, domain, res.allowed);
+						logDefault.info('determine: policy check', { tabId, domain, allowed: res.allowed });
 						if (res.allowed) {
 							defaultAllowed = true;
-							const { updateWidgetState } = await import('./widget');
+							const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+							const prev = getCurrentWidgetState(tabId);
+							const preservedStart = (prev?.domain === domain && prev?.startTime) ? prev.startTime : Date.now();
 							updateWidgetState({
 								state: 'website-provider-tracking',
 								provider: 'website-provider',
 								domain,
-								startTime: Date.now(),
+								startTime: preservedStart,
+								autoStartedByPolicy: true,
 							}, tabId);
+							logDefault.info('determine: tracking due to allow policy', { tabId, domain, preservedStart });
 						}
 					}
 				}

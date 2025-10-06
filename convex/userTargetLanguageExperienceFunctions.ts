@@ -39,12 +39,12 @@ export const getExperienceForActivity = async ({
 		userId: Id<'users'>;
 		languageCode: LanguageCode;
 		isManuallyTracked?: boolean;
-		durationInMinutes?: number;
+		durationInMs?: number;
 		occurredAt?: number;
 	};
 }): Promise<number> => {
-	const { durationInMinutes } = args;
-	const minutes = Math.max(0, Math.round(durationInMinutes ?? 0));
+	const { durationInMs } = args;
+	const minutes = Math.max(0, Math.floor((durationInMs ?? 0) / 60000));
 	if (minutes <= 0) return 0;
 
 	const when = args.occurredAt ?? Date.now();
@@ -91,7 +91,7 @@ export const addExperience = async ({
 		deltaExperience: number;
 		languageActivityId?: Id<'userTargetLanguageActivities'>;
 		isApplyingStreakBonus?: boolean;
-		durationInMinutes?: number;
+		durationInMs?: number;
 	};
 }): Promise<{
 	userTargetLanguageId: Id<'userTargetLanguages'>;
@@ -129,7 +129,7 @@ export const addExperience = async ({
 	// Base delta and multipliers
 	const baseDelta = Math.floor(args.deltaExperience ?? 0);
 	let finalDelta = baseDelta;
-	const multipliers: Array<{ type: 'streak'; value: number }> = [];
+	const multipliers: Array<{ type: 'streak'; value: number; }> = [];
 
 	if (args.isApplyingStreakBonus) {
 		const value: number = await getStreakBonusMultiplier(ctx, userId);
@@ -142,14 +142,14 @@ export const addExperience = async ({
 		deltaExperience: finalDelta,
 	});
 
-	// Update minutes only
-	if (args.durationInMinutes && args.durationInMinutes > 0) {
-		const currentTotalMinutes = Math.floor(
-			((userTargetLanguage as any).totalMsLearning ?? 0) / 60000
+	// Update totalMsLearning directly if provided
+	if (args.durationInMs && args.durationInMs > 0) {
+		const currentTotalMs = Math.floor(
+			((userTargetLanguage as any).totalMsLearning ?? 0)
 		);
-		const newTotalMinutes = currentTotalMinutes + args.durationInMinutes;
+		const newTotalMs = Math.max(0, currentTotalMs + Math.floor(args.durationInMs));
 		await ctx.db.patch(userTargetLanguage._id, {
-			totalMsLearning: newTotalMinutes * 60000,
+			totalMsLearning: newTotalMs,
 		});
 	}
 

@@ -8,6 +8,7 @@ import { Card } from '../../../components/ui/card';
 import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../../../components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../../components/ui/command';
@@ -52,7 +53,7 @@ function PoliciesManager() {
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
     const [source, setSource] = useState<ContentSource | undefined>(undefined);
-    const [policyKind, setPolicyKind] = useState<'allow' | 'block' | undefined>('block');
+    const [policyKind, setPolicyKind] = useState<'allow' | 'block' | undefined>(undefined);
     const [cursor, setCursor] = useState<string | undefined>(undefined);
     const [items, setItems] = useState<Array<PolicyItem>>([]);
     const [autoLoading, setAutoLoading] = useState(false);

@@ -5,6 +5,7 @@ interface HiddenStateProps {
     widgetState: WidgetState;
     title: string;
     description?: string;
+    iconLeft?: React.ReactNode;
     renderDebugInfo?: () => React.ReactNode;
 }
 
@@ -12,13 +13,17 @@ export const HiddenState: React.FC<HiddenStateProps> = ({
     widgetState,
     title,
     description,
+    iconLeft,
     renderDebugInfo,
 }) => {
     return (
         <>
             <div >
-                <div className="snbex:text-lg snbex:font-bold snbex:mb-2">
-                    {title}
+                <div className="snbex:flex snbex:items-center snbex:gap-2 snbex:mb-2">
+                    {iconLeft}
+                    <div className="snbex:text-lg snbex:font-bold">
+                        {title}
+                    </div>
                 </div>
                 {description && (
                     <div className="snbex:text-sm snbex:text-gray-600 snbex:mb-4">

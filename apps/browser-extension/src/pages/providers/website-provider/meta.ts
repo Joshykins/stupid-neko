@@ -7,7 +7,7 @@ const meta: ProviderMeta = {
 	extractContentKey: (url: string) => {
 		try {
 			const u = new URL(url);
-			return `website:${u.hostname}${u.pathname}`;
+			return `website:${u.hostname.toLowerCase()}`;
 		} catch {
 			return null;
 		}

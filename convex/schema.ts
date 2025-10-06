@@ -83,10 +83,14 @@ export default defineSchema({
 
 		// Pre-release access gate
 		preReleaseGranted: v.optional(v.boolean()),
+
+		// Queue indicator for translation pipeline
+		hasPendingContentActivities: v.optional(v.boolean()),
 	})
 		.index('by_email', ['email']) // mirror default indexes
 		.index('by_phone', ['phone'])
-		.index('by_integration_key', ['integrationKey']),
+		.index('by_integration_key', ['integrationKey'])
+		.index('by_has_pending', ['hasPendingContentActivities']),
 
 	userStreakDays: defineTable({
 		userId: v.id('users'),
@@ -231,7 +235,8 @@ export default defineSchema({
 		.index('by_user', ['userId'])
 		.index('by_user_and_occurred', ['userId', 'occurredAt'])
 		.index('by_user_and_state', ['userId', 'state'])
-		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey']),
+		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey'])
+		.index('by_user_state_and_occurred', ['userId', 'state', 'occurredAt']),
 
 	// Content Activity, these are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
 	contentActivities: defineTable({

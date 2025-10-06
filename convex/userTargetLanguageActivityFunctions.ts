@@ -20,7 +20,7 @@ export const addLanguageActivity = async ({
 		userId?: Id<'users'>;
 		title: string;
 		description?: string;
-		durationInMinutes: number;
+		durationInMs: number;
 		occurredAt?: number;
 		languageCode: LanguageCode;
 		contentKey?: string;
@@ -58,7 +58,7 @@ export const addLanguageActivity = async ({
 		userTargetLanguageId: args.userTargetLanguageId,
 		description: args.description ?? undefined,
 		// Canonical ms field
-		durationInMs: Math.max(0, Math.round(args.durationInMinutes * 60 * 1000)),
+		durationInMs: Math.max(0, Math.round(args.durationInMs)),
 		occurredAt,
 		state: 'completed',
 		contentKey: args.contentKey ?? undefined,
@@ -87,12 +87,12 @@ export const addLanguageActivity = async ({
 					userId,
 					languageCode: args.languageCode,
 					isManuallyTracked: args.isManuallyTracked ?? false,
-					durationInMinutes: args.durationInMinutes,
+					durationInMs: args.durationInMs,
 					occurredAt,
 				}
 			}),
 			isApplyingStreakBonus: true,
-			durationInMinutes: args.durationInMinutes,
+			durationInMs: args.durationInMs,
 		},
 	});
 
@@ -115,7 +115,7 @@ export const addManualLanguageActivity = mutation({
 	args: {
 		title: v.string(),
 		description: v.optional(v.string()),
-		durationInMinutes: v.number(),
+		durationInMs: v.number(),
 		occurredAt: v.optional(v.number()),
 		language: v.optional(languageCodeValidator),
 		externalUrl: v.optional(v.string()),
@@ -134,7 +134,7 @@ export const addManualLanguageActivity = mutation({
 	handler: async (
 		ctx,
 		args
-	): Promise<{ activityId: Id<'userTargetLanguageActivities'> }> => {
+	): Promise<{ activityId: Id<'userTargetLanguageActivities'>; }> => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error('Unauthorized');
 
@@ -160,7 +160,7 @@ export const addManualLanguageActivity = mutation({
 				userTargetLanguageId: currentTargetLanguage._id,
 				title: args.title,
 				description: args.description ?? undefined,
-				durationInMinutes: args.durationInMinutes,
+				durationInMs: args.durationInMs,
 				occurredAt,
 				externalUrl: args.externalUrl ?? undefined,
 				isManuallyTracked: true,
@@ -233,9 +233,12 @@ export const listRecentLanguageActivities = query({
 		const effectiveNow = await getEffectiveNow(ctx);
 
 		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
+		// Use composite index to fetch only completed activities efficiently
 		const items = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', q => q.eq('userId', userId))
+			.withIndex('by_user_state_and_occurred', q =>
+				q.eq('userId', userId).eq('state', 'completed')
+			)
 			.order('desc')
 			.take(limit);
 		const results: Array<any> = [];
@@ -544,20 +547,14 @@ export const deleteLanguageActivity = mutation({
 			});
 		}
 
-		// Adjust minutes
-		const durationMinutes = Math.max(
-			0,
-			Math.round(((act as any).durationInMs ?? 0) / 60000)
-		);
-		if (durationMinutes > 0) {
+		// Adjust totalMsLearning by subtracting this activity's duration
+		const durationMs = Math.max(0, Math.round(((act as any).durationInMs ?? 0)));
+		if (durationMs > 0) {
 			const utl = await ctx.db.get(utlId);
 			if (utl) {
-				const currentTotalMinutes = (utl as any).totalMinutesLearning ?? 0;
+				const currentTotalMs = (utl as any).totalMsLearning ?? 0;
 				await ctx.db.patch(utlId, {
-					totalMinutesLearning: Math.max(
-						0,
-						currentTotalMinutes - durationMinutes
-					),
+					totalMsLearning: Math.max(0, currentTotalMs - durationMs),
 				} as any);
 			}
 		}

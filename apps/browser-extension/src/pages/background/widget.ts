@@ -84,14 +84,35 @@ export async function updateWidgetStateForEvent(
 	// Update state based on event type
 	switch (evt.event) {
 		case 'start': {
-			if (providerName === 'default') {
-				// For default provider, check if we have consent
+			if (providerName === 'website-provider') {
+				// For website provider, check if we are paused for this domain or have consent
+				const isPaused = !!tabState?.pausedByDomain?.[domain];
+				if (isPaused) {
+					log.debug('widget:start suppressed due to pausedByDomain', { tabId, domain });
+					// Keep or set a stable stopped state to avoid UI flicker back to tracking
+					const prev = tabWidgetStates[tabId];
+					if (prev?.state !== 'website-provider-tracking-stopped') {
+						updateWidgetState({
+							state: 'website-provider-tracking-stopped',
+							provider: providerName,
+							domain,
+							metadata: { title: evt.title, url: evt.url },
+						}, tabId);
+					}
+					return;
+				}
 				if (tabState?.hasConsent) {
+					const prev = tabWidgetStates[tabId];
+					// Only preserve the timer if both the widget's previous domain and the tabState's currentDomain match this domain.
+					// This prevents resuming an old timer when returning to a domain after visiting another domain.
+					const sameDomainSession = (prev?.domain === domain) && (tabState?.currentDomain === domain);
+					const preservedStart = (sameDomainSession && prev?.startTime) ? prev.startTime : Date.now();
+					log.debug('widget:start website-provider', { tabId, prevDomain: prev?.domain, tabStatePrevDomain: tabState?.currentDomain, newDomain: domain, prevStartTime: prev?.startTime, preservedStart, sameDomainSession });
 					updateWidgetState({
 						state: 'website-provider-tracking',
 						provider: providerName,
 						domain,
-						startTime: Date.now(),
+						startTime: preservedStart,
 						metadata: {
 							title: evt.title,
 							url: evt.url,
@@ -110,14 +131,23 @@ export async function updateWidgetStateForEvent(
 					}, tabId);
 				}
 			} else {
-				// Non-default providers (YouTube)
+				// YouTube provider
 				const prev = tabWidgetStates[tabId];
-				const keepVerified = prev?.state === 'youtube-tracking-verified';
+				const keepStable =
+					prev?.state === 'youtube-tracking-verified' ||
+					prev?.state === 'youtube-not-tracking';
+				const sameVideo = (prev as any)?.metadata?.videoId === evt.videoId;
+				const now = Date.now();
 				updateWidgetState({
-					state: keepVerified ? prev!.state : 'youtube-tracking-unverified',
+					state: keepStable ? (prev!.state) : 'youtube-tracking-unverified',
 					provider: providerName,
 					domain,
-					startTime: prev?.startTime ?? Date.now(),
+					startTime: sameVideo ? (prev?.startTime ?? now) : now,
+					// start/resume playing
+					isPlaying: true,
+					playbackStatus: 'playing',
+					sessionActiveMs: sameVideo ? (prev?.sessionActiveMs ?? 0) : 0,
+					sessionStartedAt: now,
 					metadata: {
 						title: evt.title,
 						videoId: evt.videoId,
@@ -127,33 +157,107 @@ export async function updateWidgetStateForEvent(
 			break;
 		}
 
-		case 'end':
-			// Return to provider-specific idle state
-			const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'website-provider-not-tracking';
+		case 'pause': {
+			// For YouTube keep verified state but mark paused and stop session timer
+			if (providerName === 'youtube') {
+				const prev = tabWidgetStates[tabId];
+				const now = Date.now();
+				const accumulated = (prev?.sessionActiveMs ?? 0) + (prev?.sessionStartedAt ? now - prev.sessionStartedAt : 0);
+				updateWidgetState({
+					state: 'youtube-tracking-verified',
+					provider: providerName,
+					domain,
+					isPlaying: false,
+					playbackStatus: 'paused',
+					sessionActiveMs: accumulated,
+					sessionStartedAt: undefined,
+				}, tabId);
+				break;
+			}
+			// non-YouTube fallthrough: keep existing behavior (if any)
+			break;
+		}
+
+		case 'end': {
+			if (providerName === 'youtube') {
+				const prev = tabWidgetStates[tabId];
+				const now = Date.now();
+				const accumulated = (prev?.sessionActiveMs ?? 0) + (prev?.sessionStartedAt ? now - prev.sessionStartedAt : 0);
+				updateWidgetState({
+					state: 'youtube-tracking-verified',
+					provider: providerName,
+					domain,
+					isPlaying: false,
+					playbackStatus: 'ended',
+					sessionActiveMs: accumulated,
+					sessionStartedAt: undefined,
+				}, tabId);
+				break;
+			}
+			// Default previous idle behavior for non-YouTube
+			const idleState = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-not-tracking';
 			updateWidgetState({
 				state: idleState,
 				provider: providerName,
 				domain,
 			}, tabId);
 			break;
+		}
 
-		case 'progress':
-			// Keep current state but update metadata if needed
+		case 'progress': {
+			// Keep current state but update metadata; for YouTube also treat progress as resume/start signal
 			const currentState = tabWidgetStates[tabId];
-			if (
+			if (!currentState) break;
+
+			const isTracking =
 				currentState?.state.includes('-tracking') ||
-				currentState?.state === 'website-provider-tracking'
-			) {
-				updateWidgetState({
-					state: currentState.state,
-					metadata: {
-						...currentState.metadata,
-						title: evt.title,
-						videoId: evt.videoId,
-					},
-				}, tabId);
+				currentState?.state === 'website-provider-tracking';
+
+			if (isTracking) {
+				if (currentState.provider === 'youtube') {
+					const prevVideoId = (currentState as any)?.metadata?.videoId as string | undefined;
+					const isNewVideo = !!evt.videoId && evt.videoId !== prevVideoId;
+					const now = Date.now();
+
+					updateWidgetState({
+						state: currentState.state,
+						provider: currentState.provider,
+						domain,
+						// If video changed, start a fresh session; else if previously not playing, resume timer
+						...(isNewVideo
+							? {
+								startTime: now,
+								isPlaying: true,
+								playbackStatus: 'playing',
+								sessionActiveMs: 0,
+								sessionStartedAt: now,
+							}
+							: currentState.playbackStatus !== 'playing'
+								? {
+									isPlaying: true,
+									playbackStatus: 'playing',
+									sessionStartedAt: now,
+								}
+								: {}),
+						metadata: {
+							...(currentState.metadata || {}),
+							title: evt.title,
+							videoId: evt.videoId,
+						},
+					}, tabId);
+				} else {
+					updateWidgetState({
+						state: currentState.state,
+						metadata: {
+							...currentState.metadata,
+							title: evt.title,
+							videoId: evt.videoId,
+						},
+					}, tabId);
+				}
 			}
 			break;
+		}
 	}
 }
 
@@ -205,7 +309,7 @@ export function handleStopRecording(tabId: number): void {
 	const provider = current?.provider as ProviderName | undefined;
 	const domain = current?.domain;
 
-	const idleState = provider === 'youtube' ? 'youtube-not-tracking' : 'website-provider-idle';
+	const idleState = provider === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-idle';
 
 	updateWidgetState({
 		state: idleState,
@@ -268,10 +372,25 @@ export async function handleLanguageDetection(
 
 	const domain = new URL(tab.url).hostname;
 
+	// Only prompt when in idle/determining; do not override stable tracking or blocked states
+	const current = getCurrentWidgetState(tabId);
+	const canPrompt =
+		current.state === 'website-provider-idle' ||
+		current.state === 'determining-provider';
+
+	if (!canPrompt) {
+		log.debug('Skipping language-detected prompt due to stable state', {
+			tabId,
+			currentState: current.state,
+			domain,
+		});
+		return;
+	}
+
 	// Check if detected language matches target language
 	if (
 		targetLanguage &&
-		detectedLanguage.startsWith(targetLanguage.toLowerCase())
+		detectedLanguage.toLowerCase().startsWith(targetLanguage.toLowerCase())
 	) {
 		updateWidgetState({
 			state: 'website-provider-idle-detected',

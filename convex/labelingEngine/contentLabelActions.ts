@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { internalAction, internalMutation } from '../_generated/server';
 import * as YouTubeProcessing from './integrations/youtubeProcessing';
+import * as WebsiteProcessing from './integrations/websiteProcessing';
 import dayjs from '../../lib/dayjs';
 import { tryCatch } from '../../lib/tryCatch';
 import { languageCodeValidator } from '../schema';
@@ -153,6 +154,11 @@ export const processOneContentLabel = internalAction({
 				switch (source) {
 					case 'youtube':
 						return await YouTubeProcessing.processYouTubeContentLabel(
+							ctx,
+							{ contentLabelId: args.contentLabelId }
+						);
+					case 'website':
+						return await WebsiteProcessing.processWebsiteContentLabel(
 							ctx,
 							{ contentLabelId: args.contentLabelId }
 						);

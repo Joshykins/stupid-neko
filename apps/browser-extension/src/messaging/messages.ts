@@ -104,7 +104,13 @@ export type WidgetStateUpdate = {
 	metadata?: Record<string, unknown>;
 	error?: string;
 	startTime?: number;
+	// Playback/session fields (optional)
+	isPlaying?: boolean;
+	playbackStatus?: 'playing' | 'paused' | 'ended';
+	sessionActiveMs?: number;
+	sessionStartedAt?: number;
 	detectedLanguage?: string;
+	autoStartedByPolicy?: boolean;
 };
 
 export type PlaybackEvent = {

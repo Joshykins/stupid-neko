@@ -46,7 +46,8 @@ async function loadFontsUsingFontFace(): Promise<void> {
 		loaded.forEach(f => {
 			document.fonts.add(f);
 		});
-		document.documentElement.classList.add('sn-fonts-ready');
+		// Avoid mutating the host page's <html> to prevent React hydration mismatches
+		// Previously: document.documentElement.classList.add('sn-fonts-ready');
 	} catch { }
 }
 

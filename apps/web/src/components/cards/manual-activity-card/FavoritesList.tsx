@@ -39,7 +39,10 @@ function FavoriteRow({
 	const [isOpen, setIsOpen] = React.useState(false);
 	const [title, setTitle] = React.useState((favorite as any).title ?? '');
 	const [minutes, setMinutes] = React.useState<number>(
-		Math.max(0, Math.round((favorite as any).defaultDurationInMinutes ?? 10))
+		Math.max(
+			0,
+			Math.round(((((favorite as any).defaultDurationInMs ?? 10 * 60 * 1000) as number)) / 60000)
+		)
 	);
 	const [desc, setDesc] = React.useState<string>(
 		(favorite as any).description ?? ''
@@ -261,7 +264,7 @@ function FavoriteRow({
 									title,
 									description: desc,
 									externalUrl: url || undefined,
-									defaultDurationInMinutes: minutes,
+									defaultDurationInMs: minutes * 60 * 1000,
 								});
 								setIsOpen(false);
 							}}
@@ -338,7 +341,7 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 								<FavoriteRow
 									key={(f as any)._id}
 									favorite={f}
-									onAutoFill={onAutoFill || (() => {})}
+									onAutoFill={onAutoFill || (() => { })}
 									onUpdate={updateFavorite}
 									onDelete={deleteFavorite}
 								/>

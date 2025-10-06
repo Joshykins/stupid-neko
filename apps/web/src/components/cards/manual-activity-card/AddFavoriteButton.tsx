@@ -12,7 +12,7 @@ type FavoriteData = {
 	title: string;
 	description?: string;
 	externalUrl?: string;
-	defaultDurationInMinutes: number;
+	defaultDurationInMs: number;
 };
 
 type AddFavoriteButtonProps = {};
