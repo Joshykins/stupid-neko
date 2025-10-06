@@ -1,6 +1,5 @@
 // Content Activities are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
 
-import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import { getEffectiveNow } from '../utils';
@@ -41,7 +40,14 @@ export const recordContentActivity = async ({
 
 	const contentKey = args.contentKey;
 
-	const occurredAt = await getEffectiveNow(ctx);
+	// Prefer client-provided timestamp to avoid bunching events at server time
+	// Clamp slight future skew to protect against clock drift
+	const nowEffective = await getEffectiveNow(ctx);
+	const incoming = args.occurredAt;
+	const occurredAt =
+		typeof incoming === 'number' && incoming > 0
+			? Math.min(incoming, nowEffective + 5 * 60 * 1000)
+			: nowEffective;
 
 	// Short-circuit if user has a blocking policy for this content
 	const existingBlockingPolicy = await ctx.db

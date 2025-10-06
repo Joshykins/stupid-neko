@@ -164,7 +164,7 @@ export async function updateWidgetStateForEvent(
 				const now = Date.now();
 				const accumulated = (prev?.sessionActiveMs ?? 0) + (prev?.sessionStartedAt ? now - prev.sessionStartedAt : 0);
 				updateWidgetState({
-					state: 'youtube-tracking-verified',
+					state: (prev?.state ?? 'youtube-tracking-unverified'),
 					provider: providerName,
 					domain,
 					isPlaying: false,
@@ -184,7 +184,7 @@ export async function updateWidgetStateForEvent(
 				const now = Date.now();
 				const accumulated = (prev?.sessionActiveMs ?? 0) + (prev?.sessionStartedAt ? now - prev.sessionStartedAt : 0);
 				updateWidgetState({
-					state: 'youtube-tracking-verified',
+					state: (prev?.state ?? 'youtube-tracking-unverified'),
 					provider: providerName,
 					domain,
 					isPlaying: false,
@@ -195,7 +195,7 @@ export async function updateWidgetStateForEvent(
 				break;
 			}
 			// Default previous idle behavior for non-YouTube
-			const idleState = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-not-tracking';
+			const idleState = 'website-provider-not-tracking';
 			updateWidgetState({
 				state: idleState,
 				provider: providerName,

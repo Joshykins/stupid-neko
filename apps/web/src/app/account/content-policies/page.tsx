@@ -165,10 +165,11 @@ function PoliciesManager() {
                         const key = item.contentKey;
                         const itemSource = item.contentSource;
                         const title = item.label || item.contentUrl || key;
-                        const SOURCE_ICON: Record<'youtube' | 'spotify' | 'anki', string> = {
+                        const SOURCE_ICON: Partial<Record<ContentSource, string>> = {
                             youtube: '/brands/youtube.svg',
                             spotify: '/brands/spotify.svg',
                             anki: '/brands/anki.svg',
+                            website: '/brands/browser-extension.svg',
                         };
                         return (
                             <div
@@ -176,9 +177,9 @@ function PoliciesManager() {
                                 className="group flex items-center justify-between gap-3 p-3 transition-all "
                             >
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    {SOURCE_ICON[itemSource as 'youtube' | 'spotify' | 'anki'] ? (
+                                    {SOURCE_ICON[itemSource] ? (
                                         <Image
-                                            src={SOURCE_ICON[itemSource as 'youtube' | 'spotify' | 'anki']}
+                                            src={SOURCE_ICON[itemSource]!}
                                             alt={itemSource}
                                             width={24}
                                             height={24}
@@ -218,6 +219,17 @@ function PoliciesManager() {
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-secondary-background">
                                                 {itemSource}
                                             </span>
+                                            {item.policyKind === 'allow' ? (
+                                                <Badge variant="white" className=" gap-1">
+                                                    <CheckIcon className="size-3" />
+                                                    Allow
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="dark" className="gap-1">
+                                                    <Ban className="size-3" />
+                                                    Block
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -226,7 +238,7 @@ function PoliciesManager() {
                                     <DialogTrigger asChild>
                                         <Button
                                             size={'icon'}
-                                            variant="destructive"
+                                            variant="neutral"
                                         >
                                             <Trash2 />
                                         </Button>
