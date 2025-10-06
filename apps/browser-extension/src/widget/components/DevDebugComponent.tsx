@@ -33,7 +33,7 @@ export function DevDebugComponent({
 
 	const getProviderColor = (provider?: string) => {
 		if (provider === 'youtube') return 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30';
-		if (provider === 'default') return 'snbex:bg-blue-500/20 snbex:text-blue-200 snbex:border-blue-400/30';
+		if (provider === 'website-provider') return 'snbex:bg-blue-500/20 snbex:text-blue-200 snbex:border-blue-400/30';
 		return 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30';
 	};
 

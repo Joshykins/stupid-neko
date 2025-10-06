@@ -44,7 +44,7 @@ export const tabStates: Record<number, TabPlaybackState> = {};
 export const contentLabelsByKey: Record<string, ContentLabel> = {};
 
 type TrackingState =
-	| 'default-provider-tracking'
+	| 'website-provider-tracking'
 	| 'youtube-tracking-unverified'
 	| 'youtube-tracking-verified';
 
@@ -54,7 +54,7 @@ function isTrackingState(
 		| string
 ): state is TrackingState {
 	return (
-		state === 'default-provider-tracking' ||
+		state === 'website-provider-tracking' ||
 		state === 'youtube-tracking-unverified' ||
 		state === 'youtube-tracking-verified'
 	);
@@ -93,12 +93,20 @@ export async function postContentActivityFromPlayback(
 		return { ok: false, saved: false };
 	}
 
+	// For website provider, only post heartbeats
+	if (evt.source !== 'youtube' && activityType !== 'heartbeat') {
+		log.debug('skip non-heartbeat for website provider');
+		return { ok: true, saved: false };
+	}
+
+	const fn = evt.source === 'youtube'
+		? api.browserExtension.youtubeProviderFunctions.recordYoutubeContentActivity
+		: api.browserExtension.websiteProviderFunctions.recordWebsiteContentActivity;
 	const { data: result, error } = await tryCatch(
 		convex.mutation(
-			api.browserExtensionFunctions.recordContentActivityFromIntegration,
+			fn,
 			{
 				integrationId,
-				source: evt.source,
 				activityType,
 				contentKey,
 				url: evt.url,
@@ -131,7 +139,7 @@ export async function postContentActivityFromPlayback(
 						const { getProviderName } = require('./determineProvider');
 						return getProviderName(evt.url);
 					} catch {
-						return 'default';
+						return 'website-provider';
 					}
 				})(),
 				domain,
@@ -166,7 +174,7 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	};
 	const nextKey = deriveContentKey(payload);
 	const contentChanged = nextKey && nextKey !== prev.lastContentKey;
-	let providerName: ProviderName = 'default';
+	let providerName: ProviderName = 'website-provider';
 	try {
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const { getProviderName } = require('./determineProvider');
@@ -177,8 +185,8 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 
 	let newState: TabPlaybackState;
 
-	// Handle domain changes for default provider
-	if (domainChanged && providerName === 'default' && prev.isPlaying) {
+	// Handle domain changes for website provider
+	if (domainChanged && providerName === 'website-provider' && prev.isPlaying) {
 		// Stop current session and emit end event
 		if (prev.lastEvent) {
 			const endEvt: PlaybackEvent = {
@@ -296,18 +304,18 @@ export async function handleContentActivityPosting(
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const { getProviderName } = require('./determineProvider');
 		const name = getProviderName(payload.url);
-		isDefaultProvider = name === 'default';
+		isDefaultProvider = name === 'website-provider';
 		isYouTubeProvider = name === 'youtube';
 	} catch { }
 
-	// For default provider, check consent first (include domain policy consent)
+	// For website provider, check consent first (include domain policy consent)
 	if (isDefaultProvider) {
 		const domain = (() => { try { return new URL(payload.url).hostname; } catch { return undefined; } })();
 		const effectiveConsent =
 			(state?.hasConsent === true) ||
 			(!!domain && state?.consentByDomain?.[domain] === true);
 		if (!effectiveConsent) {
-			log.debug('default provider without consent - skipping post');
+			log.debug('website provider without consent - skipping post');
 			return;
 		}
 		// Backfill consent/currentDomain if inferred from policy to reduce future skips
@@ -348,7 +356,7 @@ export async function updateYouTubeStateFromResult(
 	result: ContentActivityResult,
 	url: string
 ): Promise<void> {
-	let providerName: ProviderName = 'default';
+	let providerName: ProviderName = 'website-provider';
 	try {
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const { getProviderName } = require('./determineProvider');
@@ -443,7 +451,7 @@ export function updateAllowPostFromResult(
 		tabStates[tabId].allowPost = true; // keep posting while labeling processes
 		log.debug('backend waiting on labeling -> allowPost=true');
 	} else {
-		// default conservative: do not block
+		// website-provider conservative: do not block
 		tabStates[tabId].allowPost = true;
 		log.debug('backend unknown result -> allowPost=true');
 	}
@@ -562,16 +570,16 @@ export async function handleUrlChange(
 				const h = new URL(url).hostname.toLowerCase();
 				if (/(^|\.)youtube\.com$/.test(h) || /(^|\.)youtu\.be$/.test(h)) return 'youtube';
 			} catch { }
-			return 'default';
+			return 'website-provider';
 		})();
 
 		// Get user's target language
 		const authState = await getAuthState();
 		const targetLanguage = authState.me?.languageCode;
 
-		// For default provider, check domain policy to possibly auto-track
+		// For website provider, check domain policy to possibly auto-track
 		let alreadyTracking = false;
-		if (providerId === 'default') {
+		if (providerId === 'website-provider') {
 			try {
 				const { checkDomainPolicyAllowed } = await import('./domainPolicy');
 				const res = await checkDomainPolicyAllowed(domain);
@@ -582,8 +590,8 @@ export async function handleUrlChange(
 					if (state.currentDomain === domain) state.hasConsent = true;
 					tabStates[tabId] = state;
 					updateWidgetState({
-						state: 'default-provider-tracking',
-						provider: 'default',
+						state: 'website-provider-tracking',
+						provider: 'website-provider',
 						domain,
 						startTime: Date.now(),
 					}, tabId);
@@ -594,7 +602,7 @@ export async function handleUrlChange(
 
 		// If not already tracking due to allow policy, set idle state
 		if (!alreadyTracking) {
-			const idleState = providerId === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+			const idleState = providerId === 'youtube' ? 'youtube-not-tracking' : 'website-provider-idle';
 			updateWidgetState({ state: idleState, provider: providerId, domain }, tabId);
 		}
 

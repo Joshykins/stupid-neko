@@ -14,7 +14,10 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
-import type * as browserExtensionFunctions from "../browserExtensionFunctions.js";
+import type * as browserExtension_browserExtensionCoreFunctions from "../browserExtension/browserExtensionCoreFunctions.js";
+import type * as browserExtension_websiteProviderFunctions from "../browserExtension/websiteProviderFunctions.js";
+import type * as browserExtension_youtubeProviderFunctions from "../browserExtension/youtubeProviderFunctions.js";
+import type * as contentLabelPolicyFunctions from "../contentLabelPolicyFunctions.js";
 import type * as crons from "../crons.js";
 import type * as devOnlyFunctions from "../devOnlyFunctions.js";
 import type * as http from "../http.js";
@@ -46,7 +49,10 @@ import type * as utils from "../utils.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
-  browserExtensionFunctions: typeof browserExtensionFunctions;
+  "browserExtension/browserExtensionCoreFunctions": typeof browserExtension_browserExtensionCoreFunctions;
+  "browserExtension/websiteProviderFunctions": typeof browserExtension_websiteProviderFunctions;
+  "browserExtension/youtubeProviderFunctions": typeof browserExtension_youtubeProviderFunctions;
+  contentLabelPolicyFunctions: typeof contentLabelPolicyFunctions;
   crons: typeof crons;
   devOnlyFunctions: typeof devOnlyFunctions;
   http: typeof http;

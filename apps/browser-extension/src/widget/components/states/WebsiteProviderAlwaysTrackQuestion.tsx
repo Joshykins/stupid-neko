@@ -9,7 +9,7 @@ interface Props {
     renderDebugInfo?: () => React.ReactNode;
 }
 
-export const DefaultProviderAlwaysTrackQuestion: React.FC<Props> = ({
+export const WebsiteProviderAlwaysTrackQuestion: React.FC<Props> = ({
     widgetState,
     renderDebugInfo,
 }) => {
@@ -33,5 +33,4 @@ export const DefaultProviderAlwaysTrackQuestion: React.FC<Props> = ({
         </>
     );
 };
-
 

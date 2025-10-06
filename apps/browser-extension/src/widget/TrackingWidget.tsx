@@ -16,20 +16,20 @@ import {
 	useWidgetPosition,
 } from './hooks';
 import { getWidgetStateConfig } from './config/widgetStates';
-import { DefaultProviderIdle } from './components/states/DefaultProviderIdle';
+import { WebsiteProviderIdle } from './components/states/WebsiteProviderIdle';
 import { YouTubeNotTracking } from './components/states/YouTubeNotTracking';
 import { YouTubeTrackingUnverified } from './components/states/YouTubeTrackingUnverified';
 import { YouTubeTrackingVerified } from './components/states/YouTubeTrackingVerified';
 import { DeterminingProvider } from './components/states/DeterminingProvider';
-import { DefaultProviderTracking } from './components/states/DefaultProviderTracking';
+import { WebsiteProviderTracking } from './components/states/WebsiteProviderTracking';
 import { ErrorState } from './components/states/ErrorState';
 import { DefaultState } from './components/states/DefaultState';
-import { DefaultProviderIdleDetected } from './components/states/DefaultProviderIdleDetected';
-import { DefaultProviderAlwaysTrackQuestion } from './components/states/DefaultProviderAlwaysTrackQuestion';
-import { DefaultProviderTrackingStopped } from './components/states/DefaultProviderTrackingStopped';
+import { WebsiteProviderIdleDetected } from './components/states/WebsiteProviderIdleDetected';
+import { WebsiteProviderAlwaysTrackQuestion } from './components/states/WebsiteProviderAlwaysTrackQuestion';
+import { WebsiteProviderTrackingStopped } from './components/states/WebsiteProviderTrackingStopped';
 import { YouTubeProviderTrackingStopped } from './components/states/YouTubeProviderTrackingStopped';
 import { ContentBlocked } from './components/states/ContentBlocked';
-import { DefaultProviderNotTracking } from './components/states/DefaultProviderNotTracking';
+import { WebsiteProviderNotTracking } from './components/states/WebsiteProviderNotTracking';
 import { IconButton } from '../components/ui/IconButton';
 import { cn } from '../lib/utils';
 import { createLogger } from '../lib/logger';
@@ -91,12 +91,13 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		}
 	}, [isDangerousTesting]);
 
-	// Update timer every second when tracking
+	// Update timer every second when tracking; pause while tab is hidden
 	useEffect(() => {
 		// Show timer for tracking states
-		const trackingStates = ['default-provider-tracking', 'youtube-tracking-verified'];
+		const trackingStates = ['website-provider-tracking', 'youtube-tracking-verified'];
 		if (trackingStates.includes(widgetState.state) && widgetState.startTime) {
 			const interval = setInterval(() => {
+				if (document.visibilityState !== 'visible') return;
 				setCurrentTime(Date.now());
 			}, 1000);
 			return () => clearInterval(interval);
@@ -236,9 +237,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
-			case 'default-provider-idle':
+			case 'website-provider-idle':
 				return (
-					<DefaultProviderIdle
+					<WebsiteProviderIdle
 						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
@@ -277,34 +278,34 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					/>
 				);
 
-			case 'default-provider-idle-detected':
+			case 'website-provider-idle-detected':
 				return (
-					<DefaultProviderIdleDetected
+					<WebsiteProviderIdleDetected
 						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
 
-			case 'default-provider-always-track-question':
+			case 'website-provider-always-track-question':
 				return (
-					<DefaultProviderAlwaysTrackQuestion
+					<WebsiteProviderAlwaysTrackQuestion
 						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
 
-			case 'default-provider-tracking':
+			case 'website-provider-tracking':
 				return (
-					<DefaultProviderTracking
+					<WebsiteProviderTracking
 						widgetState={widgetState}
 						currentTime={currentTime}
 						renderDebugInfo={renderDebugInfo}
 					/>
 				);
 
-			case 'default-provider-tracking-stopped':
+			case 'website-provider-tracking-stopped':
 				return (
-					<DefaultProviderTrackingStopped
+					<WebsiteProviderTrackingStopped
 						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>
@@ -318,9 +319,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 					/>
 				);
 
-			case 'default-provider-not-tracking':
+			case 'website-provider-not-tracking':
 				return (
-					<DefaultProviderNotTracking
+					<WebsiteProviderNotTracking
 						widgetState={widgetState}
 						renderDebugInfo={renderDebugInfo}
 					/>

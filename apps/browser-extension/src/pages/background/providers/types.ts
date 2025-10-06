@@ -3,11 +3,11 @@
 import type { ContentSource } from '../../../../../../convex/schema';
 
 // Provider names - centralized type for all provider identifiers
-export type ProviderName = 'youtube' | 'default';
+export type ProviderName = 'youtube' | 'website-provider';
 
 // Helper function to check if a string is a valid provider name
 export function isValidProviderName(name: string): name is ProviderName {
-	return name === 'youtube' || name === 'default';
+	return name === 'youtube' || name === 'website-provider';
 }
 
 export interface ContentMetadata {
@@ -141,19 +141,19 @@ export interface ProviderEventHandlers {
 // Widget state management
 export interface WidgetState {
 	state:
-		| 'default-provider-idle'
-		| 'default-provider-idle-detected'
-		| 'default-provider-always-track-question'
-		| 'default-provider-tracking'
-		| 'default-provider-tracking-stopped'
-		| 'default-provider-not-tracking'
-		| 'youtube-not-tracking'
-		| 'youtube-tracking-unverified'
-		| 'youtube-tracking-verified'
-        | 'youtube-provider-tracking-stopped'
-        | 'content-blocked'
-		| 'determining-provider'
-		| 'error';
+	| 'website-provider-idle'
+	| 'website-provider-idle-detected'
+	| 'website-provider-always-track-question'
+	| 'website-provider-tracking'
+	| 'website-provider-tracking-stopped'
+	| 'website-provider-not-tracking'
+	| 'youtube-not-tracking'
+	| 'youtube-tracking-unverified'
+	| 'youtube-tracking-verified'
+	| 'youtube-provider-tracking-stopped'
+	| 'content-blocked'
+	| 'determining-provider'
+	| 'error';
 	provider?: ProviderName;
 	domain?: string;
 	metadata?: ContentMetadata;

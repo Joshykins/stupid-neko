@@ -1,7 +1,7 @@
 import type { ProviderMeta } from '../registry';
 
 const meta: ProviderMeta = {
-	id: 'default' as const,
+	id: 'website-provider' as const,
 	displayName: 'Website',
 	matches: () => true,
 	extractContentKey: (url: string) => {
@@ -15,3 +15,4 @@ const meta: ProviderMeta = {
 };
 
 export default meta;
+

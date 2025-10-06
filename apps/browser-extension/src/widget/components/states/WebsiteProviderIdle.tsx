@@ -2,14 +2,14 @@ import React from 'react';
 import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
 import { useWidgetActions } from '../../hooks/useWidgetActions';
-import { Globe, Globe2 } from 'lucide-react';
+import { Globe2 } from 'lucide-react';
 
-interface DefaultProviderIdleProps {
+interface WebsiteProviderIdleProps {
     widgetState: WidgetState;
     renderDebugInfo?: () => React.ReactNode;
 }
 
-export const DefaultProviderIdle: React.FC<DefaultProviderIdleProps> = ({
+export const WebsiteProviderIdle: React.FC<WebsiteProviderIdleProps> = ({
     widgetState,
     renderDebugInfo,
 }) => {
@@ -34,3 +34,4 @@ export const DefaultProviderIdle: React.FC<DefaultProviderIdleProps> = ({
         </>
     );
 };
+

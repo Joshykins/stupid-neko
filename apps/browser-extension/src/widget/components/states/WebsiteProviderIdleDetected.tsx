@@ -8,7 +8,7 @@ interface Props {
     renderDebugInfo?: () => React.ReactNode;
 }
 
-export const DefaultProviderIdleDetected: React.FC<Props> = ({
+export const WebsiteProviderIdleDetected: React.FC<Props> = ({
     widgetState,
     renderDebugInfo,
 }) => {
@@ -35,5 +35,4 @@ export const DefaultProviderIdleDetected: React.FC<Props> = ({
         </>
     );
 };
-
 

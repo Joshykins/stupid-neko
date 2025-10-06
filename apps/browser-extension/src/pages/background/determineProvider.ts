@@ -32,7 +32,7 @@ export function setDeterminingProviderState(domain?: string, tabId?: number): vo
  */
 export function transitionFromDeterminingProvider(providerName: ProviderName, domain: string, tabId?: number): void {
 	// Transition from determining-provider to appropriate provider idle state
-	const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+	const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'website-provider-idle';
 
 	updateWidgetState({
 		state: idleState,
@@ -81,8 +81,8 @@ export async function determineAndActivateProvider(
 							defaultAllowed = true;
 							const { updateWidgetState } = await import('./widget');
 							updateWidgetState({
-								state: 'default-provider-tracking',
-								provider: 'default',
+								state: 'website-provider-tracking',
+								provider: 'website-provider',
 								domain,
 								startTime: Date.now(),
 							}, tabId);
@@ -95,7 +95,7 @@ export async function determineAndActivateProvider(
 		}
 
 		// Transition to appropriate provider idle state unless we already started tracking via allow policy
-		if (!(providerId === 'default' && defaultAllowed)) {
+		if (!(providerId === 'website-provider' && defaultAllowed)) {
 			transitionFromDeterminingProvider(providerId, domain, tabId);
 		}
 
@@ -113,7 +113,7 @@ export async function determineAndActivateProvider(
 
 		// Activate the provider in the content script with retry
 		{
-			const logger = providerId === 'default' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
+			const logger = providerId === 'website-provider' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
 			logger?.debug('Starting retry activation for provider:', providerId);
 		}
 		await retryActivateProvider(tabId, providerId, targetLanguage, url);

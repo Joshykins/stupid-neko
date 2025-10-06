@@ -23,56 +23,56 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		isTracking: false
 	},
 
-	'default-provider-idle': {
-		state: 'default-provider-idle',
+	'website-provider-idle': {
+		state: 'website-provider-idle',
 		visibility: 'visible',
 		openOnLoad: false,
 		forceAlwaysExpanded: false,
 		isTracking: false
 	},
 
-	// New default provider states
-	'default-provider-idle-detected': {
-		state: 'default-provider-idle-detected',
+	// New website provider states
+	'website-provider-idle-detected': {
+		state: 'website-provider-idle-detected',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: false,
 	},
 
-	'default-provider-always-track-question': {
-		state: 'default-provider-always-track-question',
+	'website-provider-always-track-question': {
+		state: 'website-provider-always-track-question',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: false,
 	},
 
-	'default-provider-tracking': {
-		state: 'default-provider-tracking',
+	'website-provider-tracking': {
+		state: 'website-provider-tracking',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: true
 	},
 
-	'default-provider-tracking-stopped': {
-		state: 'default-provider-tracking-stopped',
+	'website-provider-tracking-stopped': {
+		state: 'website-provider-tracking-stopped',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: false,
 	},
 
-	'default-provider-not-tracking': {
-		state: 'default-provider-not-tracking',
+	'website-provider-not-tracking': {
+		state: 'website-provider-not-tracking',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
 		isTracking: false,
 	},
 
-	
+
 	'youtube-tracking-unverified': {
 		state: 'youtube-tracking-unverified',
 		visibility: 'hidden',

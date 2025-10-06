@@ -67,7 +67,7 @@ function PoliciesManager() {
         return () => clearTimeout(handle);
     }, [searchInput]);
 
-    const data = useQuery(api.browserExtensionFunctions.listUserContentLabelPolicies, {
+    const data = useQuery(api.contentLabelPolicyFunctions.listUserContentLabelPolicies, {
         search: search || undefined,
         source: source || undefined,
         policyKind: policyKind || undefined,
@@ -76,7 +76,7 @@ function PoliciesManager() {
         cursor: cursor ?? undefined,
         limit: 6,
     });
-    const del = useMutation(api.browserExtensionFunctions.deleteUserContentLabelPolicy);
+    const del = useMutation(api.contentLabelPolicyFunctions.deleteUserContentLabelPolicy);
 
     // Reset pagination and accumulated items when filters change
     React.useEffect(() => {

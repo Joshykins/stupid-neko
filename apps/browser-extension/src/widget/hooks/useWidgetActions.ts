@@ -8,7 +8,7 @@ export function useWidgetActions() {
     const defaultOpenAlwaysTrackQuestion = useCallback(async () => {
         try {
             await callBackground('WIDGET_ACTION', {
-                action: 'default.open-always-track-question',
+                action: 'website-provider.open-always-track-question',
             });
         } catch (error) {
             log.error('Failed to open always-track question (default):', error);
@@ -17,7 +17,7 @@ export function useWidgetActions() {
 
     const defaultDontTrack = useCallback(async () => {
         try {
-            await callBackground('WIDGET_ACTION', { action: 'default.dont-track' });
+            await callBackground('WIDGET_ACTION', { action: 'website-provider.dont-track' });
         } catch (error) {
             log.error('Failed to set dont-track (default):', error);
         }
@@ -25,7 +25,7 @@ export function useWidgetActions() {
 
     const defaultQuestionTrackOnce = useCallback(async () => {
         try {
-            await callBackground('WIDGET_ACTION', { action: 'default.question-track-once' });
+            await callBackground('WIDGET_ACTION', { action: 'website-provider.question-track-once' });
         } catch (error) {
             log.error('Failed to start tracking once (default):', error);
         }
@@ -33,7 +33,7 @@ export function useWidgetActions() {
 
     const defaultQuestionAlwaysTrack = useCallback(async () => {
         try {
-            await callBackground('WIDGET_ACTION', { action: 'default.question-always-track' });
+            await callBackground('WIDGET_ACTION', { action: 'website-provider.question-always-track' });
         } catch (error) {
             log.error('Failed to always track (default):', error);
         }
@@ -41,7 +41,7 @@ export function useWidgetActions() {
 
     const defaultStopRecording = useCallback(async () => {
         try {
-            await callBackground('WIDGET_ACTION', { action: 'default.stop-recording' });
+            await callBackground('WIDGET_ACTION', { action: 'website-provider.stop-recording' });
         } catch (error) {
             log.error('Failed to stop recording (default):', error);
         }
@@ -49,7 +49,7 @@ export function useWidgetActions() {
 
     const defaultTrackAnyway = useCallback(async () => {
         try {
-            await callBackground('WIDGET_ACTION', { action: 'default.track-anyway' });
+            await callBackground('WIDGET_ACTION', { action: 'website-provider.track-anyway' });
         } catch (error) {
             log.error('Failed to track anyway (default):', error);
         }

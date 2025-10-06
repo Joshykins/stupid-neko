@@ -8,20 +8,19 @@ interface Props {
     renderDebugInfo?: () => React.ReactNode;
 }
 
-export const DefaultProviderNotTracking: React.FC<Props> = ({
+export const WebsiteProviderTrackingStopped: React.FC<Props> = ({
     widgetState,
     renderDebugInfo,
 }) => {
     const { defaultTrackAnyway } = useWidgetActions();
     return (
         <>
-            <div >
-                <div className="snbex:text-lg snbex:font-bold snbex:mb-2">Not tracking</div>
-                <Button className='snbex:w-full snbex:mt-3 snbex:bg-foreground snbex:text-background' onClick={defaultTrackAnyway}>Track anyway</Button>
+            <div className="snbex:mt-3 snbex:text-center">
+                <div className="snbex:text-lg snbex:font-bold snbex:mb-2">Tracking stopped</div>
+                <Button size="sm" onClick={defaultTrackAnyway}>Track anyway</Button>
             </div>
             {renderDebugInfo?.()}
         </>
     );
 };
-
 

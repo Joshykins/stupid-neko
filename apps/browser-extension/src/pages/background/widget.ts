@@ -62,7 +62,7 @@ export async function updateWidgetStateForEvent(
 	// Treat provider "tracking-stopped" states as stable; ignore transient events
 	if (
 		current?.state === 'youtube-provider-tracking-stopped' ||
-		current?.state === 'default-provider-tracking-stopped'
+		current?.state === 'website-provider-tracking-stopped'
 	) {
 		log.debug('ignoring event due to provider-tracking-stopped state', {
 			state: current?.state,
@@ -74,7 +74,7 @@ export async function updateWidgetStateForEvent(
 	const host = (() => { try { return new URL(evt.url).hostname.toLowerCase(); } catch { return ''; } })();
 	const providerName: ProviderName = /(^|\.)youtube\.com$/.test(host) || /(^|\.)youtu\.be$/.test(host)
 		? 'youtube'
-		: 'default';
+		: 'website-provider';
 	const domain = new URL(evt.url).hostname;
 
 	// Import tabStates to check consent
@@ -88,7 +88,7 @@ export async function updateWidgetStateForEvent(
 				// For default provider, check if we have consent
 				if (tabState?.hasConsent) {
 					updateWidgetState({
-						state: 'default-provider-tracking',
+						state: 'website-provider-tracking',
 						provider: providerName,
 						domain,
 						startTime: Date.now(),
@@ -100,7 +100,7 @@ export async function updateWidgetStateForEvent(
 				} else {
 					// No consent yet, show provider-specific idle state
 					updateWidgetState({
-						state: 'default-provider-idle',
+						state: 'website-provider-idle',
 						provider: providerName,
 						domain,
 						metadata: {
@@ -129,7 +129,7 @@ export async function updateWidgetStateForEvent(
 
 		case 'end':
 			// Return to provider-specific idle state
-			const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'default-provider-not-tracking';
+			const idleState = providerName === 'youtube' ? 'youtube-not-tracking' : 'website-provider-not-tracking';
 			updateWidgetState({
 				state: idleState,
 				provider: providerName,
@@ -142,7 +142,7 @@ export async function updateWidgetStateForEvent(
 			const currentState = tabWidgetStates[tabId];
 			if (
 				currentState?.state.includes('-tracking') ||
-				currentState?.state === 'default-provider-tracking'
+				currentState?.state === 'website-provider-tracking'
 			) {
 				updateWidgetState({
 					state: currentState.state,
@@ -182,8 +182,8 @@ export async function handleConsentResponse(
 	if (consent) {
 		// Start tracking with consent
 		updateWidgetState({
-			state: 'default-provider-tracking',
-			provider: 'default',
+			state: 'website-provider-tracking',
+			provider: 'website-provider',
 			domain,
 			startTime: Date.now(),
 			metadata: {
@@ -194,7 +194,7 @@ export async function handleConsentResponse(
 	} else {
 		// Return to default provider idle
 		updateWidgetState({
-			state: 'default-provider-idle',
+			state: 'website-provider-idle',
 		}, tabId);
 	}
 }
@@ -205,7 +205,7 @@ export function handleStopRecording(tabId: number): void {
 	const provider = current?.provider as ProviderName | undefined;
 	const domain = current?.domain;
 
-	const idleState = provider === 'youtube' ? 'youtube-not-tracking' : 'default-provider-idle';
+	const idleState = provider === 'youtube' ? 'youtube-not-tracking' : 'website-provider-idle';
 
 	updateWidgetState({
 		state: idleState,
@@ -219,9 +219,9 @@ export function handleStopRecording(tabId: number): void {
 }
 
 export function handleRetry(tabId?: number): void {
-	// Reset to default provider idle state
+	// Reset to website provider idle state
 	updateWidgetState({
-		state: 'default-provider-idle',
+		state: 'website-provider-idle',
 	}, tabId);
 }
 
@@ -246,8 +246,8 @@ export async function startTrackingFromPopup(tabId: number): Promise<void> {
 
 	// Start tracking with consent
 	updateWidgetState({
-		state: 'default-provider-tracking',
-		provider: 'default',
+		state: 'website-provider-tracking',
+		provider: 'website-provider',
 		domain,
 		startTime: Date.now(),
 		metadata: {
@@ -274,8 +274,8 @@ export async function handleLanguageDetection(
 		detectedLanguage.startsWith(targetLanguage.toLowerCase())
 	) {
 		updateWidgetState({
-			state: 'default-provider-idle-detected',
-			provider: 'default',
+			state: 'website-provider-idle-detected',
+			provider: 'website-provider',
 			domain,
 			detectedLanguage,
 			metadata: {

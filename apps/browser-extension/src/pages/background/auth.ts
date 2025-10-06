@@ -107,7 +107,7 @@ export async function fetchMe(): Promise<AuthState> {
 
 	log.info('fetchMe - calling meFromIntegration');
 	const { data: me, error: meError } = await tryCatch(
-		convex.query(api.browserExtensionFunctions.meFromIntegration, {
+		convex.query(api.browserExtension.browserExtensionCoreFunctions.meFromIntegration, {
 			integrationId,
 		})
 	);
@@ -123,7 +123,7 @@ export async function fetchMe(): Promise<AuthState> {
 	log.info('fetchMe - marking integration key as used');
 	const { error: markError } = await tryCatch(
 		convex.mutation(
-			api.browserExtensionFunctions.markIntegrationKeyAsUsedFromExtension,
+			api.browserExtension.browserExtensionCoreFunctions.markIntegrationKeyAsUsedFromExtension,
 			{
 				integrationId,
 			}

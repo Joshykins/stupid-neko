@@ -18,7 +18,6 @@ import {
 	tabStates,
 	postContentActivityFromPlayback,
 	handleContentActivityEvent,
-	updateConsentForDomain,
 } from './content-activity-router';
 import type { PlaybackEvent, WidgetStateUpdate } from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
@@ -27,7 +26,7 @@ import { getHashedDomainContentKey } from './domainPolicy';
 import { createLogger } from '../../lib/logger';
 const log = createLogger('service-worker', 'handlers:bg');
 
-const DEBUG_LOG_PREFIX = '[bg:handlers]';
+
 
 export function registerMessageHandlers(): void {
 	// Auth handlers
@@ -85,19 +84,19 @@ export function registerMessageHandlers(): void {
 		switch (normalizedAction) {
 			case 'open-always-track-question': {
 				const { updateWidgetState } = await import('./widget');
-				updateWidgetState({ state: 'default-provider-always-track-question' }, tabId);
+				updateWidgetState({ state: 'website-provider-always-track-question' }, tabId);
 				break;
 			}
 
 			case 'dont-track': {
 				const { updateWidgetState } = await import('./widget');
-				updateWidgetState({ state: 'default-provider-not-tracking' }, tabId);
+				updateWidgetState({ state: 'website-provider-not-tracking' }, tabId);
 				break;
 			}
 
 			case 'question-track-once': {
 				const { updateWidgetState } = await import('./widget');
-				updateWidgetState({ state: 'default-provider-tracking', startTime: Date.now() }, tabId);
+				updateWidgetState({ state: 'website-provider-tracking', startTime: Date.now() }, tabId);
 				break;
 			}
 
@@ -113,14 +112,12 @@ export function registerMessageHandlers(): void {
 						if (convex && integrationId) {
 							const { error } = await tryCatch(
 								convex.mutation(
-									api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
+									api.browserExtension.websiteProviderFunctions.markWebsiteAsAlwaysTrack,
 									{
 										integrationId,
 										contentKey,
-										source: 'website',
 										url,
 										label: domain,
-										policyKind: 'allow',
 									}
 								)
 							);
@@ -138,9 +135,9 @@ export function registerMessageHandlers(): void {
 
 						// Update widget immediately
 						updateWidgetState({
-							state: 'default-provider-tracking',
+							state: 'website-provider-tracking',
 							startTime: Date.now(),
-							provider: 'default',
+							provider: 'website-provider',
 							domain,
 							metadata: { title: tab.title, url },
 						}, tabId);
@@ -148,7 +145,7 @@ export function registerMessageHandlers(): void {
 						// Activate provider in content script
 						const authState = await getAuthState();
 						await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
-							providerId: 'default',
+							providerId: 'website-provider',
 							targetLanguage: authState.me?.languageCode,
 						});
 					}
@@ -164,7 +161,7 @@ export function registerMessageHandlers(): void {
 				if (current.provider === 'youtube') {
 					updateWidgetState({ state: 'youtube-tracking-verified', startTime: Date.now() }, tabId);
 				} else {
-					updateWidgetState({ state: 'default-provider-always-track-question' }, tabId);
+					updateWidgetState({ state: 'website-provider-always-track-question' }, tabId);
 				}
 				break;
 			}
@@ -172,60 +169,39 @@ export function registerMessageHandlers(): void {
 				await handleConsentResponse(payload, tabId);
 				break;
 
+
+
 			case 'block-content': {
-				// Create a user content label blocking policy for current content and stop recording
+
+
+
+
+
 				const state = tabStates[tabId];
 				const last = state?.lastEvent;
 				if (!last) break;
 				const { extractContentKey, getProviderName } = await import('./determineProvider');
 				const contentKey = extractContentKey(last.url);
-				if (contentKey) {
-					const integrationId = await getIntegrationId();
-					if (convex && integrationId) {
-						const { error } = await tryCatch(
-							convex.mutation(
-								api.browserExtensionFunctions.createUserContentLabelPolicyFromIntegration,
-								{
-									integrationId,
-									contentKey,
-									source: (() => {
-										const p = getProviderName(last.url);
-										return p === 'default' ? 'website' : (p as 'youtube' | 'spotify' | 'anki' | 'manual' | 'website');
-									})(),
-									url: last.url,
-									label: state?.lastEvent?.title,
-									policyKind: 'block',
-								}
-							)
-						);
-						if (error) {
-							log.error('failed to create block policy for content:', error);
-						}
+				if (!contentKey) break;
+				const integrationId = await getIntegrationId();
+				if (!(convex && integrationId)) break;
+				const providerId = getProviderName(last.url);
+				if (providerId === 'youtube') {
+					const { error } = await tryCatch(
+						convex.mutation(
+							api.browserExtension.youtubeProviderFunctions.markYoutubeVideoAsBlocked,
+							{ integrationId, contentKey, url: last.url, label: state?.lastEvent?.title }
+						)
+					);
+					if (error) {
+						log.error('failed to create block policy for content:', error);
 					}
 				}
-				// Stop recording after creating block policy
 				handleStopRecording(tabId);
-				// Show content blocked state with metadata
-				{
-					const { updateWidgetState } = await import('./widget');
-					updateWidgetState({
-						state: 'content-blocked',
-						metadata: {
-							title: state?.lastEvent?.title,
-							url: state?.lastEvent?.url,
-						},
-					}, tabId);
-				}
-				if (state?.isPlaying && state?.lastEvent) {
-					const endEvt: PlaybackEvent = {
-						...state.lastEvent,
-						event: 'end',
-						ts: Date.now(),
-					};
-					postContentActivityFromPlayback(endEvt);
-				}
 				break;
 			}
+
+
 
 			case 'stop-recording': {
 				handleStopRecording(tabId);
@@ -233,7 +209,7 @@ export function registerMessageHandlers(): void {
 				const current = getCurrentWidgetState(tabId);
 				const stateKey: WidgetStateUpdate['state'] = current.provider === 'youtube'
 					? 'youtube-provider-tracking-stopped'
-					: 'default-provider-tracking-stopped';
+					: 'website-provider-tracking-stopped';
 				// Preserve last known title/url as subtitle metadata for stopped state
 				const state = tabStates[tabId];
 				updateWidgetState({

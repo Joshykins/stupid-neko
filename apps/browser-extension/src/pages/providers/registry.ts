@@ -14,15 +14,15 @@ export type ProviderMeta = {
 // Eagerly import metas so we can match synchronously in background
 const metaModules = import.meta.glob('./**/meta.ts', { eager: true }) as Record<
 	string,
-	{ default: ProviderMeta }
+	{ default: ProviderMeta; }
 >;
 
 // Load all providers and sort them so specific providers come before the default
 const allMetas = Object.values(metaModules).map(m => m.default);
 export const metas: ProviderMeta[] = allMetas.sort((a, b) => {
-	// Put default provider last, all others first
-	if (a.id === 'default') return 1;
-	if (b.id === 'default') return -1;
+	// Put website-provider last, all others first
+	if (a.id === 'website-provider') return 1;
+	if (b.id === 'website-provider') return -1;
 	return 0;
 });
 
@@ -44,5 +44,5 @@ export function getMetaForUrl(url: string): ProviderMeta {
 	});
 	// Fallback to default by id
 	// biome-ignore lint/style/noNonNullAssertion: "m is guaranteed to be defined"
-	return m ?? metas.find(mm => mm.id === 'default')!;
+	return m ?? metas.find(mm => mm.id === 'website-provider')!;
 }

@@ -4,7 +4,6 @@ import { tryCatch } from '../../../../../lib/tryCatch';
 import { createLogger } from '../../lib/logger';
 const log = createLogger('service-worker', 'providers:determine');
 
-const DEBUG_LOG_PREFIX = '[bg:domain-policy]';
 
 type PolicyKind = 'allow' | 'block';
 
@@ -38,7 +37,7 @@ export async function checkDomainPolicyAllowed(domain: string): Promise<{ allowe
     const contentKey = buildDomainContentKey(hash);
 
     const { data: res, error } = await tryCatch(
-        convex.query(api.browserExtensionFunctions.getUserContentLabelPolicyForKeyFromIntegration, {
+        convex.query(api.browserExtension.websiteProviderFunctions.checkIfWebsiteIsAlwaysToBeTracked, {
             integrationId,
             contentKey,
         })
@@ -49,15 +48,11 @@ export async function checkDomainPolicyAllowed(domain: string): Promise<{ allowe
         return null;
     }
 
-    const policy = res?.policyKind as PolicyKind | undefined;
-    return { allowed: policy === 'allow', policy: policy ?? null, contentKey };
+    const allowed = !!res?.allowed;
+    return { allowed, policy: allowed ? 'allow' : null, contentKey };
 }
 
 export async function getHashedDomainContentKey(domain: string): Promise<string> {
     const hash = await hashDomain(domain);
     return buildDomainContentKey(hash);
 }
-
-// no cache – rely on DB for authoritative policy state
-
-
