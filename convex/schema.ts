@@ -222,6 +222,7 @@ export default defineSchema({
 
 		// State
 		state: v.union(v.literal('in-progress'), v.literal('completed')), // active: the activity is currently in progress, finished: the activity has been completed
+		isDeleted: v.optional(v.boolean()),
 
 		isManuallyTracked: v.optional(v.boolean()),
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from 'convex/react';
-import { ExternalLink, Rocket, Zap, History } from 'lucide-react';
+import { useQuery, useMutation } from 'convex/react';
+import { ExternalLink, Rocket, Zap, History, Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { api } from '../../../../../convex/_generated/api';
 import type { LanguageCode } from '../../../../../convex/schema';
@@ -18,6 +18,14 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '../ui/tooltip';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '../ui/dialog';
 import { FunctionReturnType } from 'convex/server';
 import dayjs from '../../../../../lib/dayjs';
 
@@ -165,12 +173,30 @@ const TrackedHistoryItem = ({
 	const occurredAt = item.occurredAt ?? item._creationTime;
 	const title = item.title ?? item.label?.title ?? '(untitled)';
 
+	const deleteActivity = useMutation(api.userTargetLanguageActivityFunctions.deleteLanguageActivity);
+	const [deleting, setDeleting] = React.useState(false);
+	const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+
+	const onDelete = () => {
+		setShowConfirmDialog(true);
+	};
+
+	const onConfirmDelete = async () => {
+		setDeleting(true);
+		try {
+			await deleteActivity({ activityId: item._id as any });
+		} finally {
+			setDeleting(false);
+			setShowConfirmDialog(false);
+		}
+	};
+
 	return (
 		<li key={item._id as string}>
 			<Tooltip delayDuration={500}>
 				<TooltipTrigger asChild>
 					<div
-						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10 hover:border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow`}
+						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10	`}
 					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
@@ -192,7 +218,7 @@ const TrackedHistoryItem = ({
 									className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${styles.dot}`}
 								></span>
 							)}
-							<div className="min-w-0 flex-1">
+							<div className="min-w-0 flex-1 flex flex-col items-start gap-1">
 								<div className="font-bold flex items-center gap-1 min-w-0">
 									{item.label?.contentUrl ? (
 										<>
@@ -200,7 +226,7 @@ const TrackedHistoryItem = ({
 												href={item.label.contentUrl}
 												target="_blank"
 												rel="noreferrer"
-												className="underline w-[200px] decoration-main !truncate min-w-0 flex-1"
+												className="underline max-w-[200px] decoration-main !truncate min-w-0 flex-1"
 											>
 												<span className="truncate block min-w-0">{title}</span>
 											</a>
@@ -222,10 +248,29 @@ const TrackedHistoryItem = ({
 										</>
 									)}
 								</div>
+								<span className="text-xs text-muted-foreground flex items-center gap-2">
+
+									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+										<Rocket className="!size-3" /> {xp.toLocaleString()} XP
+									</span> <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
+										{formatHoursMinutesLabel(durationSeconds)}
+									</span>
+									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
+										{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
+									</span>
+								</span>
 							</div>
 						</div>
-						<div className="flex-shrink-0 text-sm whitespace-nowrap font-bold font-display text-main-foreground">
-							{xp} XP • {formatHoursMinutesLabel(durationSeconds)}
+						<div className="flex items-center gap-2 flex-shrink-0 text-sm whitespace-nowrap font-bold font-display text-main-foreground">
+							<Button
+								size="icon"
+								variant={"neutral"}
+								aria-label="Delete activity"
+								onClick={onDelete}
+								disabled={deleting}
+							>
+								<Trash2 className="!size-4" />
+							</Button>
 						</div>
 					</div>
 				</TooltipTrigger>
@@ -258,9 +303,7 @@ const TrackedHistoryItem = ({
 									<span className="opacity-90">{key}</span>
 								</span>
 							)}
-							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
-								{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
-							</span>
+
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
 							</span>
@@ -291,6 +334,33 @@ const TrackedHistoryItem = ({
 					</div>
 				</TooltipContent>
 			</Tooltip>
+
+			<Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Delete Activity</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete this activity? This will undo the XP gained from it and cannot be undone.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="neutral"
+							onClick={() => setShowConfirmDialog(false)}
+							disabled={deleting}
+						>
+							Cancel
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={onConfirmDelete}
+							disabled={deleting}
+						>
+							{deleting ? 'Deleting...' : 'Delete'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</li>
 	);
 };
@@ -305,8 +375,13 @@ export default function TrackedHistoryCard() {
 
 	const items = React.useMemo(() => {
 		if (!data) return [] as RecentItems;
-		// Show the latest activities regardless of day, prioritizing in-progress items first
-		return data.items.slice().sort((a, b) => {
+		// Show the latest activities for current page, prioritizing in-progress items first
+		const startIndex = (page - 1) * PAGE_SIZE;
+		const endIndex = page * PAGE_SIZE;
+		const pageItems = data.items.slice(startIndex, endIndex);
+		return pageItems.slice().sort((a, b) => {
+			// Note: This query should only return completed activities, so in-progress activities
+			// should not be present. If they are, it indicates a bug in the backend query.
 			const aActive = a.state === 'in-progress';
 			const bActive = b.state === 'in-progress';
 			if (aActive && !bActive) return -1;
@@ -315,19 +390,24 @@ export default function TrackedHistoryCard() {
 				(b.occurredAt ?? b._creationTime) - (a.occurredAt ?? a._creationTime)
 			);
 		}) as RecentItems;
-	}, [data]);
+	}, [data, page]);
+
+	// Clamp page when items shrink (e.g., after deletions) so we never point past the end
+	React.useEffect(() => {
+		if (!data) return;
+		const totalItems = data.items.length;
+		const maxPage = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+		if (page > maxPage) setPage(maxPage);
+	}, [data, page]);
 
 	const { visibleItems, hasPrev, hasNext } = React.useMemo(() => {
-		const startIndex = (page - 1) * PAGE_SIZE;
-		const endIndex = startIndex + PAGE_SIZE;
-		const slice = items.slice(startIndex, endIndex) as RecentItems;
-		const moreAvailable = items.length > endIndex;
+		const hasMoreData = data && data.items.length > page * PAGE_SIZE;
 		return {
-			visibleItems: slice,
+			visibleItems: items,
 			hasPrev: page > 1,
-			hasNext: moreAvailable,
+			hasNext: hasMoreData,
 		};
-	}, [items, page]);
+	}, [items, page, data]);
 
 	return (
 		<Card>

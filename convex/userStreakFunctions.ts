@@ -232,6 +232,7 @@ export const updateStreakDays = async ({
 		.collect();
 
 	const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {
+		if ((a as any).isDeleted) return sum;
 		const ms = Math.max(0, Math.floor(a?.durationInMs ?? 0));
 		return sum + ms;
 	}, 0);
@@ -487,8 +488,8 @@ export const getStreakDataForHeatmap = query({
 			const medianMinutes =
 				nonZeroMinutes.length > 0
 					? nonZeroMinutes.sort((a, b) => a - b)[
-							Math.floor(nonZeroMinutes.length / 2)
-						]
+					Math.floor(nonZeroMinutes.length / 2)
+					]
 					: 0;
 
 			// Use median for more robust thresholds, fallback to average

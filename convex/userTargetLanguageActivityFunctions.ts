@@ -1,9 +1,7 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { UserIdentity } from 'convex/server';
 import { v } from 'convex/values';
-import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { action, internalMutation, mutation, query } from './_generated/server';
+import { mutation, query } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { type LanguageCode, languageCodeValidator } from './schema';
 import { getEffectiveNow } from './utils';
@@ -178,14 +176,14 @@ export const listManualTrackedLanguageActivities = query({
 	handler: async ctx => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
-		const items = await ctx.db
+		const userTargetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
 			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(200);
 		const set = new Set<string>();
-		for (const it of items) {
-			if (it.isManuallyTracked && it.title) set.add(it.title);
+		for (const targetLanguageActivity of userTargetLanguageActivities) {
+			if (targetLanguageActivity.isManuallyTracked && !(targetLanguageActivity.isDeleted) && targetLanguageActivity.title) set.add(targetLanguageActivity.title);
 		}
 		return Array.from(set).slice(0, 25);
 	},
@@ -232,52 +230,70 @@ export const listRecentLanguageActivities = query({
 		// Get the effective time (includes devDate if set)
 		const effectiveNow = await getEffectiveNow(ctx);
 
-		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
-		// Use composite index to fetch only completed activities efficiently
-		const items = await ctx.db
+			const limit = Math.max(1, Math.min(100, args.limit ?? 20));
+			// Over-fetch to account for deleted items so we can still return `limit` non-deleted
+			// entries without switching the endpoint to pagination.
+			const targetFetch = Math.min(500, Math.max(limit * 3, limit + 10));
+			// Use composite index to fetch only completed activities efficiently
+			// Note: This query should only return completed activities, but if in-progress activities
+			// are being returned, it indicates a bug in the activity processing logic
+			const userTargetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
 			.withIndex('by_user_state_and_occurred', q =>
 				q.eq('userId', userId).eq('state', 'completed')
 			)
 			.order('desc')
-			.take(limit);
-		const results: Array<any> = [];
-		for (const it of items) {
-			let label: any;
-			const contentKey = (it as any).contentKey as string | undefined;
+				.take(targetFetch);
+			const results: Array<any> = [];
+			for (const languageActivity of userTargetLanguageActivities) {
+			if (languageActivity.isDeleted) continue;
+			let labelOut:
+				| {
+					title?: string;
+					authorName?: string;
+					thumbnailUrl?: string;
+					fullDurationInSeconds?: number;
+					contentUrl?: string;
+				}
+				| undefined;
+			const contentKey = languageActivity.contentKey as string | undefined;
 			if (contentKey) {
-				const l = await ctx.db
+				const contentLabel = await ctx.db
 					.query('contentLabels')
 					.withIndex('by_content_key', q => q.eq('contentKey', contentKey))
 					.unique();
-				if (l) {
-					label = {
-						title: (l as any).title,
-						authorName: (l as any).authorName,
-						thumbnailUrl: (l as any).thumbnailUrl,
-						fullDurationInSeconds: (l as any).fullDurationInSeconds,
-						contentUrl: (l as any).contentUrl,
+				if (contentLabel) {
+					labelOut = {
+						title: contentLabel.title,
+						authorName: contentLabel.authorName,
+						thumbnailUrl: contentLabel.thumbnailUrl,
+						fullDurationInSeconds: Math.max(
+							0,
+							Math.floor(((contentLabel.fullDurationInMs ?? 0) as number) / 1000)
+						),
+						contentUrl: contentLabel.contentUrl,
 					};
 				}
 			}
 			// Sum actual awarded experience tied to this activity from the ledger
-			const exps = await ctx.db
+			const experienceLedgers = await ctx.db
 				.query('userTargetLanguageExperienceLedgers')
 				.withIndex('by_language_activity', q =>
-					q.eq('languageActivityId', (it as any)._id)
+					q.eq('languageActivityId', languageActivity._id)
 				)
 				.collect();
-			const awardedExperience = exps.reduce(
+			const awardedExperience = experienceLedgers.reduce(
 				(sum: number, e: any) => sum + Math.floor(e?.deltaExperience ?? 0),
 				0
 			);
 			results.push({
-				...(it as any),
-				label,
+				...languageActivity,
+				label: labelOut,
 				awardedExperience: Math.max(0, awardedExperience),
 			});
+				if (results.length >= limit) break; // stop once we have enough non-deleted entries
 		}
-		return { items: results, effectiveNow };
+			return { items: results.slice(0, limit), effectiveNow };
 	},
 });
 
@@ -295,18 +311,18 @@ export const recentManualLanguageActivities = query({
 	handler: async (ctx, args) => {
 		const userId = await getAuthUserId(ctx);
 		if (!userId) return [];
-		const items = await ctx.db
+		const userTargetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
 			.withIndex('by_user', q => q.eq('userId', userId))
 			.order('desc')
 			.take(Math.max(1, Math.min(20, args.limit ?? 8)));
-		return items
-			.filter(it => it.isManuallyTracked)
-			.map(it => ({
-				title: it.title,
-				durationInMs: (it as any).durationInMs,
-				description: it.description,
-				userTargetLanguageId: it.userTargetLanguageId,
+		return userTargetLanguageActivities
+			.filter(targetLanguageActivity => targetLanguageActivity.isManuallyTracked)
+			.map(targetLanguageActivity => ({
+				title: targetLanguageActivity.title,
+				durationInMs: targetLanguageActivity.durationInMs,
+				description: targetLanguageActivity.description,
+				userTargetLanguageId: targetLanguageActivity.userTargetLanguageId,
 			}));
 	},
 });
@@ -330,30 +346,9 @@ export const getWeeklySourceDistribution = query({
 		// Load user's preferred timezone (fallback to UTC)
 		const user = await ctx.db.get(userId);
 		const timeZone: string =
-			((user as any)?.timezone as string | undefined) || 'UTC';
+			user?.timezone ?? 'UTC';
 
-		// Helpers to work with local dates in a given timezone
-		function getLocalYmdParts(ms: number): {
-			y: number;
-			m: number;
-			d: number;
-			weekday: string;
-		} {
-			const fmt = new Intl.DateTimeFormat('en-US', {
-				timeZone,
-				year: 'numeric',
-				month: 'numeric',
-				day: 'numeric',
-				weekday: 'short',
-			});
-			const parts = fmt.formatToParts(new Date(ms));
-			const lookup = Object.fromEntries(parts.map(p => [p.type, p.value]));
-			const y = parseInt(lookup.year, 10);
-			const m = parseInt(lookup.month, 10);
-			const d = parseInt(lookup.day, 10);
-			const weekday = lookup.weekday as string; // e.g., "Mon"
-			return { y, m, d, weekday };
-		}
+
 
 		// Simpler timezone approach: get the current week's Monday-Sunday range in the user's timezone
 		const effectiveNowMs = await getEffectiveNow(ctx);
@@ -433,7 +428,7 @@ export const getWeeklySourceDistribution = query({
 		}));
 
 		// Query activities within this local week window using UTC timestamps
-		const itemsWithOccurredAt = await ctx.db
+		const targetLanguageActivitiesWithOccurredAt = await ctx.db
 			.query('userTargetLanguageActivities')
 			.withIndex('by_user_and_occurred', q =>
 				q
@@ -445,22 +440,23 @@ export const getWeeklySourceDistribution = query({
 
 		// Fallback: include docs missing `occurredAt` but created within this local week
 		// This covers historical records created before `occurredAt` was consistently set.
-		const allItems: Array<any> = [...itemsWithOccurredAt];
-		const candidates = await ctx.db
+		const allLanguageActivities = [...targetLanguageActivitiesWithOccurredAt];
+		const targetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
 			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
-		for (const it of candidates) {
-			const occ = (it as any)?.occurredAt;
+		for (const targetLanguageActivity of targetLanguageActivities) {
+			const occ = targetLanguageActivity?.occurredAt;
 			if (typeof occ === 'number') continue; // already included via occurredAt index
-			const created = (it as any)._creationTime as number;
+			const created = targetLanguageActivity._creationTime as number;
 			if (created < mondayStartLocalUtcMs || created > sundayEndLocalUtcMs)
 				continue;
-			allItems.push(it);
+			allLanguageActivities.push(targetLanguageActivity);
 		}
 
-		for (const it of allItems) {
-			const occurred = (it as any).occurredAt ?? (it as any)._creationTime;
+		for (const targetLanguageActivity of allLanguageActivities) {
+			if (targetLanguageActivity.isDeleted) continue;
+			const occurred = targetLanguageActivity.occurredAt ?? targetLanguageActivity._creationTime;
 
 			// Get the day of the week for this activity in the user's timezone
 			const occurredInUserTz = new Date(occurred);
@@ -474,10 +470,10 @@ export const getWeeklySourceDistribution = query({
 
 			const minutes = Math.max(
 				0,
-				Math.round(((it as any).durationInMs ?? 0) / 60000)
+				Math.round((targetLanguageActivity.durationInMs ?? 0) / 60000)
 			);
 
-			const key = (it as any).contentKey as string | undefined;
+			const key = targetLanguageActivity.contentKey as string | undefined;
 			const inferred: 'youtube' | 'spotify' | 'anki' | 'misc' = key?.startsWith(
 				'youtube:'
 			)
@@ -514,23 +510,23 @@ export const deleteLanguageActivity = mutation({
 		const userId = await getAuthUserId(ctx);
 		if (!userId) throw new Error('Unauthorized');
 
-		const act = await ctx.db.get(args.activityId);
-		if (!act) return { deleted: false, reversedDelta: 0 };
-		if ((act as any).userId !== userId) throw new Error('Forbidden');
+		const userTargetLanguageActivity = await ctx.db.get(args.activityId);
+		if (!userTargetLanguageActivity) return { deleted: false, reversedDelta: 0 };
+		if (userTargetLanguageActivity.userId !== userId) throw new Error('Forbidden');
 
-		const utlId = (act as any)
-			.userTargetLanguageId as Id<'userTargetLanguages'>;
-		const languageCode = (act as any).languageCode;
+		if (userTargetLanguageActivity.isDeleted) return { deleted: true, reversedDelta: 0 } as const;
+		const userTargetLanguageId = userTargetLanguageActivity.userTargetLanguageId;
+		const languageCode = userTargetLanguageActivity.languageCode;
 
 		// Sum all experience deltas tied to this activity
-		const exps = await ctx.db
+		const userTargetLanguageExperienceLedgers = await ctx.db
 			.query('userTargetLanguageExperienceLedgers')
 			.withIndex('by_language_activity', q =>
 				q.eq('languageActivityId', args.activityId)
 			)
 			.collect();
-		const totalDelta = exps.reduce(
-			(sum, e: any) => sum + (e.deltaExperience ?? 0),
+		const totalDelta = userTargetLanguageExperienceLedgers.reduce(
+			(sum, e) => sum + (e.deltaExperience ?? 0),
 			0
 		);
 
@@ -539,7 +535,7 @@ export const deleteLanguageActivity = mutation({
 				ctx,
 				args: {
 					userId,
-					languageCode,
+					languageCode: languageCode as LanguageCode,
 					languageActivityId: args.activityId,
 					deltaExperience: -totalDelta,
 					isApplyingStreakBonus: false,
@@ -548,18 +544,18 @@ export const deleteLanguageActivity = mutation({
 		}
 
 		// Adjust totalMsLearning by subtracting this activity's duration
-		const durationMs = Math.max(0, Math.round(((act as any).durationInMs ?? 0)));
+		const durationMs = Math.max(0, Math.round((userTargetLanguageActivity.durationInMs ?? 0)));
 		if (durationMs > 0) {
-			const utl = await ctx.db.get(utlId);
-			if (utl) {
-				const currentTotalMs = (utl as any).totalMsLearning ?? 0;
-				await ctx.db.patch(utlId, {
+			const userTargetLanguage = await ctx.db.get(userTargetLanguageId);
+			if (userTargetLanguage) {
+				const currentTotalMs = userTargetLanguage.totalMsLearning ?? 0;
+				await ctx.db.patch(userTargetLanguageId, {
 					totalMsLearning: Math.max(0, currentTotalMs - durationMs),
-				} as any);
+				});
 			}
 		}
 
-		await ctx.db.delete(args.activityId);
+		await ctx.db.patch(args.activityId, { isDeleted: true });
 		return { deleted: true, reversedDelta: totalDelta };
 	},
 });

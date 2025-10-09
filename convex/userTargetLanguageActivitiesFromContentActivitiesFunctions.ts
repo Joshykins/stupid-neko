@@ -202,11 +202,51 @@ export const processActivitiesForUser = internalMutation({
 					.withIndex('by_user_state_and_content_key', q => q.eq('userId', args.userId).eq('state', 'in-progress').eq('contentKey', s.contentKey))
 					.unique();
 				if (existing) {
-					await ctx.db.patch(existing._id, { state: 'completed', durationInMs: Math.max(0, Math.round(s.endMs - s.startMs)), languageCode, title, occurredAt: startMsEffective });
+					// Update existing in-progress activity to completed
+					await ctx.db.patch(existing._id, {
+						state: 'completed',
+						durationInMs: Math.max(0, Math.round(s.endMs - s.startMs)),
+						languageCode,
+						title,
+						occurredAt: startMsEffective
+					});
 					await updateStreakOnActivity({ ctx, args: { userId: args.userId, occurredAt: startMsEffective } });
-					await addExperience({ ctx, args: { userId: args.userId, languageCode, languageActivityId: existing._id, isApplyingStreakBonus: true, durationInMs: durationMs, deltaExperience: await getExperienceForActivity({ ctx, args: { userId: args.userId, languageCode, isManuallyTracked: false, durationInMs: durationMs } }) } });
+					await addExperience({
+						ctx,
+						args: {
+							userId: args.userId,
+							languageCode,
+							languageActivityId: existing._id,
+							isApplyingStreakBonus: true,
+							durationInMs: durationMs,
+							deltaExperience: await getExperienceForActivity({
+								ctx,
+								args: {
+									userId: args.userId,
+									languageCode,
+									isManuallyTracked: false,
+									durationInMs: durationMs
+								}
+							})
+						}
+					});
 				} else {
-					await addLanguageActivity({ ctx, args: { userId: args.userId, userTargetLanguageId: user.currentTargetLanguageId, title, description: undefined, durationInMs: durationMs, occurredAt: startMsEffective, contentKey: s.contentKey, languageCode, contentCategories: label?.contentMediaType ? [label.contentMediaType] : undefined, isManuallyTracked: false } });
+					// Create new completed activity if no existing in-progress activity
+					await addLanguageActivity({
+						ctx,
+						args: {
+							userId: args.userId,
+							userTargetLanguageId: user.currentTargetLanguageId,
+							title,
+							description: undefined,
+							durationInMs: durationMs,
+							occurredAt: startMsEffective,
+							contentKey: s.contentKey,
+							languageCode,
+							contentCategories: label?.contentMediaType ? [label.contentMediaType] : undefined,
+							isManuallyTracked: false
+						}
+					});
 					createdActivities += 1;
 				}
 				for (const id of s.eventIds) { await ctx.db.delete(id); processed += 1; }

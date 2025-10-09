@@ -4,16 +4,10 @@ import {
 	type ApplyExperienceResult,
 	applyExperience,
 } from '../lib/levelAndExperienceCalculations/levelAndExperienceCalculator';
-import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import {
-	internalMutation,
-	internalQuery,
-	mutation,
-	query,
-} from './_generated/server';
+import { mutation, query } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
-import { LanguageCode, languageCodeValidator } from './schema';
+import { LanguageCode } from './schema';
 import { getStreakBonusMultiplier } from './userStreakFunctions';
 
 /* ------------------- XP constants & helpers ------------------- */
@@ -61,16 +55,18 @@ export const getExperienceForActivity = async ({
 				.lte('occurredAt', dayEnd)
 		)
 		.collect();
-	const totalMinutesToday = activitiesOnThisDay.reduce(
-		(sum: number, userTargetLanguageActivity: any) => {
-			const ms = Math.max(
-				0,
-				Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
-			);
-			return sum + Math.floor(ms / 60000);
-		},
-		0
-	);
+	const totalMinutesToday = activitiesOnThisDay
+		.filter((userTargetLanguageActivity: any) => !((userTargetLanguageActivity as any).isDeleted))
+		.reduce(
+			(sum: number, userTargetLanguageActivity: any) => {
+				const ms = Math.max(
+					0,
+					Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
+				);
+				return sum + Math.floor(ms / 60000);
+			},
+			0
+		);
 
 	// Subtract this entry's minutes if it was already inserted before this query
 	const priorMinutes = Math.max(0, totalMinutesToday - minutes);
