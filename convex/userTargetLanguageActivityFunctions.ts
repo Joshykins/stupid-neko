@@ -342,8 +342,8 @@ export const getWeeklySourceDistribution = query({
 			day: v.string(),
 			youtube: v.number(),
 			spotify: v.number(),
-			anki: v.number(),
-			misc: v.number(),
+			website: v.number(),
+			manual: v.number(),
 		})
 	),
 	handler: async ctx => {
@@ -424,14 +424,14 @@ export const getWeeklySourceDistribution = query({
 			day: string;
 			youtube: number;
 			spotify: number;
-			anki: number;
-			misc: number;
+			website: number;
+			manual: number;
 		}> = labels.map(label => ({
 			day: label,
 			youtube: 0,
 			spotify: 0,
-			anki: 0,
-			misc: 0,
+			website: 0,
+			manual: 0,
 		}));
 
 		// Query activities within this local week window using UTC timestamps
@@ -480,16 +480,43 @@ export const getWeeklySourceDistribution = query({
 			);
 
 			const source = targetLanguageActivity.source;
-			const inferred: 'youtube' | 'spotify' | 'anki' | 'misc' = source === 'browser-extension-youtube-provider'
-				? 'youtube'
-				: 'misc'; // All other sources (manual, website-provider) go to misc
+			const contentKey = targetLanguageActivity.contentKey;
+			
+			// Determine source category based on activity source and contentKey
+			let category: 'youtube' | 'spotify' | 'website' | 'manual';
+			
+			if (source === 'browser-extension-youtube-provider') {
+				category = 'youtube';
+			} else if (source === 'manual') {
+				category = 'manual';
+			} else if (source === 'browser-extension-website-provider') {
+				// Check contentKey to distinguish between website and other sources
+				if (contentKey?.startsWith('website:')) {
+					category = 'website';
+				} else if (contentKey?.startsWith('spotify:')) {
+					category = 'spotify';
+				} else {
+					// Fallback for other website provider activities
+					category = 'website';
+				}
+			} else {
+				// Fallback for any other sources
+				category = 'manual';
+			}
 
-			switch (inferred) {
+			switch (category) {
 				case 'youtube':
 					bins[dayIndex].youtube += minutes;
 					break;
-				default:
-					bins[dayIndex].misc += minutes;
+				case 'spotify':
+					bins[dayIndex].spotify += minutes;
+					break;
+				case 'website':
+					bins[dayIndex].website += minutes;
+					break;
+				case 'manual':
+					bins[dayIndex].manual += minutes;
+					break;
 			}
 		}
 
@@ -582,7 +609,11 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 
 	// Determine the language to use for this activity
 	let languageCode: LanguageCode;
-	if (contentLabel?.contentLanguageCode) {
+	const isWebsiteProvider = args.source === 'browser-extension-website-provider';
+	if (isWebsiteProvider) {
+		// For website provider, always use user's target language
+		languageCode = userTargetLanguageCode;
+	} else if (contentLabel?.contentLanguageCode) {
 		// Use detected language if available
 		languageCode = contentLabel.contentLanguageCode;
 	} else {
@@ -591,7 +622,8 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 	}
 
 	// Check if this content matches the user's target language
-	if (contentLabel?.contentLanguageCode && contentLabel.contentLanguageCode !== userTargetLanguageCode) {
+	// Skip language filtering for website provider - it should track all content
+	if (!isWebsiteProvider && contentLabel?.contentLanguageCode && contentLabel.contentLanguageCode !== userTargetLanguageCode) {
 		// Content language doesn't match user's target language, skip
 		return { wasUpdated: false, wasCompleted: false };
 	}

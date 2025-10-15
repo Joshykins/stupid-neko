@@ -101,6 +101,15 @@ export function registerMessageHandlers(): void {
 					const domain = url ? new URL(url).hostname : undefined;
 					if (domain) {
 						log.info('question-track-once: clicked', { tabId, domain, url });
+						
+						// Clear pausedByDomain flag since user explicitly wants to track
+						const state = tabStates[tabId] || {};
+						if (state.pausedByDomain?.[domain]) {
+							delete state.pausedByDomain[domain];
+							tabStates[tabId] = state;
+							log.info('question-track-once: cleared pausedByDomain flag', { tabId, domain });
+						}
+						
 						const { updateConsentForDomain } = await import('./content-activity-router');
 						updateConsentForDomain(tabId, domain, true, true);
 
@@ -161,6 +170,13 @@ export function registerMessageHandlers(): void {
 						state.consentByDomain = state.consentByDomain || {};
 						state.consentByDomain[domain] = true;
 						if (state.currentDomain === domain) state.hasConsent = true;
+						
+						// Clear pausedByDomain flag since user explicitly wants to always track
+						if (state.pausedByDomain?.[domain]) {
+							delete state.pausedByDomain[domain];
+							log.info('question-always-track: cleared pausedByDomain flag', { tabId, domain });
+						}
+						
 						tabStates[tabId] = state;
 
 						// Update widget immediately

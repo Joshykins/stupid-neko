@@ -115,7 +115,9 @@ const TrackedHistoryItem = ({
 					? 'spotify'
 					: contentKey.startsWith('anki:')
 						? 'anki'
-						: 'manual';
+						: contentKey.startsWith('website:')
+							? 'website'
+							: 'manual';
 
 	const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
 
@@ -139,6 +141,11 @@ const TrackedHistoryItem = ({
 				border: 'border-[var(--source-anki)]',
 				badge: 'bg-[var(--source-anki-soft)]',
 			},
+			website: {
+				dot: 'bg-[var(--source-website)]',
+				border: 'border-[var(--source-website)]',
+				badge: 'bg-[var(--source-website-soft)]',
+			},
 			manual: {
 				dot: 'bg-[var(--source-misc)]',
 				border: 'border-[var(--source-misc)]',
@@ -153,6 +160,7 @@ const TrackedHistoryItem = ({
 			youtube: '/brands/youtube.svg',
 			spotify: '/brands/spotify.svg',
 			anki: '/brands/anki.svg',
+			website: '/brands/browser-extension.svg',
 		}),
 		[]
 	);
@@ -171,7 +179,12 @@ const TrackedHistoryItem = ({
 		0;
 	const durationSeconds = Math.max(0, Math.round(durationMs / 1000));
 	const occurredAt = item.occurredAt ?? item._creationTime;
-	const title = item.title ?? item.label?.title ?? '(untitled)';
+
+	// For website sources, extract domain from title if it contains "website:domain" pattern
+	let title = item.title ?? item.label?.title ?? '(untitled)';
+	if (key === 'website' && title.startsWith('website:')) {
+		title = title.split(':')[1] || title;
+	}
 
 	const deleteActivity = useMutation(api.userTargetLanguageActivityFunctions.deleteLanguageActivity);
 	const [deleting, setDeleting] = React.useState(false);
@@ -300,7 +313,7 @@ const TrackedHistoryItem = ({
 								<span
 									className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${styles.badge}`}
 								>
-									<span className="opacity-90">{key}</span>
+									<span className="opacity-90">{key === 'website' ? 'website' : key}</span>
 								</span>
 							)}
 

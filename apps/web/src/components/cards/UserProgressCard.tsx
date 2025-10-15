@@ -148,8 +148,8 @@ export const UserProgressCard = ({
                         <div className="font-semibold text-xs">Tracked Hours</div>
                         <div className="text-2xl font-bold text-main-foreground">
                             {userProgress
-                                ? Math.round((displayData.totalMsLearning || 0) / 1000 / 60 / 60)
-                                : Math.round((mockUserProgress.totalMsLearning || 0) / 1000 / 60 / 60)}{' '}
+                                ? Math.floor(((displayData.totalMsLearning || 0) / 1000 / 60 / 60) * 10) / 10
+                                : Math.floor(((mockUserProgress.totalMsLearning || 0) / 1000 / 60 / 60) * 10) / 10}{' '}
                             hrs
                         </div>
                     </div>

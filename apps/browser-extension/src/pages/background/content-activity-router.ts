@@ -285,7 +285,8 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				...prev,
 				lastEvent: payload,
 				isPlaying: true,
-				allowPost: !!payload.matchesTarget,
+				// For website provider, always allow posting regardless of matchesTarget
+				allowPost: providerName === 'website-provider' ? true : !!payload.matchesTarget,
 				lastContentKey: nextKey || prev.lastContentKey,
 				currentProvider: providerName,
 				currentDomain,
