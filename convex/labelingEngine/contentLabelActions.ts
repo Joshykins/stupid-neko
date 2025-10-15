@@ -23,6 +23,8 @@ const contentLabelPatchValidator = v.object({
 	fullDurationInMs: v.optional(v.number()),
 	contentLanguageCode: v.optional(languageCodeValidator),
 	languageEvidence: v.optional(v.array(v.string())),
+	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)),
+	geminiLanguageEvidence: v.optional(v.string()),
 });
 
 
@@ -145,6 +147,8 @@ export const processOneContentLabel = internalAction({
 				fullDurationInMs?: number;
 				contentLanguageCode?: 'en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr';
 				languageEvidence?: string[];
+				isAboutTargetLanguages?: ('en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr')[];
+				geminiLanguageEvidence?: string;
 			};
 			error?: string;
 		};

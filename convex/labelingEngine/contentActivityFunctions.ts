@@ -167,6 +167,7 @@ export const recordContentActivity = async ({
 				title: label.title,
 				contentLanguageCode: label.contentLanguageCode as any,
 				contentMediaType: label.contentMediaType,
+				isAboutTargetLanguages: label.isAboutTargetLanguages as any,
 			},
 			userTargetLanguageId: currentTargetLanguageId,
 			userTargetLanguageCode: currentTargetLanguage.languageCode as any,

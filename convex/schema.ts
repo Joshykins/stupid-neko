@@ -261,9 +261,13 @@ export default defineSchema({
 		thumbnailUrl: v.optional(v.string()),
 		fullDurationInMs: v.optional(v.number()),
 
-		// Language signals
-		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
-		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+	// Language signals
+	contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
+	languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+	
+	// Gemini language detection results
+	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)), // Languages the content is about/teaching
+	geminiLanguageEvidence: v.optional(v.string()), // Store Gemini's reasoning for audit trail
 
 		// Ops
 		attempts: v.optional(v.number()),

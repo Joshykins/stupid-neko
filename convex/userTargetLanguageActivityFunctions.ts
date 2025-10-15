@@ -214,6 +214,7 @@ export const listRecentLanguageActivities = query({
 				durationInMs: v.optional(v.number()),
 				updatedAt: v.optional(v.number()),
 				state: v.union(v.literal('in-progress'), v.literal('completed')),
+				isDeleted: v.optional(v.boolean()),
 				contentKey: v.optional(v.string()),
 				externalUrl: v.optional(v.string()),
 				label: v.optional(
@@ -595,6 +596,7 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 			title?: string;
 			contentLanguageCode?: LanguageCode;
 			contentMediaType?: 'audio' | 'video' | 'text';
+			isAboutTargetLanguages?: LanguageCode[];
 		};
 		userTargetLanguageId: Id<'userTargetLanguages'>;
 		userTargetLanguageCode: LanguageCode;
@@ -624,8 +626,12 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 	// Check if this content matches the user's target language
 	// Skip language filtering for website provider - it should track all content
 	if (!isWebsiteProvider && contentLabel?.contentLanguageCode && contentLabel.contentLanguageCode !== userTargetLanguageCode) {
-		// Content language doesn't match user's target language, skip
-		return { wasUpdated: false, wasCompleted: false };
+		// Check if content is ABOUT the target language (via Gemini detection)
+		const isAboutTargetLanguage = contentLabel?.isAboutTargetLanguages?.includes(userTargetLanguageCode);
+		if (!isAboutTargetLanguage) {
+			// Content language doesn't match user's target language and isn't about the target language, skip
+			return { wasUpdated: false, wasCompleted: false };
+		}
 	}
 
 	// Look for existing in-progress activity with this contentKey
@@ -753,6 +759,7 @@ export const listStaleInProgressActivities = internalQuery({
 			v.literal('browser-extension-website-provider')
 		),
 		state: v.union(v.literal('in-progress'), v.literal('completed')),
+		isDeleted: v.optional(v.boolean()),
 		title: v.optional(v.string()),
 		durationInMs: v.optional(v.number()),
 		updatedAt: v.optional(v.number()),
@@ -766,6 +773,7 @@ export const listStaleInProgressActivities = internalQuery({
 		contentKey?: string;
 		source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
 		state: 'in-progress' | 'completed';
+		isDeleted?: boolean;
 		title?: string;
 		durationInMs?: number;
 		updatedAt?: number;
