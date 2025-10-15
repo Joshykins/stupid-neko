@@ -29,7 +29,7 @@ Always prefix a child concept with the exact parent concept name. This applies t
 
 ### Indexes
 - Use `by_...` and include all indexed fields in order, prefixed with the parent when present.
-  - Examples: `by_user`, `by_user_and_language`, `by_user_and_day`, `by_user_and_occurred`, `by_user_target_language_and_title`.
+  - Examples: `by_user`, `by_user_and_language`, `by_user_and_day`, `by_user_and_creation_time`, `by_user_target_language_and_title`.
 
 ### Convex function names
 - Use `verb + ParentChild + OptionalQualifier`.

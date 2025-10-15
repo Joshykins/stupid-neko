@@ -4,6 +4,23 @@ import type { Id } from '../_generated/dataModel';
 import type { MutationCtx } from '../_generated/server';
 import { getEffectiveNow } from '../utils';
 import { getOrCreateContentLabel } from './contentLabelFunctions';
+import { createOrUpdateLanguageActivityFromContent } from '../userTargetLanguageActivityFunctions';
+
+// Helper function to convert content source to activity source
+function getSourceFromContentSource(contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website'): 'browser-extension-youtube-provider' | 'browser-extension-website-provider' {
+	switch (contentSource) {
+		case 'youtube':
+			return 'browser-extension-youtube-provider';
+		case 'website':
+			return 'browser-extension-website-provider';
+		case 'spotify':
+		case 'anki':
+		case 'manual':
+		default:
+			// All other sources fallback to website provider
+			return 'browser-extension-website-provider';
+	}
+}
 
 export const recordContentActivity = async ({
 	ctx,
@@ -21,7 +38,7 @@ export const recordContentActivity = async ({
 }): Promise<{
 	ok: true;
 	saved: boolean;
-	contentActivityId?: Id<'contentActivities'>;
+	languageActivityId?: Id<'userTargetLanguageActivities'>;
 	contentLabelId?: Id<'contentLabels'>;
 	isWaitingOnLabeling?: boolean;
 	reason?: string;
@@ -65,21 +82,19 @@ export const recordContentActivity = async ({
 		};
 	}
 
+	// Get user's target language
+	const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
+	if (!currentTargetLanguage)
+		throw new Error('Current target language not found');
+
 	// Inspect existing content label
 	const label = await ctx.db
 		.query('contentLabels')
 		.withIndex('by_content_key', q => q.eq('contentKey', contentKey))
 		.unique();
 
-	// If no label exists, enqueue and record the activity as waiting on labeling
+	// If no label exists, enqueue labeling and create activity with user's target language
 	if (!label) {
-		const contentActivityId = await ctx.db.insert('contentActivities', {
-			userId,
-			contentKey,
-			activityType: args.activityType,
-			occurredAt,
-			isWaitingOnLabeling: true,
-		});
 		const enqueue = await getOrCreateContentLabel({
 			ctx,
 			args: {
@@ -93,44 +108,74 @@ export const recordContentActivity = async ({
 				contentUrl: args.url,
 			}
 		});
-		// Mark user as having pending content activities
-		await ctx.db.patch(userId, { hasPendingContentActivities: true });
+
+		// Create activity with user's target language (will be updated when labeling completes)
+		const result = await createOrUpdateLanguageActivityFromContent({
+			ctx,
+			args: {
+				userId,
+				contentKey,
+				occurredAt,
+				userTargetLanguageId: currentTargetLanguageId,
+				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
+				source: getSourceFromContentSource(args.source),
+			}
+		});
+
 		return {
 			ok: true,
-			saved: true,
-			contentActivityId,
+			saved: result.activityId !== undefined,
+			languageActivityId: result.activityId,
 			contentLabelId: enqueue.contentLabelId,
 			isWaitingOnLabeling: true,
 			contentKey,
 		};
 	}
 
-	// If label exists but isn't completed or lacks language, record as waiting
+	// If label exists but isn't completed or lacks language, create activity with user's target language
 	if (label.stage !== 'completed' || !label.contentLanguageCode) {
-		const contentActivityId = await ctx.db.insert('contentActivities', {
-			userId,
-			contentKey,
-			activityType: args.activityType,
-			occurredAt,
-			isWaitingOnLabeling: true,
+		const result = await createOrUpdateLanguageActivityFromContent({
+			ctx,
+			args: {
+				userId,
+				contentKey,
+				occurredAt,
+				userTargetLanguageId: currentTargetLanguageId,
+				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
+				source: getSourceFromContentSource(args.source),
+			}
 		});
-		// Mark user as having pending content activities
-		await ctx.db.patch(userId, { hasPendingContentActivities: true });
+
 		return {
 			ok: true,
-			saved: true,
-			contentActivityId,
+			saved: result.activityId !== undefined,
+			languageActivityId: result.activityId,
 			contentLabelId: label._id,
 			isWaitingOnLabeling: true,
 			contentKey,
 		};
 	}
 
-	// Otherwise, filter by user's target language
-	const currentTargetLanguage = await ctx.db.get(currentTargetLanguageId);
-	if (!currentTargetLanguage)
-		throw new Error('Current target language not found');
-	if (currentTargetLanguage.languageCode !== label.contentLanguageCode) {
+	// Label exists and is completed, create activity with detected language
+	const result = await createOrUpdateLanguageActivityFromContent({
+		ctx,
+		args: {
+			userId,
+			contentKey,
+			occurredAt,
+			contentLabel: {
+				title: label.title,
+				contentLanguageCode: label.contentLanguageCode as any,
+				contentMediaType: label.contentMediaType,
+			},
+			userTargetLanguageId: currentTargetLanguageId,
+			userTargetLanguageCode: currentTargetLanguage.languageCode as any,
+			source: getSourceFromContentSource(args.source),
+		}
+	});
+
+	// Check if activity was skipped due to language mismatch
+	if (!result.activityId && !result.wasUpdated && !result.wasCompleted) {
 		return {
 			ok: true,
 			saved: false,
@@ -140,21 +185,10 @@ export const recordContentActivity = async ({
 		};
 	}
 
-	// Label matches target language, record activity normally
-	const contentActivityId = await ctx.db.insert('contentActivities', {
-		userId,
-		contentKey,
-		activityType: args.activityType,
-		occurredAt,
-		isWaitingOnLabeling: false,
-	});
-
-	// Mark user as having pending content activities
-	await ctx.db.patch(userId, { hasPendingContentActivities: true });
 	return {
 		ok: true,
-		saved: true,
-		contentActivityId,
+		saved: result.activityId !== undefined,
+		languageActivityId: result.activityId,
 		contentLabelId: label._id,
 		isWaitingOnLabeling: false,
 		contentKey,

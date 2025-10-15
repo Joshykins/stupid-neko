@@ -27,7 +27,7 @@ export const recordYoutubeContentActivity = mutation({
     returns: v.object({
         ok: v.boolean(),
         saved: v.boolean(),
-        contentActivityId: v.optional(v.id('contentActivities')),
+        languageActivityId: v.optional(v.id('userTargetLanguageActivities')),
         contentLabelId: v.optional(v.id('contentLabels')),
         isWaitingOnLabeling: v.optional(v.boolean()),
         reason: v.optional(v.string()),
@@ -43,7 +43,7 @@ export const recordYoutubeContentActivity = mutation({
     handler: async (ctx, args): Promise<{
         ok: boolean;
         saved: boolean;
-        contentActivityId?: Id<'contentActivities'>;
+        languageActivityId?: Id<'userTargetLanguageActivities'>;
         contentLabelId?: Id<'contentLabels'>;
         isWaitingOnLabeling?: boolean;
         reason?: string;

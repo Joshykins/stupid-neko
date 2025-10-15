@@ -61,14 +61,14 @@ export const processContentLabelTransaction = internalMutation({
 				updatedAt: now,
 			});
 
-			// Schedule cleanup of activities for users with mismatched target languages
+			// Update language activities when labeling completes
 			if (args.patch?.contentLanguageCode) {
 				// Get the contentKey from the label
 				const label = await ctx.db.get(args.contentLabelId);
 				if (label?.contentKey) {
 					await ctx.scheduler.runAfter(
 						0,
-						internal.labelingEngine.contentLabelFunctions.cleanActivitiesForLabel,
+						internal.userTargetLanguageActivityFunctions.updateLanguageActivitiesForContentLabel,
 						{
 							contentKey: label.contentKey,
 							contentLanguageCode: args.patch.contentLanguageCode,

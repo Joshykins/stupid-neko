@@ -223,12 +223,11 @@ export const updateStreakDays = async ({
 	// Aggregate activities in this day
 	const activitiesOnThisDay = await ctx.db
 		.query('userTargetLanguageActivities')
-		.withIndex('by_user_and_occurred', q =>
-			q
-				.eq('userId', args.userId)
-				.gte('occurredAt', dayStart)
-				.lte('occurredAt', dayEnd)
-		)
+		.withIndex('by_user', q => q.eq('userId', args.userId))
+		.filter(q => q.and(
+			q.gte(q.field('_creationTime'), dayStart),
+			q.lte(q.field('_creationTime'), dayEnd)
+		))
 		.collect();
 
 	const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {

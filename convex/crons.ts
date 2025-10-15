@@ -5,40 +5,6 @@ import { internalAction } from './_generated/server';
 
 const crons = cronJobs();
 
-// Ensure the function reference exists in this module for stronger linking in dev
-export const tick = internalAction({
-	args: {},
-	returns: v.null(),
-	handler: async ctx => {
-		// Process only users who have pending content activities
-		const userIds = await ctx.runQuery(
-			internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
-				.findUsersWithPendingContentActivities,
-			{ maxScan: 500, maxUsers: 50 }
-		);
-		for (const userId of userIds) {
-			await ctx.runMutation(
-				internal.userTargetLanguageActivitiesFromContentActivitiesFunctions
-					.processActivitiesForUser,
-				{ userId, limit: 200 }
-			);
-		}
-
-		// Nudge all users once per tick (bounded)
-		const users = await ctx.runQuery(
-			internal.userFunctions.listAllUsersForCron,
-			{}
-		);
-		const now = Date.now();
-		for (const u of users.slice(0, 100)) {
-			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreakMutation, {
-				userId: u._id,
-				now,
-			});
-		}
-		return null;
-	},
-});
 
 
 // Hourly vacation enforcement via streak nudge mimicking TestingComponent behavior
@@ -63,18 +29,50 @@ export const hourlyNudge = internalAction({
 	},
 });
 
-crons.interval(
-	'translate content activities',
-	{ seconds: 30 },
-	internal.crons.tick,
-	{}
-);
+// Process stale in-progress activities every 5 minutes
+export const processStaleActivities = internalAction({
+	args: {},
+	returns: v.null(),
+	handler: async (ctx) => {
+		const batchSize = 250;
+		console.log(`Processing stale activities at ${Date.now()}`);
+		
+		const staleActivities = await ctx.runQuery(
+			internal.userTargetLanguageActivityFunctions.listStaleInProgressActivities,
+			{ batchSize }
+		);
 
+		let completed = 0;
+		let deleted = 0;
+		let skipped = 0;
+
+		for (const activity of staleActivities) {
+			const result = await ctx.runMutation(
+				internal.userTargetLanguageActivityFunctions.processStaleActivity,
+				{ activityId: activity._id }
+			);
+			
+			if (result.action === 'completed') completed++;
+			else if (result.action === 'deleted') deleted++;
+			else skipped++;
+		}
+
+		console.log(`Processed ${staleActivities.length} stale activities: ${completed} completed, ${deleted} deleted, ${skipped} skipped`);
+		return null;
+	},
+});
 
 crons.interval(
 	'hourly streak nudge',
 	{ hours: 1 },
 	internal.crons.hourlyNudge,
+	{}
+);
+
+crons.interval(
+	'process stale activities',
+	{ minutes: 1 },
+	internal.crons.processStaleActivities,
 	{}
 );
 

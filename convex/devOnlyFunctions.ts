@@ -157,10 +157,12 @@ export const stepDevDate = mutation({
 										: source === 'spotify'
 											? ['audio']
 											: ['other'],
-							isManuallyTracked: source === 'manual',
 							userTargetLanguageId:
 								userTargetLanguageId as Id<'userTargetLanguages'>,
-							source,
+							source: source === 'manual' ? 'manual' : 
+								   source === 'youtube' ? 'browser-extension-youtube-provider' :
+								   source === 'spotify' ? 'browser-extension-website-provider' :
+								   'browser-extension-website-provider',
 						},
 					});
 				}
@@ -263,10 +265,12 @@ export const seedAtDevDate = mutation({
 								: source === 'spotify'
 									? ['audio']
 									: ['other'],
-					isManuallyTracked: source === 'manual',
 					userTargetLanguageId:
 						userTargetLanguageId as Id<'userTargetLanguages'>,
-					source,
+					source: source === 'manual' ? 'manual' : 
+						   source === 'youtube' ? 'browser-extension-youtube-provider' :
+						   source === 'spotify' ? 'browser-extension-website-provider' :
+						   'browser-extension-website-provider',
 				},
 			});
 
@@ -379,10 +383,12 @@ export const seedToTargetAtDevDate = mutation({
 								: source === 'spotify'
 									? ['audio']
 									: ['other'],
-					isManuallyTracked: source === 'manual',
 					userTargetLanguageId:
 						userTargetLanguageId as Id<'userTargetLanguages'>,
-					source,
+					source: source === 'manual' ? 'manual' : 
+						   source === 'youtube' ? 'browser-extension-youtube-provider' :
+						   source === 'spotify' ? 'browser-extension-website-provider' :
+						   'browser-extension-website-provider',
 				},
 			});
 
@@ -413,14 +419,6 @@ export const resetMyDevState = mutation({
 			await ctx.db.delete(a._id);
 		}
 
-		// 1b) Delete all content activities for the user
-		const contentActs = await ctx.db
-			.query('contentActivities')
-			.withIndex('by_user', q => q.eq('userId', userId))
-			.collect();
-		for (const ev of contentActs) {
-			await ctx.db.delete(ev._id);
-		}
 
 		// 2) Delete experience records for the user
 		const exps = await ctx.db
@@ -434,7 +432,7 @@ export const resetMyDevState = mutation({
 		// 2b) Delete streak day ledger entries
 		const dayLedger = await ctx.db
 			.query('userStreakDayLedgers')
-			.withIndex('by_user_and_occurred', q => q.eq('userId', userId))
+			.withIndex('by_user_and_creation_time', q => q.eq('userId', userId))
 			.collect();
 		for (const row of dayLedger) {
 			await ctx.db.delete(row._id);

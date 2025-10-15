@@ -1,12 +1,18 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
-import { mutation, query } from './_generated/server';
+import { mutation, query, internalMutation, internalQuery } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { type LanguageCode, languageCodeValidator } from './schema';
 import { getEffectiveNow } from './utils';
 import { addExperience, getExperienceForActivity } from './userTargetLanguageExperienceFunctions';
 import { updateStreakOnActivity } from './userStreakFunctions';
+
+// Gap threshold for creating new activities vs updating existing ones
+const ACTIVITY_GAP_MS = 2 * 60 * 1000; // 2 minutes
+
+// Minimum duration threshold for meaningful activities
+const MIN_ACTIVITY_DURATION_MS = 30 * 1000; // 30 seconds
 
 // Create activity, update streak, then add experience (internal)
 export const addLanguageActivity = async ({
@@ -24,9 +30,8 @@ export const addLanguageActivity = async ({
 		contentKey?: string;
 		externalUrl?: string;
 		contentCategories?: ('audio' | 'video' | 'text' | 'other')[];
-		isManuallyTracked?: boolean;
+		source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
 		userTargetLanguageId: Id<'userTargetLanguages'>;
-		source?: 'youtube' | 'spotify' | 'anki' | 'manual';
 	};
 }): Promise<{
 	activityId: Id<'userTargetLanguageActivities'>;
@@ -49,28 +54,27 @@ export const addLanguageActivity = async ({
 	const occurredAt = args.occurredAt ?? nowEffective;
 	const activityId = await ctx.db.insert('userTargetLanguageActivities', {
 		userId,
-		isManuallyTracked:
-			args.isManuallyTracked ?? (args.source ?? 'manual') === 'manual',
+		source: args.source,
 		languageCode: args.languageCode,
 		title: args.title,
 		userTargetLanguageId: args.userTargetLanguageId,
 		description: args.description ?? undefined,
 		// Canonical ms field
 		durationInMs: Math.max(0, Math.round(args.durationInMs)),
-		occurredAt,
+		updatedAt: occurredAt,
 		state: 'completed',
 		contentKey: args.contentKey ?? undefined,
 		externalUrl: args.externalUrl ?? undefined,
 	});
 
-	// 2) Update streak
-	const streak = await updateStreakOnActivity({
-		ctx,
-		args: {
-			userId,
-			occurredAt,
-		}
-	});
+		// 2) Update streak
+		const streak = await updateStreakOnActivity({
+			ctx,
+			args: {
+				userId,
+				occurredAt: occurredAt,
+			}
+		});
 
 	// 3) Add experience (with optional streak bonus)
 	const exp = await addExperience({
@@ -84,7 +88,7 @@ export const addLanguageActivity = async ({
 				args: {
 					userId,
 					languageCode: args.languageCode,
-					isManuallyTracked: args.isManuallyTracked ?? false,
+					isManuallyTracked: args.source === 'manual',
 					durationInMs: args.durationInMs,
 					occurredAt,
 				}
@@ -161,7 +165,7 @@ export const addManualLanguageActivity = mutation({
 				durationInMs: args.durationInMs,
 				occurredAt,
 				externalUrl: args.externalUrl ?? undefined,
-				isManuallyTracked: true,
+				source: 'manual',
 				languageCode: languageCode as LanguageCode,
 			},
 		});
@@ -183,12 +187,13 @@ export const listManualTrackedLanguageActivities = query({
 			.take(200);
 		const set = new Set<string>();
 		for (const targetLanguageActivity of userTargetLanguageActivities) {
-			if (targetLanguageActivity.isManuallyTracked && !(targetLanguageActivity.isDeleted) && targetLanguageActivity.title) set.add(targetLanguageActivity.title);
+			if (targetLanguageActivity.source === 'manual' && !(targetLanguageActivity.isDeleted) && targetLanguageActivity.title) set.add(targetLanguageActivity.title);
 		}
 		return Array.from(set).slice(0, 25);
 	},
 });
 
+// List recent language activities with proper validator
 export const listRecentLanguageActivities = query({
 	args: { limit: v.optional(v.number()) },
 	returns: v.object({
@@ -198,14 +203,16 @@ export const listRecentLanguageActivities = query({
 				_creationTime: v.number(),
 				userId: v.id('users'),
 				userTargetLanguageId: v.id('userTargetLanguages'),
-				// source removed from schema
-				// categories removed from persisted schema
-				isManuallyTracked: v.optional(v.boolean()),
+				source: v.union(
+					v.literal('manual'),
+					v.literal('browser-extension-youtube-provider'),
+					v.literal('browser-extension-website-provider')
+				),
 				languageCode: v.optional(languageCodeValidator),
 				title: v.optional(v.string()),
 				description: v.optional(v.string()),
 				durationInMs: v.optional(v.number()),
-				occurredAt: v.optional(v.number()),
+				updatedAt: v.optional(v.number()),
 				state: v.union(v.literal('in-progress'), v.literal('completed')),
 				contentKey: v.optional(v.string()),
 				externalUrl: v.optional(v.string()),
@@ -239,7 +246,7 @@ export const listRecentLanguageActivities = query({
 			// are being returned, it indicates a bug in the activity processing logic
 			const userTargetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_state_and_occurred', q =>
+			.withIndex('by_user_and_state', q =>
 				q.eq('userId', userId).eq('state', 'completed')
 			)
 			.order('desc')
@@ -317,7 +324,7 @@ export const recentManualLanguageActivities = query({
 			.order('desc')
 			.take(Math.max(1, Math.min(20, args.limit ?? 8)));
 		return userTargetLanguageActivities
-			.filter(targetLanguageActivity => targetLanguageActivity.isManuallyTracked)
+			.filter(targetLanguageActivity => targetLanguageActivity.source === 'manual')
 			.map(targetLanguageActivity => ({
 				title: targetLanguageActivity.title,
 				durationInMs: targetLanguageActivity.durationInMs,
@@ -430,12 +437,11 @@ export const getWeeklySourceDistribution = query({
 		// Query activities within this local week window using UTC timestamps
 		const targetLanguageActivitiesWithOccurredAt = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_occurred', q =>
-				q
-					.eq('userId', userId)
-					.gte('occurredAt', mondayStartLocalUtcMs)
-					.lte('occurredAt', sundayEndLocalUtcMs)
-			)
+			.withIndex('by_user', q => q.eq('userId', userId))
+			.filter(q => q.and(
+				q.gte(q.field('_creationTime'), mondayStartLocalUtcMs),
+				q.lte(q.field('_creationTime'), sundayEndLocalUtcMs)
+			))
 			.collect();
 
 		// Fallback: include docs missing `occurredAt` but created within this local week
@@ -446,8 +452,8 @@ export const getWeeklySourceDistribution = query({
 			.withIndex('by_user', q => q.eq('userId', userId))
 			.collect();
 		for (const targetLanguageActivity of targetLanguageActivities) {
-			const occ = targetLanguageActivity?.occurredAt;
-			if (typeof occ === 'number') continue; // already included via occurredAt index
+			const occ = targetLanguageActivity?.updatedAt;
+			if (typeof occ === 'number') continue; // already included via _creationTime index
 			const created = targetLanguageActivity._creationTime as number;
 			if (created < mondayStartLocalUtcMs || created > sundayEndLocalUtcMs)
 				continue;
@@ -456,7 +462,7 @@ export const getWeeklySourceDistribution = query({
 
 		for (const targetLanguageActivity of allLanguageActivities) {
 			if (targetLanguageActivity.isDeleted) continue;
-			const occurred = targetLanguageActivity.occurredAt ?? targetLanguageActivity._creationTime;
+			const occurred = targetLanguageActivity.updatedAt ?? targetLanguageActivity._creationTime;
 
 			// Get the day of the week for this activity in the user's timezone
 			const occurredInUserTz = new Date(occurred);
@@ -473,26 +479,14 @@ export const getWeeklySourceDistribution = query({
 				Math.round((targetLanguageActivity.durationInMs ?? 0) / 60000)
 			);
 
-			const key = targetLanguageActivity.contentKey as string | undefined;
-			const inferred: 'youtube' | 'spotify' | 'anki' | 'misc' = key?.startsWith(
-				'youtube:'
-			)
+			const source = targetLanguageActivity.source;
+			const inferred: 'youtube' | 'spotify' | 'anki' | 'misc' = source === 'browser-extension-youtube-provider'
 				? 'youtube'
-				: key?.startsWith('spotify:')
-					? 'spotify'
-					: key?.startsWith('anki:')
-						? 'anki'
-						: 'misc';
+				: 'misc'; // All other sources (manual, website-provider) go to misc
 
 			switch (inferred) {
 				case 'youtube':
 					bins[dayIndex].youtube += minutes;
-					break;
-				case 'spotify':
-					bins[dayIndex].spotify += minutes;
-					break;
-				case 'anki':
-					bins[dayIndex].anki += minutes;
 					break;
 				default:
 					bins[dayIndex].misc += minutes;
@@ -559,3 +553,272 @@ export const deleteLanguageActivity = mutation({
 		return { deleted: true, reversedDelta: totalDelta };
 	},
 });
+
+// Real-time activity recording function that creates or updates language activities
+export const createOrUpdateLanguageActivityFromContent = async ({
+	ctx,
+	args,
+}: {
+	ctx: MutationCtx;
+	args: {
+		userId: Id<'users'>;
+		contentKey: string;
+		occurredAt: number;
+		contentLabel?: {
+			title?: string;
+			contentLanguageCode?: LanguageCode;
+			contentMediaType?: 'audio' | 'video' | 'text';
+		};
+		userTargetLanguageId: Id<'userTargetLanguages'>;
+		userTargetLanguageCode: LanguageCode;
+		source: 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
+	};
+}): Promise<{
+	activityId?: Id<'userTargetLanguageActivities'>;
+	wasUpdated: boolean;
+	wasCompleted: boolean;
+}> => {
+	const { userId, contentKey, occurredAt, contentLabel, userTargetLanguageId, userTargetLanguageCode } = args;
+
+	// Determine the language to use for this activity
+	let languageCode: LanguageCode;
+	if (contentLabel?.contentLanguageCode) {
+		// Use detected language if available
+		languageCode = contentLabel.contentLanguageCode;
+	} else {
+		// Use user's target language as fallback
+		languageCode = userTargetLanguageCode;
+	}
+
+	// Check if this content matches the user's target language
+	if (contentLabel?.contentLanguageCode && contentLabel.contentLanguageCode !== userTargetLanguageCode) {
+		// Content language doesn't match user's target language, skip
+		return { wasUpdated: false, wasCompleted: false };
+	}
+
+	// Look for existing in-progress activity with this contentKey
+	const existingActivity = await ctx.db
+		.query('userTargetLanguageActivities')
+		.withIndex('by_user_state_and_content_key', q => 
+			q.eq('userId', userId).eq('state', 'in-progress').eq('contentKey', contentKey)
+		)
+		.unique();
+
+	const title = contentLabel?.title ?? contentKey;
+	const isWebsite = contentKey.startsWith('website:');
+
+	// Early return if no existing activity - create new one
+	if (!existingActivity) {
+		const activityId = await ctx.db.insert('userTargetLanguageActivities', {
+			userId,
+			userTargetLanguageId,
+			languageCode,
+			contentKey,
+			state: 'in-progress',
+			title,
+			source: args.source,
+			durationInMs: 0,
+			updatedAt: occurredAt,
+		});
+
+		return { activityId, wasUpdated: false, wasCompleted: false };
+	}
+
+	// Calculate timing and duration for existing activity
+	const lastUpdateTime = existingActivity.updatedAt ?? existingActivity._creationTime;
+	const startTime =  existingActivity._creationTime;
+	const timeSinceLastUpdate = occurredAt - lastUpdateTime;
+	const currentDurationMs = Math.max(0, occurredAt - startTime);
+	
+	// Determine if we should continue existing activity or start new one
+	const shouldContinueActivity = timeSinceLastUpdate <= ACTIVITY_GAP_MS;
+	const isLongEnoughForCompletion = currentDurationMs >= MIN_ACTIVITY_DURATION_MS;
+
+	// Continue existing activity - just update duration
+	if (shouldContinueActivity) {
+		await ctx.db.patch(existingActivity._id, {
+			durationInMs: Math.max(0, Math.round(currentDurationMs)),
+			languageCode,
+			title,
+			updatedAt: occurredAt,
+		});
+
+		return { activityId: existingActivity._id, wasUpdated: true, wasCompleted: false };
+	}
+
+	// Gap exceeded - create new activity (cron will handle the old one)
+	const newActivityId = await ctx.db.insert('userTargetLanguageActivities', {
+		userId,
+		userTargetLanguageId,
+		languageCode,
+		contentKey,
+		state: 'in-progress',
+		title,
+		source: args.source,
+		durationInMs: 0,
+		updatedAt: occurredAt,
+	});
+
+	return { activityId: newActivityId, wasUpdated: false, wasCompleted: false };
+};
+
+// Update language activities when content labeling completes
+export const updateLanguageActivitiesForContentLabel = internalMutation({
+	args: {
+		contentKey: v.string(),
+		contentLanguageCode: languageCodeValidator,
+	},
+	returns: v.null(),
+	handler: async (ctx, args) => {
+		// Find all in-progress activities with this contentKey
+		// We need to query all activities and filter, since the index requires userId first
+		const allActivities = await ctx.db
+			.query('userTargetLanguageActivities')
+			.filter(q => q.and(
+				q.eq(q.field('state'), 'in-progress'),
+				q.eq(q.field('contentKey'), args.contentKey)
+			))
+			.collect();
+
+		for (const activity of allActivities) {
+			// Get the user's target language
+			const user = await ctx.db.get(activity.userId);
+			if (!user?.currentTargetLanguageId) continue;
+
+			const userTargetLanguage = await ctx.db.get(user.currentTargetLanguageId);
+			if (!userTargetLanguage?.languageCode) continue;
+
+			// Check if the detected language matches the user's target language
+			if (args.contentLanguageCode === userTargetLanguage.languageCode) {
+				// Update the activity with the detected language
+				await ctx.db.patch(activity._id, {
+					languageCode: args.contentLanguageCode,
+				});
+			} else {
+				// Language doesn't match, mark as deleted
+				await ctx.db.patch(activity._id, {
+					isDeleted: true,
+				});
+			}
+		}
+
+		return null;
+	},
+});
+
+// Internal query to find stale in-progress activities for cron processing
+export const listStaleInProgressActivities = internalQuery({
+	args: { batchSize: v.number() },
+	returns: v.array(v.object({
+		_id: v.id('userTargetLanguageActivities'),
+		userId: v.id('users'),
+		userTargetLanguageId: v.id('userTargetLanguages'),
+		languageCode: v.optional(languageCodeValidator),
+		contentKey: v.optional(v.string()),
+		source: v.union(
+			v.literal('manual'),
+			v.literal('browser-extension-youtube-provider'),
+			v.literal('browser-extension-website-provider')
+		),
+		state: v.union(v.literal('in-progress'), v.literal('completed')),
+		title: v.optional(v.string()),
+		durationInMs: v.optional(v.number()),
+		updatedAt: v.optional(v.number()),
+		_creationTime: v.number(),
+	})),
+	handler: async (ctx, args): Promise<Array<{
+		_id: Id<'userTargetLanguageActivities'>;
+		userId: Id<'users'>;
+		userTargetLanguageId: Id<'userTargetLanguages'>;
+		languageCode?: LanguageCode;
+		contentKey?: string;
+		source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
+		state: 'in-progress' | 'completed';
+		title?: string;
+		durationInMs?: number;
+		updatedAt?: number;
+		_creationTime: number;
+	}>> => {
+		const nowEffective = Date.now();
+		const staleThreshold = nowEffective - ACTIVITY_GAP_MS;
+		
+		// Query all in-progress activities
+		// Note: We need to query all users since the index requires userId first
+		const allInProgress = await ctx.db
+			.query('userTargetLanguageActivities')
+			.filter(q => q.eq(q.field('state'), 'in-progress'))
+			.take(args.batchSize);
+		
+		// Filter to those that are stale
+		return allInProgress.filter(activity => {
+			const lastUpdate = activity.updatedAt ?? activity._creationTime;
+			return lastUpdate < staleThreshold;
+		});
+	},
+});
+
+// Internal mutation to process a single stale activity (complete or delete)
+export const processStaleActivity = internalMutation({
+	args: {
+		activityId: v.id('userTargetLanguageActivities'),
+	},
+	returns: v.object({
+		processed: v.boolean(),
+		action: v.union(v.literal('completed'), v.literal('deleted'), v.literal('skipped')),
+	}),
+	handler: async (ctx, args): Promise<{
+		processed: boolean;
+		action: 'completed' | 'deleted' | 'skipped';
+	}> => {
+		const activity = await ctx.db.get(args.activityId);
+		if (!activity || activity.state !== 'in-progress') {
+			return { processed: false, action: 'skipped' as const };
+		}
+
+		const existingDurationMs = activity.durationInMs ?? 0;
+		const isLongEnoughForCompletion = existingDurationMs >= MIN_ACTIVITY_DURATION_MS;
+
+		if (isLongEnoughForCompletion) {
+			// Complete the activity using existing duration
+			await ctx.db.patch(activity._id, {
+				state: 'completed',
+			});
+
+			// Update streak
+			await updateStreakOnActivity({
+				ctx,
+				args: { userId: activity.userId, occurredAt: activity._creationTime }
+			});
+
+			// Add experience
+			const languageCode = activity.languageCode as LanguageCode;
+			await addExperience({
+				ctx,
+				args: {
+					userId: activity.userId,
+					languageCode,
+					languageActivityId: activity._id,
+					isApplyingStreakBonus: true,
+					durationInMs: existingDurationMs,
+					deltaExperience: await getExperienceForActivity({
+						ctx,
+						args: {
+							userId: activity.userId,
+							languageCode,
+							isManuallyTracked: false,
+							durationInMs: existingDurationMs,
+							occurredAt: activity._creationTime,
+						}
+					})
+				}
+			});
+
+			return { processed: true, action: 'completed' as const };
+		} else {
+			// Activity too short - delete it
+			await ctx.db.delete(activity._id);
+			return { processed: true, action: 'deleted' as const };
+		}
+	},
+});
+

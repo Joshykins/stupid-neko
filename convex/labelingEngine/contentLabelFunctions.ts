@@ -126,66 +126,6 @@ export const getOrCreateContentLabel = async ({
 };
 
 
-// Batched cleanup of contentActivities for a given contentKey
-export const cleanActivitiesForLabel = internalMutation({
-	args: v.object({
-		contentKey: v.string(),
-		contentLanguageCode: languageCodeValidator,
-		cursor: v.optional(v.union(v.string(), v.null())),
-		limit: v.optional(v.number()),
-	}),
-	returns: v.null(),
-	handler: async (ctx, args) => {
-		const page = await ctx.db
-			.query('contentActivities')
-			.withIndex('by_content_key', q => q.eq('contentKey', args.contentKey))
-			.paginate({
-				numItems: Math.max(1, Math.min(1000, args.limit ?? 500)),
-				cursor: args.cursor ?? null,
-			});
-
-		// Build userId set for this page
-		const userIds = new Set<Id<'users'>>();
-		for (const ev of page.page) userIds.add(ev.userId);
-
-		// Load users and their target languages
-		const userIdToLanguage = new Map<string, string | undefined>();
-		for (const userId of userIds) {
-			const user = await ctx.db.get(userId);
-			const targetId = user?.currentTargetLanguageId;
-			if (!targetId) {
-				userIdToLanguage.set(userId, undefined);
-				continue;
-			}
-			const target = await ctx.db.get(targetId);
-			userIdToLanguage.set(userId, target?.languageCode as string | undefined);
-		}
-
-		// Delete mismatches (or missing data)
-		for (const ev of page.page) {
-			const userId = ev.userId as string;
-			const lang = userIdToLanguage.get(userId);
-			if (!lang || lang !== args.contentLanguageCode) {
-				await ctx.db.delete(ev._id);
-			}
-		}
-
-		if (!page.isDone && page.continueCursor) {
-			await ctx.scheduler.runAfter(
-				0,
-				internal.labelingEngine.contentLabelFunctions.cleanActivitiesForLabel,
-				{
-					contentKey: args.contentKey,
-					contentLanguageCode: args.contentLanguageCode,
-					cursor: page.continueCursor,
-					limit: args.limit ?? 500,
-				}
-			);
-		}
-
-		return null;
-	},
-});
 
 // Base: read minimal label details (usable from actions)
 export const getLabelBasics = internalQuery({

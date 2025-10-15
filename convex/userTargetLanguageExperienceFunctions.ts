@@ -48,12 +48,11 @@ export const getExperienceForActivity = async ({
 	// Sum total minutes already recorded for this user today
 	const activitiesOnThisDay = await ctx.db
 		.query('userTargetLanguageActivities')
-		.withIndex('by_user_and_occurred', (q) =>
-			q
-				.eq('userId', args.userId)
-				.gte('occurredAt', dayStart)
-				.lte('occurredAt', dayEnd)
-		)
+		.withIndex('by_user', (q) => q.eq('userId', args.userId))
+		.filter((q) => q.and(
+			q.gte(q.field('_creationTime'), dayStart),
+			q.lte(q.field('_creationTime'), dayEnd)
+		))
 		.collect();
 	const totalMinutesToday = activitiesOnThisDay
 		.filter((userTargetLanguageActivity: any) => !((userTargetLanguageActivity as any).isDeleted))

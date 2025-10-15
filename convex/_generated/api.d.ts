@@ -33,7 +33,6 @@ import type * as spotifyActions from "../spotifyActions.js";
 import type * as spotifyFunctions from "../spotifyFunctions.js";
 import type * as userFunctions from "../userFunctions.js";
 import type * as userStreakFunctions from "../userStreakFunctions.js";
-import type * as userTargetLanguageActivitiesFromContentActivitiesFunctions from "../userTargetLanguageActivitiesFromContentActivitiesFunctions.js";
 import type * as userTargetLanguageActivityFunctions from "../userTargetLanguageActivityFunctions.js";
 import type * as userTargetLanguageExperienceFunctions from "../userTargetLanguageExperienceFunctions.js";
 import type * as userTargetLanguageFavoriteActivityFunctions from "../userTargetLanguageFavoriteActivityFunctions.js";
@@ -69,7 +68,6 @@ declare const fullApi: ApiFromModules<{
   spotifyFunctions: typeof spotifyFunctions;
   userFunctions: typeof userFunctions;
   userStreakFunctions: typeof userStreakFunctions;
-  userTargetLanguageActivitiesFromContentActivitiesFunctions: typeof userTargetLanguageActivitiesFromContentActivitiesFunctions;
   userTargetLanguageActivityFunctions: typeof userTargetLanguageActivityFunctions;
   userTargetLanguageExperienceFunctions: typeof userTargetLanguageExperienceFunctions;
   userTargetLanguageFavoriteActivityFunctions: typeof userTargetLanguageFavoriteActivityFunctions;

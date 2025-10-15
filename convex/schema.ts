@@ -84,13 +84,10 @@ export default defineSchema({
 		// Pre-release access gate
 		preReleaseGranted: v.optional(v.boolean()),
 
-		// Queue indicator for translation pipeline
-		hasPendingContentActivities: v.optional(v.boolean()),
 	})
 		.index('by_email', ['email']) // mirror default indexes
 		.index('by_phone', ['phone'])
-		.index('by_integration_key', ['integrationKey'])
-		.index('by_has_pending', ['hasPendingContentActivities']),
+		.index('by_integration_key', ['integrationKey']),
 
 	userStreakDays: defineTable({
 		userId: v.id('users'),
@@ -127,7 +124,7 @@ export default defineSchema({
 		note: v.optional(v.string()),
 	})
 		.index('by_user_and_day', ['userId', 'dayStartMs'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt']),
+		.index('by_user_and_creation_time', ['userId', 'occurredAt']),
 
 	userStreakVacationLedgers: defineTable({
 		userId: v.id('users'),
@@ -140,7 +137,7 @@ export default defineSchema({
 		note: v.optional(v.string()),
 	})
 		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
+		.index('by_user_and_creation_time', ['userId', 'occurredAt'])
 		.index('by_user_and_reason', ['userId', 'reason']),
 
 	userTargetLanguages: defineTable({
@@ -224,37 +221,24 @@ export default defineSchema({
 		state: v.union(v.literal('in-progress'), v.literal('completed')), // active: the activity is currently in progress, finished: the activity has been completed
 		isDeleted: v.optional(v.boolean()),
 
-		isManuallyTracked: v.optional(v.boolean()),
+		// Source of the activity
+		source: v.union(
+			v.literal('manual'),
+			v.literal('browser-extension-youtube-provider'),
+			v.literal('browser-extension-website-provider')
+		),
 
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 
 		// Canonical duration in milliseconds
 		durationInMs: v.optional(v.number()),
-		occurredAt: v.optional(v.number()),
+		updatedAt: v.optional(v.number()),
 	})
 		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
 		.index('by_user_and_state', ['userId', 'state'])
-		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey'])
-		.index('by_user_state_and_occurred', ['userId', 'state', 'occurredAt']),
+		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey']),
 
-	// Content Activity, these are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
-	contentActivities: defineTable({
-		userId: v.id('users'),
-		contentKey: v.string(), // (will match a contentLabel contentKey) "youtube:VIDEO_ID", "spotify:TRACK_ID" etc.
-		activityType: v.union(
-			v.literal('heartbeat'),
-			v.literal('start'),
-			v.literal('pause'),
-			v.literal('end')
-		),
-		occurredAt: v.optional(v.number()),
-		isWaitingOnLabeling: v.optional(v.boolean()),
-	})
-		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
-		.index('by_content_key', ['contentKey']),
 
 	// Labeling Engine
 	contentLabels: defineTable({
