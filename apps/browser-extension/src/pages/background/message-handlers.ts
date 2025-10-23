@@ -39,6 +39,26 @@ export function registerMessageHandlers(): void {
 		return await refreshAuth();
 	});
 
+	on('GET_USER_PROGRESS', async () => {
+		const integrationId = await getIntegrationId();
+		if (!integrationId || !convex) {
+			return { success: false, error: 'Not authenticated' };
+		}
+
+		const { data: progress, error } = await tryCatch(
+			convex.query(api.browserExtension.browserExtensionCoreFunctions.getUserProgressFromIntegration, {
+				integrationId,
+			})
+		);
+
+		if (error) {
+			log.error('Failed to fetch user progress:', error);
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, data: progress };
+	});
+
 	// Content handlers
 	on('GET_CONTENT_LABEL', async ({ contentKey }) => {
 		const label = contentKey ? contentLabelsByKey[contentKey] : undefined;

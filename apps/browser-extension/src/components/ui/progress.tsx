@@ -16,14 +16,14 @@ function Progress({
 		<ProgressPrimitive.Root
 			data-slot="progress"
 			className={cn(
-				'relative h-4 w-full overflow-hidden rounded-base border-2 border-border bg-secondary-background',
+				'snbex:relative snbex:h-4 snbex:w-full snbex:overflow-hidden snbex:rounded-base snbex:border-2 snbex:border-border snbex:bg-secondary-background',
 				className
 			)}
 			{...props}
 		>
 			<ProgressPrimitive.Indicator
 				data-slot="progress-indicator"
-				className="h-full w-full flex-1 border-r-2 border-border bg-main transition-transform duration-700 ease-out"
+				className="snbex:h-full snbex:w-full snbex:flex-1 snbex:border-r-2 snbex:border-border snbex:bg-main snbex:transition-transform snbex:duration-700 snbex:ease-out"
 				style={{
 					transform: `translateX(-${100 - (value || 0)}%)`,
 					backgroundColor: indicatorColor,

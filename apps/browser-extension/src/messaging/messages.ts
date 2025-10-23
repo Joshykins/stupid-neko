@@ -44,6 +44,11 @@ export type MessageMap = {
 		res: { success: boolean; error?: string; };
 	};
 
+	GET_USER_PROGRESS: {
+		req: Record<string, never>;
+		res: { success: boolean; data?: UserProgress; error?: string; };
+	};
+
 	WIDGET_STATE_UPDATE: {
 		req: { payload: WidgetStateUpdate; };
 		res: Record<string, never>;
@@ -80,6 +85,21 @@ export type AuthMe = {
 	username?: string;
 	timezone?: string;
 	languageCode?: string;
+};
+
+export type UserProgress = {
+	name?: string;
+	image?: string;
+	currentStreak?: number;
+	longestStreak?: number;
+	languageCode?: string;
+	totalMsLearning?: number;
+	userCreatedAt: number;
+	targetLanguageCreatedAt: number;
+	currentLevel: number;
+	nextLevelXp: number;
+	experienceTowardsNextLevel: number;
+	hasPreReleaseCode: boolean;
 };
 
 import type { ProviderName } from '../pages/background/providers/types';

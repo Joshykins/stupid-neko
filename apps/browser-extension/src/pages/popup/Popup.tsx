@@ -53,7 +53,7 @@ export default function Popup() {
 							showEdit={showEdit}
 							settingsTab={settingsTab}
 							onToggleEdit={() => setShowEdit(!showEdit)}
-							onTabChange={setSettingsTab}
+							onTabChange={(tab: SettingsTab) => setSettingsTab(tab)}
 						/>
 
 						<img

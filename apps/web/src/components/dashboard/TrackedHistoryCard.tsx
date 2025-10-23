@@ -296,7 +296,7 @@ const TrackedHistoryItem = ({
 										</span>
 									)}
 									{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-										<Rocket className="!size-3" /> {xp.toLocaleString()} XP{isInProgress ? ' (est.)' : ''}
+										<Rocket className="!size-3" /> {xp.toLocaleString()} XP
 									</span>} <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 										{formatHoursMinutesLabel(durationSeconds)}
 									</span>
@@ -350,16 +350,16 @@ const TrackedHistoryItem = ({
 							)}
 
 							{isInProgress && (
-								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
 									In Progress
 								</span>
 							)}
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
 							</span>
-							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-								<Rocket className="!size-3" /> {xp.toLocaleString()} XP{isInProgress ? ' (est.)' : ''}
-							</span>
+							{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+								<Rocket className="!size-3" /> {xp.toLocaleString()} XP
+							</span>}
 						</div>
 						{item.label?.authorName && (
 							<div className="text-xs opacity-80">

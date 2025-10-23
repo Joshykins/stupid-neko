@@ -22,7 +22,6 @@ import { YouTubeTrackingVerified } from './components/states/YouTubeTrackingVeri
 import { DeterminingProvider } from './components/states/DeterminingProvider';
 import { WebsiteProviderTracking } from './components/states/WebsiteProviderTracking';
 import { ErrorState } from './components/states/ErrorState';
-import { DefaultState } from './components/states/DefaultState';
 import { WebsiteProviderIdleDetected } from './components/states/WebsiteProviderIdleDetected';
 import { WebsiteProviderAlwaysTrackQuestion } from './components/states/WebsiteProviderAlwaysTrackQuestion';
 import { WebsiteProviderTrackingStopped } from './components/states/WebsiteProviderTrackingStopped';
@@ -184,11 +183,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		if (!widgetState) {
 			// Default content when no state is provided
 			return (
-				<DefaultState
-					userName={userInfo.userName}
-					targetLanguage={props.languageCode}
-					renderDebugInfo={renderDebugInfo}
-				/>
+				<>Problems loading widget</>
 			);
 		}
 
