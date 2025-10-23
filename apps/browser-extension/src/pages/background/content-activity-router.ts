@@ -83,6 +83,8 @@ function deriveContentKey(evt: PlaybackEvent): string | undefined {
 			/* noop */
 			void 0;
 		}
+		// For YouTube source, don't fall back to website provider - return undefined if no video ID
+		return undefined;
 	}
 	try {
 		// Lazy load to avoid pulling provider registry in background paths unnecessarily
