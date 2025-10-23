@@ -13,7 +13,6 @@ const logYoutube = createLogger('service-worker', 'providers:youtube');
 const logActivation = createLogger('service-worker', 'providers:activation');
 const logDetermine = createLogger('service-worker', 'providers:determine');
 
-const DEBUG_LOG_PREFIX = '[bg:determine-provider]';
 
 /**
  * Set the widget state to determining-provider
@@ -170,7 +169,7 @@ async function retryActivateProvider(
 	url: string,
 	maxRetries: number = 5
 ): Promise<void> {
-	const logger = providerId === 'default' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
+	const logger = providerId === 'website-provider' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
 
 	for (let attempt = 1; attempt <= maxRetries; attempt++) {
 		try {

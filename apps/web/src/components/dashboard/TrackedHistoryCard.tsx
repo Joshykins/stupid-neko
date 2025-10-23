@@ -28,6 +28,7 @@ import {
 } from '../ui/dialog';
 import { FunctionReturnType } from 'convex/server';
 import dayjs from '../../../../../lib/dayjs';
+import { cn } from '../../lib/utils';
 
 //
 
@@ -78,10 +79,34 @@ function formatHoursMinutesLabel(totalSeconds?: number): string {
 	const totalMinutes = Math.floor(seconds / 60);
 	const hours = Math.floor(totalMinutes / 60);
 	const minutes = totalMinutes % 60;
+	const remainingSeconds = seconds % 60;
 	const parts: Array<string> = [];
-	if (hours > 0) parts.push(`${hours}h`);
-	// Show minutes if there are any, or always when hours is 0 (e.g., 0h 05m -> 5m)
-	if (minutes > 0 || hours === 0) parts.push(`${minutes}m`);
+
+	// If less than 1 minute, show only seconds
+	if (totalMinutes === 0) {
+		if (remainingSeconds > 0) {
+			parts.push(`${remainingSeconds}s`);
+		}
+		return parts.join(' ');
+	}
+
+	// For 1 minute or more, show hours and minutes
+	if (hours > 0) {
+		parts.push(`${hours}h`);
+		if (minutes > 0) parts.push(`${minutes}m`);
+	} else {
+		// Less than 1 hour: show minutes and seconds if under 10 minutes
+		if (totalMinutes < 10) {
+			parts.push(`${minutes}m`);
+			if (remainingSeconds > 0) {
+				parts.push(`${remainingSeconds}s`);
+			}
+		} else {
+			// 10+ minutes: show only minutes
+			parts.push(`${minutes}m`);
+		}
+	}
+
 	return parts.join(' ');
 }
 
@@ -119,6 +144,22 @@ const TrackedHistoryItem = ({
 							? 'website'
 							: 'manual';
 
+	// Derive presentation fields
+	const legacyDurationSeconds = (item as { durationInSeconds?: number; })
+		.durationInSeconds;
+	const durationMs =
+		(item as { durationMs?: number; }).durationMs ??
+		(item as { durationInMs?: number; }).durationInMs ??
+		(typeof legacyDurationSeconds === 'number'
+			? legacyDurationSeconds * 1000
+			: undefined) ??
+		0;
+	const durationSeconds = Math.max(0, Math.round(durationMs / 1000));
+	const occurredAt = item.occurredAt ?? item._creationTime;
+
+	// Calculate XP - use awarded experience for completed, estimate for in-progress
+	const isInProgress = item.state == 'in-progress';
+	console.log(item.state, "STAte?", isInProgress);
 	const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
 
 	const SOURCE_STYLES: Record<
@@ -167,19 +208,6 @@ const TrackedHistoryItem = ({
 
 	const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
 
-	// Derive presentation fields
-	const legacyDurationSeconds = (item as { durationInSeconds?: number; })
-		.durationInSeconds;
-	const durationMs =
-		(item as { durationMs?: number; }).durationMs ??
-		(item as { durationInMs?: number; }).durationInMs ??
-		(typeof legacyDurationSeconds === 'number'
-			? legacyDurationSeconds * 1000
-			: undefined) ??
-		0;
-	const durationSeconds = Math.max(0, Math.round(durationMs / 1000));
-	const occurredAt = item.occurredAt ?? item._creationTime;
-
 	// For website sources, extract domain from title if it contains "website:domain" pattern
 	let title = item.title ?? item.label?.title ?? '(untitled)';
 	if (key === 'website' && title.startsWith('website:')) {
@@ -209,7 +237,7 @@ const TrackedHistoryItem = ({
 			<Tooltip delayDuration={500}>
 				<TooltipTrigger asChild>
 					<div
-						className={`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10	`}
+						className={cn(`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10	`, isInProgress ? 'bg-secondary-background border-border shadow-shadow' : '')}
 					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
@@ -262,20 +290,24 @@ const TrackedHistoryItem = ({
 									)}
 								</div>
 								<span className="text-xs text-muted-foreground flex items-center gap-2">
-
-									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-										<Rocket className="!size-3" /> {xp.toLocaleString()} XP
-									</span> <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
+									{isInProgress && (
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+											In Progress
+										</span>
+									)}
+									{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+										<Rocket className="!size-3" /> {xp.toLocaleString()} XP{isInProgress ? ' (est.)' : ''}
+									</span>} <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 										{formatHoursMinutesLabel(durationSeconds)}
 									</span>
-									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
+									{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
 										{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
-									</span>
+									</span>}
 								</span>
 							</div>
 						</div>
 						<div className="flex items-center gap-2 flex-shrink-0 text-sm whitespace-nowrap font-bold font-display text-main-foreground">
-							<Button
+							{!isInProgress && <Button
 								size="icon"
 								variant={"neutral"}
 								aria-label="Delete activity"
@@ -283,7 +315,7 @@ const TrackedHistoryItem = ({
 								disabled={deleting}
 							>
 								<Trash2 className="!size-4" />
-							</Button>
+							</Button>}
 						</div>
 					</div>
 				</TooltipTrigger>
@@ -317,11 +349,16 @@ const TrackedHistoryItem = ({
 								</span>
 							)}
 
+							{isInProgress && (
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+									In Progress
+								</span>
+							)}
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
 							</span>
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-								<Rocket className="!size-3" /> {xp.toLocaleString()} XP
+								<Rocket className="!size-3" /> {xp.toLocaleString()} XP{isInProgress ? ' (est.)' : ''}
 							</span>
 						</div>
 						{item.label?.authorName && (
@@ -393,8 +430,7 @@ export default function TrackedHistoryCard() {
 		const endIndex = page * PAGE_SIZE;
 		const pageItems = data.items.slice(startIndex, endIndex);
 		return pageItems.slice().sort((a, b) => {
-			// Note: This query should only return completed activities, so in-progress activities
-			// should not be present. If they are, it indicates a bug in the backend query.
+			// Prioritize in-progress activities at the top
 			const aActive = a.state === 'in-progress';
 			const bActive = b.state === 'in-progress';
 			if (aActive && !bActive) return -1;

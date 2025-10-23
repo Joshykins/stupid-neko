@@ -1,8 +1,7 @@
-import type { LanguageCode } from '../../../../../convex/schema';
-import { languageCodeToLabel } from '../../../../../lib/languages';
+
 import { cn } from '../../lib/utils';
 import { useAuth } from '../hooks/useAuth';
-import { Badge } from '../ui/badge';
+
 
 export function UserProfile({ className }: { className?: string; }) {
 	const auth = useAuth();
@@ -11,9 +10,6 @@ export function UserProfile({ className }: { className?: string; }) {
 		return null;
 	}
 
-	const languageLabel = auth.me.languageCode
-		? languageCodeToLabel(auth.me.languageCode)
-		: 'Language';
 
 	return (
 		<div

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '../../../components/ui/button';
 import type { WidgetState } from '../../../pages/background/providers/types';
 
 interface ErrorStateProps {

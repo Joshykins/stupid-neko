@@ -50,7 +50,7 @@ export const WebsiteProviderTracking: React.FC<WebsiteProviderTrackingProps> = (
                             url: window.location.href,
                             ts: Date.now(),
                         },
-                    }).catch(() => { });
+                    }).catch(() => { /* noop */ });
                 }, 5000);
             }
         };
@@ -58,10 +58,10 @@ export const WebsiteProviderTracking: React.FC<WebsiteProviderTrackingProps> = (
         // Initial setup and listen for tab visibility changes
         refreshHeartbeat();
         const onVisibility = () => refreshHeartbeat();
-        document.addEventListener('visibilitychange', onVisibility, { passive: true } as any);
+        document.addEventListener('visibilitychange', onVisibility, { passive: true });
 
         return () => {
-            document.removeEventListener('visibilitychange', onVisibility as any);
+            document.removeEventListener('visibilitychange', onVisibility);
             if (intervalId) window.clearInterval(intervalId);
         };
     }, [widgetState.state]);
@@ -88,9 +88,9 @@ export const WebsiteProviderTracking: React.FC<WebsiteProviderTrackingProps> = (
             }
         };
 
-        document.addEventListener('visibilitychange', onVisibility, { passive: true } as any);
+        document.addEventListener('visibilitychange', onVisibility, { passive: true });
         return () => {
-            document.removeEventListener('visibilitychange', onVisibility as any);
+            document.removeEventListener('visibilitychange', onVisibility);
         };
     }, [widgetState.state]);
     return (

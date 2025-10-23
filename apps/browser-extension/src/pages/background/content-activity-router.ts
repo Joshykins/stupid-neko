@@ -79,11 +79,14 @@ function deriveContentKey(evt: PlaybackEvent): string | undefined {
 					if (segs[1]) return `youtube:${segs[1]}`;
 				}
 			}
-		} catch { }
+		} catch {
+			/* noop */
+			void 0;
+		}
 	}
 	try {
 		// Lazy load to avoid pulling provider registry in background paths unnecessarily
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 		const { extractContentKey } = require('./determineProvider');
 		return extractContentKey(evt.url) || undefined;
 	} catch {
@@ -155,7 +158,7 @@ export async function postContentActivityFromPlayback(
 				state: 'content-blocked',
 				provider: (() => {
 					try {
-						// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 						const { getProviderName } = require('./determineProvider');
 						return getProviderName(evt.url);
 					} catch {
@@ -196,10 +199,13 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	const contentChanged = nextKey && nextKey !== prev.lastContentKey;
 	let providerName: ProviderName = 'website-provider';
 	try {
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 		const { getProviderName } = require('./determineProvider');
 		providerName = getProviderName(payload.url);
-	} catch { }
+	} catch {
+		/* noop */
+		void 0;
+	}
 	const currentDomain = new URL(payload.url).hostname;
 	const domainChanged = currentDomain !== prev.currentDomain;
 
@@ -248,8 +254,8 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 						await sendToTab(tabId, 'ACTIVATE_PROVIDER', { providerId: providerName, targetLanguage });
 						log.debug(`re-activated provider: ${providerName} (attempt ${attempt})`);
 						break;
-					} catch (e: any) {
-						const msg = String(e?.message || e);
+					} catch (e: unknown) {
+						const msg = e instanceof Error ? e.message : String(e);
 						const isConnErr = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
 						if (!isConnErr) break;
 						if (attempt === 5) {
@@ -276,7 +282,10 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 			tabStates[tabId] = prev;
 			return;
 		}
-	} catch { }
+	} catch {
+		/* noop */
+		void 0;
+	}
 
 	switch (payload.event) {
 		case 'start':
@@ -341,16 +350,21 @@ export async function handleContentActivityPosting(
 			log.debug('skipping posting due to content-blocked');
 			return;
 		}
-	} catch { }
+	} catch {
+		/* noop */
+		void 0;
+	}
 	let isDefaultProvider = true;
 	let isYouTubeProvider = payload.source === 'youtube';
 	try {
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const { getProviderName } = require('./determineProvider');
 		const name = getProviderName(payload.url);
 		isDefaultProvider = name === 'website-provider';
 		if (name === 'youtube') isYouTubeProvider = true;
-	} catch { }
+	} catch {
+		/* noop */
+		void 0;
+	}
 
 	// For YouTube provider, always post content activities (never gated by website consent)
 	if (isYouTubeProvider) {
@@ -420,7 +434,10 @@ export async function updateYouTubeStateFromResult(
 			log.debug('skip YouTube state update due to stopped state');
 			return;
 		}
-	} catch { }
+	} catch {
+		/* noop */
+		void 0;
+	}
 	const domain = host || new URL(url).hostname;
 
 	// Determine YouTube state based on result
@@ -430,10 +447,13 @@ export async function updateYouTubeStateFromResult(
 
 	// Prefer explicit contentLabel decision if available
 	if (result.contentLabel && result.currentTargetLanguage) {
-		const contentLabel = result.contentLabel as any;
+		const labelObj = result.contentLabel as Record<string, unknown>;
 		targetLanguage = result.currentTargetLanguage.languageCode;
-		contentLanguage = contentLabel?.contentLanguageCode || contentLabel?.languageCode || contentLabel?.detectedLanguage;
-		log.debug('YouTube language check:', { contentLanguage, targetLanguage, contentLabel });
+		const cl1 = typeof labelObj['contentLanguageCode'] === 'string' ? (labelObj['contentLanguageCode'] as string) : undefined;
+		const cl2 = typeof labelObj['languageCode'] === 'string' ? (labelObj['languageCode'] as string) : undefined;
+		const cl3 = typeof labelObj['detectedLanguage'] === 'string' ? (labelObj['detectedLanguage'] as string) : undefined;
+		contentLanguage = cl1 ?? cl2 ?? cl3;
+		log.debug('YouTube language check:', { contentLanguage, targetLanguage, contentLabel: labelObj });
 		if (contentLanguage && targetLanguage && contentLanguage === targetLanguage) {
 			newState = 'youtube-tracking-verified';
 		} else if (contentLanguage && targetLanguage && contentLanguage !== targetLanguage) {
@@ -619,7 +639,9 @@ export async function handleUrlChange(
 				}
 				tabStates[tabId] = state;
 			}
-		} catch { }
+		} catch {
+			/* noop */
+		}
 
 		// Capture previous widget state BEFORE we change domain to avoid cross-domain timer carryover
 		const prevWidget = getCurrentWidgetState(tabId);
@@ -637,7 +659,9 @@ export async function handleUrlChange(
 			try {
 				const h = new URL(url).hostname.toLowerCase();
 				if (/(^|\.)youtube\.com$/.test(h) || /(^|\.)youtu\.be$/.test(h)) return 'youtube';
-			} catch { }
+			} catch {
+				/* noop */
+			}
 			return 'website-provider';
 		})();
 
@@ -666,9 +690,13 @@ export async function handleUrlChange(
 					}
 					tabStates[tabId] = state;
 				}
-			} catch { }
+			} catch {
+				/* noop */
+			}
 
-		} catch { }
+		} catch {
+			/* noop */
+		}
 
 		// Get user's target language
 		const authState = await getAuthState();
@@ -698,7 +726,9 @@ export async function handleUrlChange(
 						alreadyTracking = true;
 					}
 				}
-			} catch { }
+			} catch {
+				/* noop */
+			}
 		}
 
 		if (providerId === 'website-provider' && !alreadyTracking) {
@@ -727,7 +757,9 @@ export async function handleUrlChange(
 						alreadyTracking = true;
 					}
 				}
-			} catch { }
+			} catch {
+				/* noop */
+			}
 		}
 
 		// If not already tracking due to consent/policy, set idle unless preserving stopped state
@@ -747,8 +779,8 @@ export async function handleUrlChange(
 				await sendToTab(tabId, 'ACTIVATE_PROVIDER', { providerId, targetLanguage });
 				log.debug(`activated provider: ${providerId} (attempt ${attempt})`);
 				break;
-			} catch (e: any) {
-				const msg = String(e?.message || e);
+			} catch (e: unknown) {
+				const msg = e instanceof Error ? e.message : String(e);
 				const isConnErr = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
 				if (!isConnErr) break;
 				if (attempt === 5) {

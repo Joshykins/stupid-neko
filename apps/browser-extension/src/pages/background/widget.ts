@@ -136,7 +136,7 @@ export async function updateWidgetStateForEvent(
 				const keepStable =
 					prev?.state === 'youtube-tracking-verified' ||
 					prev?.state === 'youtube-not-tracking';
-				const sameVideo = (prev as any)?.metadata?.videoId === evt.videoId;
+				const sameVideo = typeof prev?.metadata?.['videoId'] === 'string' ? (prev.metadata!['videoId'] as string) === evt.videoId : false;
 				const now = Date.now();
 				updateWidgetState({
 					state: keepStable ? (prev!.state) : 'youtube-tracking-unverified',
@@ -215,7 +215,7 @@ export async function updateWidgetStateForEvent(
 
 			if (isTracking) {
 				if (currentState.provider === 'youtube') {
-					const prevVideoId = (currentState as any)?.metadata?.videoId as string | undefined;
+					const prevVideoId = typeof currentState.metadata?.['videoId'] === 'string' ? (currentState.metadata['videoId'] as string) : undefined;
 					const isNewVideo = !!evt.videoId && evt.videoId !== prevVideoId;
 					const now = Date.now();
 

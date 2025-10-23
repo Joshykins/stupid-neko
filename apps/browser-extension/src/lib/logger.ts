@@ -25,7 +25,7 @@ export const KNOWN_SCOPES = [
   'auth:get-me',
   'settings:integration-key',
   'providers:no-provider-yet',
-  'providers:default',
+  'providers:website-provider',
   'providers:youtube',
   'providers:activation',
   'providers:determine',
@@ -55,13 +55,39 @@ function format(area: LogArea, scope: LogScope, level: LogLevel): string {
   return `[snbex] [${area}] [${scope}] [${level.toUpperCase()}]`;
 }
 
+const ENV: 'DEVELOPMENT' | 'PRODUCTION' | undefined =
+  (process.env.VITE_ENV as 'DEVELOPMENT' | 'PRODUCTION' | undefined) || undefined;
+
 function emit(level: LogLevel, area: LogArea, scope: LogScope, args: unknown[]) {
+  // In PRODUCTION, suppress all logs from the platform logger
+  if (ENV === 'PRODUCTION') return;
+
   const line = format(area, scope, level);
-  const method = (console as any)[level] || console.log;
+  let method: (...args: unknown[]) => void;
+  switch (level) {
+    case 'error':
+      method = console.error;
+      break;
+    case 'warn':
+      method = console.warn;
+      break;
+    case 'info':
+      method = console.info;
+      break;
+    case 'debug':
+      method = console.debug;
+      break;
+    default:
+      method = console.log;
+  }
   try {
     method(line, ...args);
   } catch {
-    try { console.log(line, ...args); } catch { /* ignore */ }
+    try {
+      console.log(line, ...args);
+    } catch {
+      /* ignore */
+    }
   }
 }
 

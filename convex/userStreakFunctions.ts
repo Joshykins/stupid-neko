@@ -500,17 +500,6 @@ export const getStreakDataForHeatmap = query({
 			const t3 = Math.max(30, baseMinutes * 0.6); // high intensity (min 30 minutes)
 			const t4 = Math.max(60, baseMinutes * 0.8); // very high intensity (min 60 minutes)
 
-			// Debug logging
-			console.log('Heatmap thresholds:', {
-				t1,
-				t2,
-				t3,
-				t4,
-				baseMinutes,
-				medianMinutes,
-				avgMinutes,
-			});
-
 			// Second pass: compute intensities and expose activity counts
 			const activityCounts: number[] = [];
 			const values: number[] = [];
@@ -592,6 +581,13 @@ export const nudgeUserStreak = async ({
 	if (!prev || !prev.credited) return { usedFreeze: false };
 
 	const gap = todayStart - prev.dayStartMs;
+	if (gap > DAY_MS * 2) {
+		// Gap > 48h - reset streak to 0 (no activity, passive check)
+		await ctx.db.patch(args.userId, {
+			currentStreak: 0,
+		});
+		return { usedFreeze: false };
+	}
 	if (gap !== DAY_MS * 2) {
 		// Only auto-bridge exactly one missed day
 		return { usedFreeze: false };

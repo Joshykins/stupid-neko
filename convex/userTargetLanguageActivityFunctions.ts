@@ -67,14 +67,14 @@ export const addLanguageActivity = async ({
 		externalUrl: args.externalUrl ?? undefined,
 	});
 
-		// 2) Update streak
-		const streak = await updateStreakOnActivity({
-			ctx,
-			args: {
-				userId,
-				occurredAt: occurredAt,
-			}
-		});
+	// 2) Update streak
+	const streak = await updateStreakOnActivity({
+		ctx,
+		args: {
+			userId,
+			occurredAt: occurredAt,
+		}
+	});
 
 	// 3) Add experience (with optional streak bonus)
 	const exp = await addExperience({
@@ -238,22 +238,21 @@ export const listRecentLanguageActivities = query({
 		// Get the effective time (includes devDate if set)
 		const effectiveNow = await getEffectiveNow(ctx);
 
-			const limit = Math.max(1, Math.min(100, args.limit ?? 20));
-			// Over-fetch to account for deleted items so we can still return `limit` non-deleted
-			// entries without switching the endpoint to pagination.
-			const targetFetch = Math.min(500, Math.max(limit * 3, limit + 10));
-			// Use composite index to fetch only completed activities efficiently
-			// Note: This query should only return completed activities, but if in-progress activities
-			// are being returned, it indicates a bug in the activity processing logic
-			const userTargetLanguageActivities = await ctx.db
+		const limit = Math.max(1, Math.min(100, args.limit ?? 20));
+		// Over-fetch to account for deleted items so we can still return `limit` non-deleted
+		// entries without switching the endpoint to pagination.
+		const targetFetch = Math.min(500, Math.max(limit * 3, limit + 10));
+		// Fetch both completed and in-progress activities
+		const userTargetLanguageActivities = await ctx.db
 			.query('userTargetLanguageActivities')
-			.withIndex('by_user_and_state', q =>
-				q.eq('userId', userId).eq('state', 'completed')
+			.withIndex('by_user', q =>
+				q.eq('userId', userId)
 			)
+			.filter(q => q.neq(q.field('isDeleted'), true))
 			.order('desc')
-				.take(targetFetch);
-			const results: Array<any> = [];
-			for (const languageActivity of userTargetLanguageActivities) {
+			.take(targetFetch);
+		const results: Array<any> = [];
+		for (const languageActivity of userTargetLanguageActivities) {
 			if (languageActivity.isDeleted) continue;
 			let labelOut:
 				| {
@@ -299,9 +298,9 @@ export const listRecentLanguageActivities = query({
 				label: labelOut,
 				awardedExperience: Math.max(0, awardedExperience),
 			});
-				if (results.length >= limit) break; // stop once we have enough non-deleted entries
+			if (results.length >= limit) break; // stop once we have enough non-deleted entries
 		}
-			return { items: results.slice(0, limit), effectiveNow };
+		return { items: results.slice(0, limit), effectiveNow };
 	},
 });
 
@@ -482,10 +481,10 @@ export const getWeeklySourceDistribution = query({
 
 			const source = targetLanguageActivity.source;
 			const contentKey = targetLanguageActivity.contentKey;
-			
+
 			// Determine source category based on activity source and contentKey
 			let category: 'youtube' | 'spotify' | 'website' | 'manual';
-			
+
 			if (source === 'browser-extension-youtube-provider') {
 				category = 'youtube';
 			} else if (source === 'manual') {
@@ -637,9 +636,10 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 	// Look for existing in-progress activity with this contentKey
 	const existingActivity = await ctx.db
 		.query('userTargetLanguageActivities')
-		.withIndex('by_user_state_and_content_key', q => 
+		.withIndex('by_user_state_and_content_key', q =>
 			q.eq('userId', userId).eq('state', 'in-progress').eq('contentKey', contentKey)
 		)
+		.filter(q => q.neq(q.field('isDeleted'), true))
 		.unique();
 
 	const title = contentLabel?.title ?? contentKey;
@@ -664,10 +664,10 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 
 	// Calculate timing and duration for existing activity
 	const lastUpdateTime = existingActivity.updatedAt ?? existingActivity._creationTime;
-	const startTime =  existingActivity._creationTime;
+	const startTime = existingActivity._creationTime;
 	const timeSinceLastUpdate = occurredAt - lastUpdateTime;
 	const currentDurationMs = Math.max(0, occurredAt - startTime);
-	
+
 	// Determine if we should continue existing activity or start new one
 	const shouldContinueActivity = timeSinceLastUpdate <= ACTIVITY_GAP_MS;
 	const isLongEnoughForCompletion = currentDurationMs >= MIN_ACTIVITY_DURATION_MS;
@@ -781,14 +781,14 @@ export const listStaleInProgressActivities = internalQuery({
 	}>> => {
 		const nowEffective = Date.now();
 		const staleThreshold = nowEffective - ACTIVITY_GAP_MS;
-		
+
 		// Query all in-progress activities
 		// Note: We need to query all users since the index requires userId first
 		const allInProgress = await ctx.db
 			.query('userTargetLanguageActivities')
 			.filter(q => q.eq(q.field('state'), 'in-progress'))
 			.take(args.batchSize);
-		
+
 		// Filter to those that are stale
 		return allInProgress.filter(activity => {
 			const lastUpdate = activity.updatedAt ?? activity._creationTime;
@@ -855,8 +855,8 @@ export const processStaleActivity = internalMutation({
 
 			return { processed: true, action: 'completed' as const };
 		} else {
-			// Activity too short - delete it
-			await ctx.db.delete(activity._id);
+			// Activity too short - soft-delete it
+			await ctx.db.patch(activity._id, { isDeleted: true });
 			return { processed: true, action: 'deleted' as const };
 		}
 	},

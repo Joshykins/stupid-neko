@@ -19,10 +19,10 @@ export const baseManifest = {
 	...(isDev ? devManifest : ({} as ManifestV3Export)),
 	...(localize
 		? {
-				name: '__MSG_extName__',
-				description: '__MSG_extDescription__',
-				default_locale: 'en',
-			}
+			name: '__MSG_extName__',
+			description: '__MSG_extDescription__',
+			default_locale: 'en',
+		}
 		: {}),
 } as ManifestV3Export;
 
@@ -48,6 +48,10 @@ export default defineConfig({
 		VITE_CONVEX_SITE_URL: JSON.stringify(process.env.CONVEX_SITE_URL || ''),
 		VITE_SITE_URL: JSON.stringify(
 			process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || ''
+		),
+		// Expose environment for runtime logging decisions in the extension
+		'process.env.ENVIROMENT': JSON.stringify(
+			process.env.ENVIROMENT || (isDev ? 'DEVELOPMENT' : 'PRODUCTION')
 		),
 	},
 });

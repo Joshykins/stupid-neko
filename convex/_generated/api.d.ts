@@ -8,11 +8,6 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
 import type * as auth from "../auth.js";
 import type * as browserExtension_browserExtensionCoreFunctions from "../browserExtension/browserExtensionCoreFunctions.js";
 import type * as browserExtension_websiteProviderFunctions from "../browserExtension/websiteProviderFunctions.js";
@@ -41,6 +36,12 @@ import type * as userTargetLanguageExperienceFunctions from "../userTargetLangua
 import type * as userTargetLanguageFavoriteActivityFunctions from "../userTargetLanguageFavoriteActivityFunctions.js";
 import type * as userXPChartFunctions from "../userXPChartFunctions.js";
 import type * as utils from "../utils.js";
+
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -80,11 +81,15 @@ declare const fullApi: ApiFromModules<{
   userXPChartFunctions: typeof userXPChartFunctions;
   utils: typeof utils;
 }>;
+declare const fullApiWithMounts: typeof fullApi;
+
 export declare const api: FilterApi<
-  typeof fullApi,
+  typeof fullApiWithMounts,
   FunctionReference<any, "public">
 >;
 export declare const internal: FilterApi<
-  typeof fullApi,
+  typeof fullApiWithMounts,
   FunctionReference<any, "internal">
 >;
+
+export declare const components: {};

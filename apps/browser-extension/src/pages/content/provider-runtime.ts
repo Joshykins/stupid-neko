@@ -29,7 +29,9 @@ onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 			log.debug('Stopping previous provider:', active.id);
 			try {
 				active.api.stop();
-			} catch { }
+			} catch {
+				/* noop */
+			}
 			active = null;
 		}
 
@@ -38,11 +40,11 @@ onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 		);
 		if (!key) {
 			log.error('Provider content not found:', providerId);
-			return { error: `Provider content not found: ${providerId}` } as any;
+			return { error: `Provider content not found: ${providerId}` };
 		}
 
 		log.debug('Loading provider content:', key);
-		const mod: any = await loadContent[key]!();
+		const mod = (await loadContent[key]!()) as { default: ProviderContent; };
 		const api: ProviderContent = mod.default;
 
 		log.debug('Starting provider:', providerId);
@@ -55,7 +57,7 @@ onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 		return {};
 	} catch (e) {
 		log.error('Error activating provider:', e);
-		return { error: String(e) } as any;
+		return { error: String(e) };
 	}
 });
 
@@ -63,7 +65,9 @@ onContent('DEACTIVATE_PROVIDER', async () => {
 	if (active) {
 		try {
 			active.api.stop();
-		} catch { }
+		} catch {
+			/* noop */
+		}
 		active = null;
 	}
 	return {};

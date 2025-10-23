@@ -73,13 +73,19 @@ export function useAuth(): AuthState {
 		};
 		try {
 			chrome.storage.onChanged.addListener(onStorageChange);
-		} catch { }
+		} catch {
+			/* noop */
+			void 0;
+		}
 
 		return () => {
 			mounted = false;
 			try {
 				chrome.storage.onChanged.removeListener(onStorageChange);
-			} catch { }
+			} catch {
+				/* noop */
+				void 0;
+			}
 		};
 	}, []);
 

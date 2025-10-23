@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Minimize2 } from 'lucide-react';
 import type { LanguageCode } from '../../../../convex/schema';
-import { useAuth } from '../components/hooks/useAuth';
 import {
 	Popover,
 	PopoverContent,
@@ -52,7 +51,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// Use custom hooks for state management
 	const widgetState = useWidgetState();
 	const userInfo = useUserInfo(props);
-	const { } = useWidgetActions();
+	useWidgetActions();
 	const {
 		position,
 		controls,
@@ -84,7 +83,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			const url = chrome.runtime.getURL(iconName);
 			setIconUrl(url);
-		} catch (error) {
+		} catch {
 			// Fallback to regular icon if dev icon fails to load
 			const iconName = isDangerousTesting ? 'dev-icon-128.png' : 'icon-128.png';
 			setIconUrl(`/${iconName}`);
@@ -134,45 +133,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// 	}
 	// }, [isDragging, widgetState, expanded]);
 
-	const contentLabel: string = useMemo(() => {
-		try {
-			const raw = localStorage.getItem('lastContentLabel');
-			if (raw) {
-				const parsed = JSON.parse(raw);
-				if (typeof parsed?.title === 'string' && parsed.title.trim().length > 0)
-					return parsed.title.trim();
-			}
-		} catch { }
-		try {
-			const title = document.title.replace(/ - YouTube$/, '').trim();
-			if (title) return title;
-		} catch { }
-		return 'this content';
-	}, []);
 
 	// Auth/me state from background
-	const { me } = useAuth();
 
-	// Rotating encouragement lines (stupid neko themed)
-	const encouragement: string = useMemo(() => {
-		const lines: Array<string> = [
-			'Keep up the good work',
-			'Stupid Neko approves this grind.',
-			'Nyaa~ your brain is leveling up.',
-			'Meowtstanding progress!',
-			'Learn now, nap later.',
-			'One more minute, one more whisker.',
-			'Claw your way to fluency.',
-			'Big Neko energy.',
-			'No nap until +1 XP.',
-		];
-		try {
-			const idx = Math.floor(Math.random() * lines.length);
-			return lines[idx];
-		} catch {
-			return lines[0];
-		}
-	}, []);
 
 	// Enhanced drag handlers with popover management
 	const handleDrag = (

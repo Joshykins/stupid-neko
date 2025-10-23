@@ -32,7 +32,9 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'italic', weight: '100 900' }
 			);
 			faces.push(pjItalic);
-		} catch { }
+		} catch {
+			/* noop */
+		}
 		try {
 			const baloo = new FontFace(
 				'Baloo 2',
@@ -40,7 +42,9 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'normal', weight: '400 800' }
 			);
 			faces.push(baloo);
-		} catch { }
+		} catch {
+			/* noop */
+		}
 		const loads = faces.map(f => f.load());
 		const loaded = await Promise.all(loads);
 		loaded.forEach(f => {
@@ -48,7 +52,9 @@ async function loadFontsUsingFontFace(): Promise<void> {
 		});
 		// Avoid mutating the host page's <html> to prevent React hydration mismatches
 		// Previously: document.documentElement.classList.add('sn-fonts-ready');
-	} catch { }
+	} catch {
+		/* noop */
+	}
 }
 
 function WidgetGate() {
@@ -143,7 +149,7 @@ shadow.adoptedStyleSheets = [sheet];
 
 // Initialize the app
 async function initializeApp() {
-	await loadFontsUsingFontFace().catch(() => { });
+	await loadFontsUsingFontFace().catch(() => { /* noop */ });
 
 	// Wait a bit for CSS to load
 	await new Promise(resolve => setTimeout(resolve, 100));

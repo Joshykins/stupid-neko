@@ -6,7 +6,7 @@ import type {
 
 // Default content handler - runs in content script context
 import { createLogger } from '../../../lib/logger';
-const log = createLogger('content', 'providers:default');
+const log = createLogger('content', 'providers:website-provider');
 let isActive = false;
 let startTime: number | null = null;
 let activityTimer: number | null = null;
@@ -132,7 +132,7 @@ const checkLanguageMatch = (targetLanguage?: string): void => {
 };
 
 // Public API for content script
-export const defaultContentHandler: ContentHandler = {
+export const websiteContentHandler: ContentHandler = {
 	start: (playbackEventCallback: (event: ContentActivityEvent) => void) => {
 		if (isActive) return;
 

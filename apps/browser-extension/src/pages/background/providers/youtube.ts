@@ -91,7 +91,8 @@ const getCurrentMetadata = (): ContentMetadata => {
 				}
 			}
 		}
-	} catch (error) {
+	} catch {
+		/* noop */
 	}
 
 	return { title, videoId, author };
@@ -116,10 +117,7 @@ const emit = (event: 'start' | 'pause' | 'end' | 'progress'): void => {
 		payload.rate = player.playbackRate;
 	}
 
-	try {
-	} catch {
-		// Ignore console errors
-	}
+	/* noop */
 
 	onPlaybackEvent(payload);
 };
@@ -136,8 +134,11 @@ const attach = (p: HTMLVideoElement): void => {
 				const startCT = Math.floor(p.currentTime || 0);
 				const payload = { startCT, startTS: Date.now() } as const;
 				localStorage.setItem(key, JSON.stringify(payload));
-			} catch { }
+			} catch {
+				/* noop */
+			}
 		} else {
+			/* noop */
 		}
 	};
 

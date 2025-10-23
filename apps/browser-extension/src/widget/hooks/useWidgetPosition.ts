@@ -36,7 +36,9 @@ function snapToEdges(p: Position): Position {
 function savePosition(p: Position) {
 	try {
 		chrome.storage.sync.set({ trackingWidgetPos: p });
-	} catch { }
+	} catch {
+		/* noop */
+	}
 }
 
 export function useWidgetPosition() {
@@ -60,7 +62,9 @@ export function useWidgetPosition() {
 					const snapped = snapToEdges(clamped);
 					setPosition(snapped);
 				}
-			} catch { }
+			} catch {
+				/* noop */
+			}
 		})();
 	}, []);
 
@@ -81,7 +85,7 @@ export function useWidgetPosition() {
 		// (Framer handles this internally; we just reset our flags here)
 	};
 
-	const onDrag = (_e: any, info: { offset: { x: number; y: number; }; }) => {
+	const onDrag = (_e: unknown, info: { offset: { x: number; y: number; }; }) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
 		if (dx > 2 || dy > 2) {
@@ -90,7 +94,7 @@ export function useWidgetPosition() {
 	};
 
 	const onDragEnd = async (
-		_e: any,
+		_e: unknown,
 		info: { offset: { x: number; y: number; }; }
 	) => {
 		const start = startRef.current || {

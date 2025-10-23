@@ -9,7 +9,6 @@ import { Id } from './_generated/dataModel';
 import { LanguageCode } from './schema';
 
 function isDangerousTestingEnabled() {
-	console.log('isDangerousTestingEnabled', process.env.DANGEROUS_TESTING);
 	return dangerousTestingEnabled();
 }
 
