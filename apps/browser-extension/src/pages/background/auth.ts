@@ -4,10 +4,12 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import { tryCatch } from '../../../../../lib/tryCatch';
 import type { AuthMe } from '../../messaging/messages';
+import { createLogger } from '../../lib/logger';
+
 
 // Constants
 const AUTH_CACHE_DURATION_MS = 60_000;
-const DEBUG_LOG_PREFIX = '[bg:auth]';
+const log = createLogger('service-worker', 'auth:get-me');
 
 // Types
 export type AuthState = {
@@ -65,9 +67,9 @@ function getEnv(
 const CONVEX_URL = getEnv('CONVEX_URL') || getEnv('CONVEX_SITE_URL');
 export const convex = CONVEX_URL
 	? new ConvexHttpClient(CONVEX_URL, {
-			// Allow using .convex.site host during development if needed
-			skipConvexDeploymentUrlCheck: /\.convex\.site$/i.test(CONVEX_URL),
-		})
+		// Allow using .convex.site host during development if needed
+		skipConvexDeploymentUrlCheck: /\.convex\.site$/i.test(CONVEX_URL),
+	})
 	: null;
 
 // Integration ID storage helpers
@@ -81,10 +83,7 @@ export async function getIntegrationId(): Promise<string | null> {
 	);
 
 	if (storageError || !storageData) {
-		console.warn(
-			`${DEBUG_LOG_PREFIX} failed to get integration ID:`,
-			storageError
-		);
+		log.warn('failed to get integration ID:', storageError);
 		return null;
 	}
 
@@ -99,38 +98,32 @@ export async function getIntegrationId(): Promise<string | null> {
 
 export async function fetchMe(): Promise<AuthState> {
 	const integrationId = await getIntegrationId();
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe - integrationId:`, integrationId);
+	log.info('fetchMe - integrationId:', integrationId);
 
 	if (!integrationId || !convex) {
-		console.log(`${DEBUG_LOG_PREFIX} fetchMe - no integrationId or convex`);
+		log.info('fetchMe - no integrationId or convex');
 		return { isAuthed: false, me: null };
 	}
 
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe - calling meFromIntegration`);
+	log.info('fetchMe - calling meFromIntegration');
 	const { data: me, error: meError } = await tryCatch(
-		convex.query(api.browserExtensionFunctions.meFromIntegration, {
+		convex.query(api.browserExtension.browserExtensionCoreFunctions.meFromIntegration, {
 			integrationId,
 		})
 	);
 
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe - meFromIntegration result:`, {
-		me,
-		meError,
-	});
+	log.info('fetchMe - meFromIntegration result:', { me, meError });
 
 	if (meError || !me) {
-		console.log(
-			`${DEBUG_LOG_PREFIX} fetchMe - authentication failed:`,
-			meError
-		);
+		log.info('fetchMe - authentication failed:', meError);
 		return { isAuthed: false, me: null };
 	}
 
 	// Mark the integration key as used when successfully authenticated
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe - marking integration key as used`);
+	log.info('fetchMe - marking integration key as used');
 	const { error: markError } = await tryCatch(
 		convex.mutation(
-			api.browserExtensionFunctions.markIntegrationKeyAsUsedFromExtension,
+			api.browserExtension.browserExtensionCoreFunctions.markIntegrationKeyAsUsedFromExtension,
 			{
 				integrationId,
 			}
@@ -139,19 +132,16 @@ export async function fetchMe(): Promise<AuthState> {
 
 	// Ignore markError - this is best effort
 	if (markError) {
-		console.warn(
-			`${DEBUG_LOG_PREFIX} failed to mark integration key as used:`,
-			markError
-		);
+		log.warn('failed to mark integration key as used:', markError);
 	}
 
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe - authentication successful`);
+	log.info('fetchMe - authentication successful');
 	return { isAuthed: true, me: me as AuthMe };
 }
 
 export async function getAuthState(): Promise<AuthState> {
 	const now = Date.now();
-	console.log(`${DEBUG_LOG_PREFIX} GET_AUTH_STATE`, lastAuthState);
+	log.info('GET_AUTH_STATE', lastAuthState);
 
 	const isFresh =
 		lastAuthState.value &&
@@ -165,7 +155,7 @@ export async function getAuthState(): Promise<AuthState> {
 	const { data: auth, error } = await tryCatch(fetchMe());
 
 	if (error) {
-		console.error(`${DEBUG_LOG_PREFIX} fetchMe failed:`, error);
+		log.error('fetchMe failed:', error);
 		return { isAuthed: false, me: null };
 	}
 
@@ -178,7 +168,7 @@ export async function refreshAuth(): Promise<{
 	auth?: AuthState;
 	error?: string;
 }> {
-	console.log(`${DEBUG_LOG_PREFIX} REFRESH_AUTH`);
+	log.info('REFRESH_AUTH');
 
 	// Invalidate cache and refetch right away
 	lastAuthState = { value: null, fetchedAt: null };
@@ -186,18 +176,16 @@ export async function refreshAuth(): Promise<{
 	const { data: auth, error } = await tryCatch(fetchMe());
 
 	if (error) {
-		console.error(`${DEBUG_LOG_PREFIX} fetchMe failed:`, error);
+		log.error('fetchMe failed:', error);
 		return { ok: false, error: error.message };
 	}
 
-	console.log(`${DEBUG_LOG_PREFIX} fetchMe success:`, auth);
+	log.info('fetchMe success:', auth);
 	lastAuthState = { value: auth, fetchedAt: Date.now() };
 	return { ok: true, auth };
 }
 
 export function invalidateAuthCache(): void {
-	console.log(
-		`${DEBUG_LOG_PREFIX} integration ID changed, invalidating auth cache`
-	);
+	log.info('integration ID changed, invalidating auth cache');
 	lastAuthState = { value: null, fetchedAt: null };
 }

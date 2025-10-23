@@ -3,11 +3,11 @@
 import type { ContentSource } from '../../../../../../convex/schema';
 
 // Provider names - centralized type for all provider identifiers
-export type ProviderName = 'youtube' | 'default';
+export type ProviderName = 'youtube' | 'website-provider';
 
 // Helper function to check if a string is a valid provider name
 export function isValidProviderName(name: string): name is ProviderName {
-	return name === 'youtube' || name === 'default';
+	return name === 'youtube' || name === 'website-provider';
 }
 
 export interface ContentMetadata {
@@ -141,21 +141,31 @@ export interface ProviderEventHandlers {
 // Widget state management
 export interface WidgetState {
 	state:
-		| 'default-provider-idle'
-		| 'default-provider-awaiting-consent'
-		| 'default-provider-tracking'
-		| 'default-provider-prompt-user-for-track'
-		| 'youtube-not-tracking'
-		| 'youtube-tracking-unverified'
-		| 'youtube-tracking-verified'
-		| 'determining-provider'
-		| 'error';
+	| 'website-provider-idle'
+	| 'website-provider-idle-detected'
+	| 'website-provider-always-track-question'
+	| 'website-provider-tracking'
+	| 'website-provider-tracking-stopped'
+	| 'website-provider-not-tracking'
+	| 'youtube-not-tracking'
+	| 'youtube-tracking-unverified'
+	| 'youtube-tracking-verified'
+	| 'youtube-provider-tracking-stopped'
+	| 'content-blocked'
+	| 'determining-provider'
+	| 'error';
 	provider?: ProviderName;
 	domain?: string;
 	metadata?: ContentMetadata;
 	error?: string;
 	startTime?: number;
+	// Playback/session fields (optional)
+	isPlaying?: boolean;
+	playbackStatus?: 'playing' | 'paused' | 'ended';
+	sessionActiveMs?: number; // accumulated active play time in ms
+	sessionStartedAt?: number; // wall-clock ms when current play segment started
 	detectedLanguage?: string;
+	autoStartedByPolicy?: boolean;
 }
 
 export interface WidgetStateUpdate {
@@ -165,7 +175,13 @@ export interface WidgetStateUpdate {
 	metadata?: ContentMetadata;
 	error?: string;
 	startTime?: number;
+	// Playback/session fields (optional)
+	isPlaying?: boolean;
+	playbackStatus?: 'playing' | 'paused' | 'ended';
+	sessionActiveMs?: number;
+	sessionStartedAt?: number;
 	detectedLanguage?: string;
+	autoStartedByPolicy?: boolean;
 }
 
 /**

@@ -1,4 +1,6 @@
 import type { MessageMap, MsgKey, Req, Res } from './messages';
+import { createLogger } from '../lib/logger';
+const log = createLogger('content', 'messaging:content');
 
 type ContentHandler<K extends MsgKey> = (
 	req: MessageMap[K]['req'],
@@ -16,21 +18,21 @@ export function onContent<K extends MsgKey>(
 
 chrome.runtime.onMessage.addListener(
 	(msg: Req<MsgKey>, sender, sendResponse) => {
-		console.debug('[content] Message router received:', msg?.type, msg);
+		log.debug('Message router received:', msg?.type, msg);
 		const handler = handlers[msg?.type as MsgKey];
 		if (!handler) {
-			console.debug('[content] No handler for message type:', msg?.type);
+			log.debug('No handler for message type:', msg?.type);
 			return;
 		}
 
-		console.debug('[content] Calling handler for:', msg?.type);
+		log.debug('Calling handler for:', msg?.type);
 		(async () => {
 			try {
 				const { type: _t, ...payload } = msg as Req<MsgKey>;
 				const res = await handler(payload, sender);
 				sendResponse(res);
 			} catch (e) {
-				console.error('[content] Handler error:', e);
+				log.error('Handler error:', e);
 				sendResponse({ error: String(e) });
 			}
 		})();

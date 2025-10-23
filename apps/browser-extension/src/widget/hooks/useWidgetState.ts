@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { WidgetState } from '../../pages/background/providers/types';
 import { widgetStateManager } from '../WidgetStateManager';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:state-updates');
 
 export function useWidgetState() {
 	const [widgetState, setWidgetState] = useState<WidgetState>({
@@ -8,17 +10,17 @@ export function useWidgetState() {
 	});
 
 	useEffect(() => {
-		console.log('[useWidgetState] Initializing widget state manager');
+		log.debug('Initializing widget state manager');
 
 		// Subscribe to state changes
 		const unsubscribe = widgetStateManager.subscribe(newState => {
-			console.log('[useWidgetState] State updated:', newState);
+			log.debug('State updated:', newState);
 			setWidgetState(newState);
 		});
 
 		// Get initial state
 		const initialState = widgetStateManager.getCurrentState();
-		console.log('[useWidgetState] Initial state:', initialState);
+		log.debug('Initial state:', initialState);
 		setWidgetState(initialState);
 
 		return unsubscribe;

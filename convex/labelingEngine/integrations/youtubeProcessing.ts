@@ -2,6 +2,8 @@ import type { ActionCtx } from '../../_generated/server';
 import type { LanguageCode } from '../../schema';
 import type { Id } from '../../_generated/dataModel';
 import { internal } from '../../_generated/api';
+import { detectLanguageWithGemini } from './geminiLanguageDetection';
+import { tryCatch } from '../../../lib/tryCatch';
 
 // Define the patch type for content label updates
 type ContentLabelPatch = {
@@ -15,87 +17,15 @@ type ContentLabelPatch = {
 	fullDurationInMs?: number;
 	contentLanguageCode?: LanguageCode;
 	languageEvidence?: string[];
+	isAboutTargetLanguages?: LanguageCode[];
+	geminiLanguageEvidence?: string;
 };
 
-interface YouTubeVideoSnippet {
-	publishedAt: string;
-	channelId: string;
-	title: string;
-	description: string;
-	thumbnails: {
-		default?: { url: string; width: number; height: number };
-		medium?: { url: string; width: number; height: number };
-		high?: { url: string; width: number; height: number };
-		standard?: { url: string; width: number; height: number };
-		maxres?: { url: string; width: number; height: number };
-	};
-	channelTitle: string;
-	tags?: string[];
-	categoryId: string;
-	liveBroadcastContent: string;
-	defaultLanguage?: string;
-	defaultAudioLanguage?: string;
-}
-
-interface YouTubeVideoStatistics {
-	viewCount: string;
-	likeCount?: string;
-	favoriteCount: string;
-	commentCount?: string;
-}
-
-interface YouTubeVideoContentDetails {
-	duration: string;
-	dimension: string;
-	definition: string;
-	caption: string;
-	licensedContent: boolean;
-	regionRestriction?: {
-		allowed?: string[];
-		blocked?: string[];
-	};
-}
-
-interface YouTubeVideoData {
-	kind: 'youtube#video';
-	etag: string;
-	id: string;
-	snippet: YouTubeVideoSnippet;
-	statistics: YouTubeVideoStatistics;
-	contentDetails: YouTubeVideoContentDetails;
-}
-
-interface YouTubePlaylistSnippet {
-	publishedAt: string;
-	channelId: string;
-	title: string;
-	description: string;
-	thumbnails: {
-		default?: { url: string; width: number; height: number };
-		medium?: { url: string; width: number; height: number };
-		high?: { url: string; width: number; height: number };
-		standard?: { url: string; width: number; height: number };
-		maxres?: { url: string; width: number; height: number };
-	};
-	channelTitle: string;
-	defaultLanguage?: string;
-}
-
-interface YouTubePlaylistData {
-	kind: 'youtube#playlist';
-	etag: string;
-	id: string;
-	snippet: YouTubePlaylistSnippet;
-	contentDetails: {
-		itemCount: number;
-	};
-}
-
-type YouTubeMetadata = 
-	| { type: 'video'; id: string; data: YouTubeVideoData }
-	| { type: 'playlist'; id: string; data: YouTubePlaylistData }
-	| { type: 'unknown'; id: string; data: null };
-
+/**
+ * Pure Gemini-based YouTube processing
+ * No YouTube API calls - relies entirely on Gemini for language detection
+ * and basic URL parsing for minimal metadata
+ */
 export async function processYouTubeContentLabel(
 	ctx: ActionCtx,
 	{ contentLabelId }: { contentLabelId: Id<'contentLabels'> }
@@ -126,66 +56,103 @@ export async function processYouTubeContentLabel(
 			url,
 		});
 
-		// Best-effort metadata enrichment
-		const apiKey = process.env.YOUTUBE_API_KEY || '';
-		console.debug('[youtubeProcessing.processOne] apiKey present?', {
-			hasKey: Boolean(apiKey),
-		});
-		const patch: ContentLabelPatch = { contentMediaType: 'video' };
-		if (url && apiKey) {
-			const meta = await getYouTubeMetadata(url, apiKey);
-			console.debug('[youtubeProcessing.processOne] fetched metadata', {
-				type: meta.type,
-				id: meta.id,
-				hasData: Boolean((meta as any).data),
-			});
-			if (meta.type === 'video' && meta.data) {
-				const vid = meta.data;
-				// Title / author / thumbnails
-				patch.title = vid.snippet?.title ?? patch.title;
-				patch.authorName = vid.snippet?.channelTitle ?? patch.authorName;
-				const channelId = vid.snippet?.channelId;
-				if (channelId)
-					patch.authorUrl = `https://www.youtube.com/channel/${channelId}`;
-				const thumbs = vid.snippet?.thumbnails;
-				const thumbUrl =
-					thumbs?.maxres?.url ||
-					thumbs?.high?.url ||
-					thumbs?.medium?.url ||
-					thumbs?.default?.url;
-				if (thumbUrl) patch.thumbnailUrl = thumbUrl;
-				// Description (shorten to avoid 1MB limits if needed)
-				if (vid.snippet?.description)
-					patch.description = vid.snippet.description.slice(0, 5000);
+		const patch: ContentLabelPatch = { 
+			contentMediaType: 'video',
+			contentUrl: url
+		};
 
-				// Duration parse from ISO8601
-				const iso = vid.contentDetails?.duration;
-				if (iso) patch.fullDurationInMs = iso8601ToSeconds(iso) * 1000;
-
-				// Language inference
-				const defaultAudioLang = vid.snippet?.defaultAudioLanguage;
-				const defaultLang = vid.snippet?.defaultLanguage;
-				const lang: LanguageCode | undefined = mapToSupportedLanguageCode(
-					defaultAudioLang || defaultLang || ''
-				);
-				if (lang) {
-					patch.contentLanguageCode = lang;
-					patch.languageEvidence = [
-						defaultAudioLang
-							? `yt:defaultAudioLanguage:${defaultAudioLang}`
-							: undefined,
-						defaultLang ? `yt:defaultLanguage:${defaultLang}` : undefined,
-					].filter((item): item is string => item !== undefined);
-				}
-				console.debug('[youtubeProcessing.processOne] built patch', {
-					title: patch.title,
-					authorName: patch.authorName,
-					hasThumb: Boolean(patch.thumbnailUrl),
-					fullDurationInMs: patch.fullDurationInMs,
-					contentLanguageCode: patch.contentLanguageCode,
-				});
+		// Extract basic info from URL if possible
+		if (url) {
+			const videoId = extractVideoId(url);
+			if (videoId.type === 'video_id') {
+				// Generate basic thumbnail URL (YouTube provides default thumbnails without API)
+				patch.thumbnailUrl = `https://i.ytimg.com/vi/${videoId.value}/maxresdefault.jpg`;
 			}
 		}
+
+		// Get title and description from YouTube API (minimal usage - only for Gemini analysis)
+		let title: string | undefined;
+		let description: string | undefined;
+		let authorName: string | undefined;
+		let authorUrl: string | undefined;
+
+		const apiKey = process.env.YOUTUBE_API_KEY || '';
+		if (url && apiKey) {
+			const videoId = extractVideoId(url);
+			if (videoId.type === 'video_id') {
+				const { data: response, error } = await tryCatch(
+					fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId.value}&key=${apiKey}`)
+				);
+				
+				if (error) {
+					console.debug('[youtubeProcessing.processOne] YouTube API call failed', { error: error.message });
+				} else if (response) {
+					const { data, error: jsonError } = await tryCatch(response.json());
+					
+					if (jsonError) {
+						console.debug('[youtubeProcessing.processOne] YouTube API JSON parse failed', { error: jsonError.message });
+					} else if (data?.items && data.items.length > 0) {
+						const snippet = data.items[0].snippet;
+						title = snippet?.title;
+						description = snippet?.description?.slice(0, 5000); // Limit description length
+						authorName = snippet?.channelTitle;
+						if (snippet?.channelId) {
+							authorUrl = `https://www.youtube.com/channel/${snippet.channelId}`;
+						}
+					}
+				}
+			}
+		}
+
+		// Update patch with basic metadata
+		if (title) patch.title = title;
+		if (authorName) patch.authorName = authorName;
+		if (authorUrl) patch.authorUrl = authorUrl;
+		if (description) patch.description = description;
+
+		// PRIMARY: Use Gemini for all language detection and content analysis
+		console.debug('[youtubeProcessing.processOne] running Gemini language detection', {
+			url,
+			title,
+			description,
+			hasYouTubeData: Boolean(title && description)
+		});
+
+		const geminiResult = await detectLanguageWithGemini({
+			url: url,
+			title: title,
+			description: description
+		});
+
+		if (geminiResult.success && geminiResult.target_languages.length > 0) {
+			// Use Gemini's dominant language as the primary content language
+			patch.contentLanguageCode = geminiResult.dominant_language || undefined;
+			patch.isAboutTargetLanguages = geminiResult.target_languages;
+			patch.geminiLanguageEvidence = geminiResult.reason;
+			patch.languageEvidence = [`gemini:detection:${geminiResult.reason}`];
+
+			console.debug('[youtubeProcessing.processOne] Gemini detection completed', {
+				target_languages: geminiResult.target_languages,
+				dominant_language: geminiResult.dominant_language,
+				reason: geminiResult.reason
+			});
+		} else {
+			// No language detected - mark as unknown
+			patch.languageEvidence = ['gemini:detection:failed'];
+			console.debug('[youtubeProcessing.processOne] Gemini detection failed', {
+				error: geminiResult.error,
+				reason: geminiResult.reason
+			});
+		}
+
+		console.debug('[youtubeProcessing.processOne] built patch', {
+			contentUrl: patch.contentUrl,
+			contentMediaType: patch.contentMediaType,
+			hasThumb: Boolean(patch.thumbnailUrl),
+			contentLanguageCode: patch.contentLanguageCode,
+			isAboutTargetLanguages: patch.isAboutTargetLanguages,
+			hasGeminiEvidence: Boolean(patch.geminiLanguageEvidence),
+		});
 
 		console.debug('[youtubeProcessing.processOne] completed', {
 			contentLabelId,
@@ -206,95 +173,12 @@ export async function processYouTubeContentLabel(
 	}
 }
 
-// Helper functions (copied from the original file)
-function iso8601ToSeconds(iso: string): number {
-	// PT#H#M#S
-	const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-	if (!match) return 0;
-	const hours = parseInt(match[1] || '0', 10);
-	const minutes = parseInt(match[2] || '0', 10);
-	const seconds = parseInt(match[3] || '0', 10);
-	return hours * 3600 + minutes * 60 + seconds;
-}
-
-function mapToSupportedLanguageCode(ytLang: string): LanguageCode | undefined {
-	// Map YouTube language codes to our supported language codes
-	const langMap: Record<string, LanguageCode> = {
-		'en': 'en',
-		'es': 'es',
-		'fr': 'fr',
-		'de': 'de',
-		'it': 'it',
-		'pt': 'pt',
-		'ru': 'ru',
-		'ja': 'ja',
-		'ko': 'ko',
-		'zh': 'zh',
-		'zh-CN': 'zh',
-		'zh-TW': 'zh',
-		'ar': 'ar',
-		'hi': 'hi',
-		// All other languages fallback to English
-	};
-	return langMap[ytLang] || 'en';
-}
-
-async function getYouTubeMetadata(url: string, apiKey: string): Promise<YouTubeMetadata> {
-	// Extract video ID or playlist ID from URL
-	const videoId = extractVideoId(url);
-	const playlistId = extractPlaylistId(url);
-	
-	if (videoId.type === 'video_id') {
-		const response = await fetch(
-			`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId.value}&key=${apiKey}`
-		);
-		const data = await response.json();
-		
-		if (data.items && data.items.length > 0) {
-			return {
-				type: 'video',
-				id: videoId.value,
-				data: data.items[0] as YouTubeVideoData,
-			};
-		}
-	}
-	
-	if (playlistId.type === 'playlist_id') {
-		const response = await fetch(
-			`https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId.value}&key=${apiKey}`
-		);
-		const data = await response.json();
-		
-		if (data.items && data.items.length > 0) {
-			return {
-				type: 'playlist',
-				id: playlistId.value,
-				data: data.items[0] as YouTubePlaylistData,
-			};
-		}
-	}
-	
-	return {
-		type: 'unknown',
-		id: videoId.value || playlistId.value || '',
-		data: null,
-	};
-}
-
+// Helper function to extract video ID from URL
 function extractVideoId(url: string): { type: 'video_id' | 'unknown'; value: string } {
 	const videoRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
 	const match = url.match(videoRegex);
 	if (match) {
 		return { type: 'video_id', value: match[1] };
-	}
-	return { type: 'unknown', value: '' };
-}
-
-function extractPlaylistId(url: string): { type: 'playlist_id' | 'unknown'; value: string } {
-	const playlistRegex = /[?&]list=([^&\n?#]+)/;
-	const match = url.match(playlistRegex);
-	if (match) {
-		return { type: 'playlist_id', value: match[1] };
 	}
 	return { type: 'unknown', value: '' };
 }

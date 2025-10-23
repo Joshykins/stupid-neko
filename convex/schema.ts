@@ -33,7 +33,7 @@ export const ContentSources = [
 	'spotify',
 	'anki',
 	'manual',
-	'language-detection',
+	'website'
 ] as const;
 export type ContentSource = (typeof ContentSources)[number];
 export const contentSourceValidator = v.union(
@@ -83,6 +83,7 @@ export default defineSchema({
 
 		// Pre-release access gate
 		preReleaseGranted: v.optional(v.boolean()),
+
 	})
 		.index('by_email', ['email']) // mirror default indexes
 		.index('by_phone', ['phone'])
@@ -123,7 +124,7 @@ export default defineSchema({
 		note: v.optional(v.string()),
 	})
 		.index('by_user_and_day', ['userId', 'dayStartMs'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt']),
+		.index('by_user_and_creation_time', ['userId', 'occurredAt']),
 
 	userStreakVacationLedgers: defineTable({
 		userId: v.id('users'),
@@ -136,7 +137,7 @@ export default defineSchema({
 		note: v.optional(v.string()),
 	})
 		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
+		.index('by_user_and_creation_time', ['userId', 'occurredAt'])
 		.index('by_user_and_reason', ['userId', 'reason']),
 
 	userTargetLanguages: defineTable({
@@ -218,37 +219,26 @@ export default defineSchema({
 
 		// State
 		state: v.union(v.literal('in-progress'), v.literal('completed')), // active: the activity is currently in progress, finished: the activity has been completed
+		isDeleted: v.optional(v.boolean()),
 
-		isManuallyTracked: v.optional(v.boolean()),
+		// Source of the activity
+		source: v.union(
+			v.literal('manual'),
+			v.literal('browser-extension-youtube-provider'),
+			v.literal('browser-extension-website-provider')
+		),
 
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 
 		// Canonical duration in milliseconds
 		durationInMs: v.optional(v.number()),
-		occurredAt: v.optional(v.number()),
+		updatedAt: v.optional(v.number()),
 	})
 		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
 		.index('by_user_and_state', ['userId', 'state'])
 		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey']),
 
-	// Content Activity, these are the heartbeats, starts, pauses, ends, etc of any automated injestion of content
-	contentActivities: defineTable({
-		userId: v.id('users'),
-		contentKey: v.string(), // (will match a contentLabel contentKey) "youtube:VIDEO_ID", "spotify:TRACK_ID" etc.
-		activityType: v.union(
-			v.literal('heartbeat'),
-			v.literal('start'),
-			v.literal('pause'),
-			v.literal('end')
-		),
-		occurredAt: v.optional(v.number()),
-		isWaitingOnLabeling: v.optional(v.boolean()),
-	})
-		.index('by_user', ['userId'])
-		.index('by_user_and_occurred', ['userId', 'occurredAt'])
-		.index('by_content_key', ['contentKey']),
 
 	// Labeling Engine
 	contentLabels: defineTable({
@@ -271,9 +261,13 @@ export default defineSchema({
 		thumbnailUrl: v.optional(v.string()),
 		fullDurationInMs: v.optional(v.number()),
 
-		// Language signals
-		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
-		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+	// Language signals
+	contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
+	languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+	
+	// Gemini language detection results
+	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)), // Languages the content is about/teaching
+	geminiLanguageEvidence: v.optional(v.string()), // Store Gemini's reasoning for audit trail
 
 		// Ops
 		attempts: v.optional(v.number()),
@@ -282,6 +276,22 @@ export default defineSchema({
 		updatedAt: v.optional(v.number()),
 		processedAt: v.optional(v.number()),
 	}).index('by_content_key', ['contentKey']),
+
+	// User-specific content label policies (allow/block)
+	userContentLabelPolicies: defineTable({
+		userId: v.id('users'),
+		policyKind: v.union(v.literal('allow'), v.literal('block')),
+		contentKey: v.string(), // e.g. "youtube:VIDEO_ID", "web:domain/path"
+		// Accept standard sources plus 'website' for generic websites
+		contentSource: v.union(contentSourceValidator),
+		contentUrl: v.optional(v.string()),
+		label: v.optional(v.string()),
+		note: v.optional(v.string()),
+	})
+		.index('by_user', ['userId'])
+		.index('by_user_and_source', ['userId', 'contentSource'])
+		.index('by_user_and_policy_kind', ['userId', 'policyKind'])
+		.index('by_user_and_content_key', ['userId', 'contentKey']),
 
 	// Spotify OAuth linkage and token storage
 	spotifyAccounts: defineTable({

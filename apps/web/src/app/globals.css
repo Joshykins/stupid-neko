@@ -66,6 +66,7 @@
 	--source-youtube: #ff0000;
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
+	--source-website: #4285f4;
 	--source-misc: #b37bbe;
 	--source-youtube-soft: color-mix(
 		in oklch,
@@ -78,6 +79,7 @@
 		#ffffff
 	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
+	--source-website-soft: color-mix(in oklch, var(--source-website) 80%, #ffffff);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
 	/* flashcards breakdown (dedicated palette distinct from chart colors) */
@@ -149,6 +151,7 @@
 	--source-youtube: #ff0000;
 	--source-spotify: #1db954;
 	--source-anki: #2f80ed;
+	--source-website: #4285f4;
 	--source-misc: #b37bbe;
 	--source-youtube-soft: color-mix(
 		in oklch,
@@ -161,6 +164,7 @@
 		#ffffff
 	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
+	--source-website-soft: color-mix(in oklch, var(--source-website) 80%, #ffffff);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
 	/* flashcards breakdown (dark variants) */
@@ -208,10 +212,12 @@
 	--color-source-youtube: var(--source-youtube);
 	--color-source-spotify: var(--source-spotify);
 	--color-source-anki: var(--source-anki);
+	--color-source-website: var(--source-website);
 	--color-source-misc: var(--source-misc);
 	--color-source-youtube-soft: var(--source-youtube-soft);
 	--color-source-spotify-soft: var(--source-spotify-soft);
 	--color-source-anki-soft: var(--source-anki-soft);
+	--color-source-website-soft: var(--source-website-soft);
 	--color-source-misc-soft: var(--source-misc-soft);
 
 	/* flashcards breakdown mapped colors */

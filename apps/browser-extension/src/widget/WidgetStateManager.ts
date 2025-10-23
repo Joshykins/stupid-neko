@@ -4,6 +4,8 @@ import type {
 } from '../pages/background/providers/types';
 import { onContent } from '../messaging/messagesContentRouter';
 import { callBackground } from '../messaging/messagesContentRouter';
+import { createLogger } from '../lib/logger';
+const log = createLogger('content', 'widget:state-updates');
 
 export class WidgetStateManager {
 	private currentState: WidgetState = { state: 'determining-provider' };
@@ -14,10 +16,10 @@ export class WidgetStateManager {
 	}
 
 	private init(): void {
-		console.log('[WidgetStateManager] Initializing...');
+		log.debug('WidgetStateManager initializing...');
 		// Listen for state updates from background script using new messaging pattern
 		onContent('WIDGET_STATE_UPDATE', ({ payload }) => {
-			console.log('[WidgetStateManager] Received state update:', payload);
+			log.debug('Received widget state update:', payload);
 			this.updateState(payload);
 			return {};
 		});
@@ -28,14 +30,14 @@ export class WidgetStateManager {
 
 	private async requestInitialState(): Promise<void> {
 		try {
-			console.log('[WidgetStateManager] Requesting initial state from background...');
+			log.debug('Requesting initial widget state from background...');
 			const currentState = await callBackground('GET_WIDGET_STATE', {});
-			console.log('[WidgetStateManager] Received initial state from background:', currentState);
+			log.debug('Received initial widget state from background:', currentState);
 			if (currentState) {
 				this.updateState(currentState);
 			}
 		} catch (error) {
-			console.warn('[WidgetStateManager] Failed to get initial state:', error);
+			log.warn('Failed to get initial widget state:', error);
 		}
 	}
 
@@ -53,7 +55,7 @@ export class WidgetStateManager {
 			try {
 				listener(this.currentState);
 			} catch (error) {
-				console.warn('Widget state listener error:', error);
+				log.warn('Widget state listener error:', error);
 			}
 		});
 	}
@@ -82,7 +84,7 @@ export class WidgetStateManager {
 	 */
 	sendAction(action: string, payload?: Record<string, unknown>): void {
 		callBackground('WIDGET_ACTION', { action, payload }).catch(error => {
-			console.error('Failed to send widget action:', error);
+			log.error('Failed to send widget action:', error);
 		});
 	}
 }

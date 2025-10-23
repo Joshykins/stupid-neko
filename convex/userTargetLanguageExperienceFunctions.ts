@@ -4,16 +4,10 @@ import {
 	type ApplyExperienceResult,
 	applyExperience,
 } from '../lib/levelAndExperienceCalculations/levelAndExperienceCalculator';
-import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import {
-	internalMutation,
-	internalQuery,
-	mutation,
-	query,
-} from './_generated/server';
+import { mutation, query } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
-import { LanguageCode, languageCodeValidator } from './schema';
+import { LanguageCode } from './schema';
 import { getStreakBonusMultiplier } from './userStreakFunctions';
 
 /* ------------------- XP constants & helpers ------------------- */
@@ -39,12 +33,12 @@ export const getExperienceForActivity = async ({
 		userId: Id<'users'>;
 		languageCode: LanguageCode;
 		isManuallyTracked?: boolean;
-		durationInMinutes?: number;
+		durationInMs?: number;
 		occurredAt?: number;
 	};
 }): Promise<number> => {
-	const { durationInMinutes } = args;
-	const minutes = Math.max(0, Math.round(durationInMinutes ?? 0));
+	const { durationInMs } = args;
+	const minutes = Math.max(0, Math.floor((durationInMs ?? 0) / 60000));
 	if (minutes <= 0) return 0;
 
 	const when = args.occurredAt ?? Date.now();
@@ -54,23 +48,24 @@ export const getExperienceForActivity = async ({
 	// Sum total minutes already recorded for this user today
 	const activitiesOnThisDay = await ctx.db
 		.query('userTargetLanguageActivities')
-		.withIndex('by_user_and_occurred', (q) =>
-			q
-				.eq('userId', args.userId)
-				.gte('occurredAt', dayStart)
-				.lte('occurredAt', dayEnd)
-		)
+		.withIndex('by_user', (q) => q.eq('userId', args.userId))
+		.filter((q) => q.and(
+			q.gte(q.field('_creationTime'), dayStart),
+			q.lte(q.field('_creationTime'), dayEnd)
+		))
 		.collect();
-	const totalMinutesToday = activitiesOnThisDay.reduce(
-		(sum: number, userTargetLanguageActivity: any) => {
-			const ms = Math.max(
-				0,
-				Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
-			);
-			return sum + Math.floor(ms / 60000);
-		},
-		0
-	);
+	const totalMinutesToday = activitiesOnThisDay
+		.filter((userTargetLanguageActivity: any) => !((userTargetLanguageActivity as any).isDeleted))
+		.reduce(
+			(sum: number, userTargetLanguageActivity: any) => {
+				const ms = Math.max(
+					0,
+					Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
+				);
+				return sum + Math.floor(ms / 60000);
+			},
+			0
+		);
 
 	// Subtract this entry's minutes if it was already inserted before this query
 	const priorMinutes = Math.max(0, totalMinutesToday - minutes);
@@ -91,7 +86,7 @@ export const addExperience = async ({
 		deltaExperience: number;
 		languageActivityId?: Id<'userTargetLanguageActivities'>;
 		isApplyingStreakBonus?: boolean;
-		durationInMinutes?: number;
+		durationInMs?: number;
 	};
 }): Promise<{
 	userTargetLanguageId: Id<'userTargetLanguages'>;
@@ -129,7 +124,7 @@ export const addExperience = async ({
 	// Base delta and multipliers
 	const baseDelta = Math.floor(args.deltaExperience ?? 0);
 	let finalDelta = baseDelta;
-	const multipliers: Array<{ type: 'streak'; value: number }> = [];
+	const multipliers: Array<{ type: 'streak'; value: number; }> = [];
 
 	if (args.isApplyingStreakBonus) {
 		const value: number = await getStreakBonusMultiplier(ctx, userId);
@@ -142,14 +137,14 @@ export const addExperience = async ({
 		deltaExperience: finalDelta,
 	});
 
-	// Update minutes only
-	if (args.durationInMinutes && args.durationInMinutes > 0) {
-		const currentTotalMinutes = Math.floor(
-			((userTargetLanguage as any).totalMsLearning ?? 0) / 60000
+	// Update totalMsLearning directly if provided
+	if (args.durationInMs && args.durationInMs > 0) {
+		const currentTotalMs = Math.floor(
+			((userTargetLanguage as any).totalMsLearning ?? 0)
 		);
-		const newTotalMinutes = currentTotalMinutes + args.durationInMinutes;
+		const newTotalMs = Math.max(0, currentTotalMs + Math.floor(args.durationInMs));
 		await ctx.db.patch(userTargetLanguage._id, {
-			totalMsLearning: newTotalMinutes * 60000,
+			totalMsLearning: newTotalMs,
 		});
 	}
 

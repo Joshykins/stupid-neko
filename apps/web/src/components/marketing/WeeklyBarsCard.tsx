@@ -40,8 +40,8 @@ export function WeeklyBarsCard() {
 	const chartConfig = {
 		youtube: { label: 'YouTube', color: 'var(--color-source-youtube-soft)' },
 		spotify: { label: 'Spotify', color: 'var(--color-source-spotify-soft)' },
-		anki: { label: 'Anki', color: 'var(--color-source-anki-soft)' },
-		misc: { label: 'Misc', color: 'var(--color-source-misc-soft)' },
+		website: { label: 'Website', color: 'var(--color-source-website-soft)' },
+		manual: { label: 'Manual', color: 'var(--color-source-misc-soft)' },
 	} as const;
 
 	// Real data when authenticated, else fallback to demo
@@ -50,13 +50,13 @@ export function WeeklyBarsCard() {
 		{}
 	);
 	const demoData = [
-		{ day: 'Mon', youtube: 60, spotify: 35, anki: 20, misc: 10 },
-		{ day: 'Tue', youtube: 40, spotify: 28, anki: 26, misc: 12 },
-		{ day: 'Wed', youtube: 30, spotify: 22, anki: 18, misc: 8 },
-		{ day: 'Thu', youtube: 55, spotify: 26, anki: 24, misc: 10 },
-		{ day: 'Fri', youtube: 42, spotify: 25, anki: 20, misc: 9 },
-		{ day: 'Sat', youtube: 24, spotify: 14, anki: 16, misc: 6 },
-		{ day: 'Sun', youtube: 36, spotify: 20, anki: 18, misc: 7 },
+		{ day: 'Mon', youtube: 60, spotify: 35, website: 20, manual: 10 },
+		{ day: 'Tue', youtube: 40, spotify: 28, website: 26, manual: 12 },
+		{ day: 'Wed', youtube: 30, spotify: 22, website: 18, manual: 8 },
+		{ day: 'Thu', youtube: 55, spotify: 26, website: 24, manual: 10 },
+		{ day: 'Fri', youtube: 42, spotify: 25, website: 20, manual: 9 },
+		{ day: 'Sat', youtube: 24, spotify: 14, website: 16, manual: 6 },
+		{ day: 'Sun', youtube: 36, spotify: 20, website: 18, manual: 7 },
 	];
 	const data = React.useMemo(() => {
 		if (weekly && weekly.length === 7) return weekly;
@@ -69,8 +69,8 @@ export function WeeklyBarsCard() {
 			const total =
 				(Number((d as any).youtube) || 0) +
 				(Number((d as any).spotify) || 0) +
-				(Number((d as any).anki) || 0) +
-				(Number((d as any).misc) || 0);
+				(Number((d as any).website) || 0) +
+				(Number((d as any).manual) || 0);
 			return { ...d, __total: total } as any;
 		});
 		const max = Math.max(0, ...withTotals.map((d: any) => d.__total));
@@ -147,13 +147,13 @@ export function WeeklyBarsCard() {
 							radius={[2, 2, 0, 0]}
 						/>
 						<Bar
-							dataKey="anki"
+							dataKey="website"
 							stackId="a"
-							fill="var(--color-source-anki-soft)"
+							fill="var(--color-source-website-soft)"
 							radius={[2, 2, 0, 0]}
 						/>
 						<Bar
-							dataKey="misc"
+							dataKey="manual"
 							stackId="a"
 							fill="var(--color-source-misc-soft)"
 							radius={[2, 2, 0, 0]}

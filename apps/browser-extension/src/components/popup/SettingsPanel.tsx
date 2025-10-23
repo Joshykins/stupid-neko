@@ -36,7 +36,7 @@ export function SettingsPanel({
 							Integration Key
 						</span>
 					</IconButton>
-					<IconButton
+					{/* <IconButton
 						title="Widget Settings"
 						onClick={() => onTabChange('widget')}
 						selected={settingsTab === 'widget'}
@@ -44,7 +44,7 @@ export function SettingsPanel({
 						<span className="snbex:text-[11px] snbex:font-semibold">
 							Widget
 						</span>
-					</IconButton>
+					</IconButton> */}
 				</>
 			)}
 		</div>

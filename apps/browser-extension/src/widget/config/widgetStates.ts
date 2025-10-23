@@ -6,92 +6,122 @@ import type { WidgetState } from '../../pages/background/providers/types';
 export interface WidgetStateConfig {
 	state: WidgetState['state'];
 	visibility: 'visible' | 'hidden';
-	expandable: boolean;
-	showTimer: boolean;
-	showControls: boolean;
-	requiresUserInteraction: boolean;
+	// Expands the widget(if not already) if its visible
+	openOnLoad: boolean;
+	// Should force the widget to be expanded is no longer closable.
+	forceAlwaysExpanded: boolean;
+	// Whether the widget is tracking content.
+	isTracking: boolean;
 }
 
 export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 	'determining-provider': {
 		state: 'determining-provider',
 		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
+		openOnLoad: false,
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
-	'default-provider-idle': {
-		state: 'default-provider-idle',
+	'website-provider-idle': {
+		state: 'website-provider-idle',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: false,
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
-	'default-provider-awaiting-consent': {
-		state: 'default-provider-awaiting-consent',
+	// New website provider states
+	'website-provider-idle-detected': {
+		state: 'website-provider-idle-detected',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
-	'default-provider-tracking': {
-		state: 'default-provider-tracking',
+	'website-provider-always-track-question': {
+		state: 'website-provider-always-track-question',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: true,
-		showControls: true,
-		requiresUserInteraction: false
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
-	'default-provider-prompt-user-for-track': {
-		state: 'default-provider-prompt-user-for-track',
+	'website-provider-tracking': {
+		state: 'website-provider-tracking',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: true
+	},
+
+	'website-provider-tracking-stopped': {
+		state: 'website-provider-tracking-stopped',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
+	},
+
+	'website-provider-not-tracking': {
+		state: 'website-provider-not-tracking',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
+	},
+
+
+	'youtube-tracking-unverified': {
+		state: 'youtube-tracking-unverified',
+		visibility: 'hidden',
+		openOnLoad: false,
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
 	'youtube-not-tracking': {
 		state: 'youtube-not-tracking',
 		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
+		openOnLoad: false,
+		forceAlwaysExpanded: false,
+		isTracking: false
 	},
 
-	'youtube-tracking-unverified': {
-		state: 'youtube-tracking-unverified',
-		visibility: 'hidden',
-		expandable: false,
-		showTimer: false,
-		showControls: false,
-		requiresUserInteraction: false
-	},
 
 	'youtube-tracking-verified': {
 		state: 'youtube-tracking-verified',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: true,
-		showControls: true,
-		requiresUserInteraction: false
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: true
+	},
+
+	// New: YouTube provider stopped state
+	'youtube-provider-tracking-stopped': {
+		state: 'youtube-provider-tracking-stopped',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
+	},
+
+	// New: Content blocked by policy
+	'content-blocked': {
+		state: 'content-blocked',
+		visibility: 'visible',
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false,
 	},
 
 	'error': {
 		state: 'error',
 		visibility: 'visible',
-		expandable: true,
-		showTimer: false,
-		showControls: true,
-		requiresUserInteraction: true
+		openOnLoad: true,
+		forceAlwaysExpanded: false,
+		isTracking: false
 	}
 };
 

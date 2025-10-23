@@ -5,7 +5,7 @@ import { callBackground } from '../../messaging/messagesContentRouter';
 
 // Infer types from Convex functions
 type MeFromIntegration = FunctionReturnType<
-	typeof api.browserExtensionFunctions.meFromIntegration
+	typeof api.browserExtension.browserExtensionCoreFunctions.meFromIntegration
 >;
 
 // AuthMe should match the structure returned by browser extension functions
@@ -59,7 +59,7 @@ export function useAuth(): AuthState {
 
 		// Re-fetch when integrationId changes in storage
 		const onStorageChange = (
-			changes: { [key: string]: chrome.storage.StorageChange },
+			changes: { [key: string]: chrome.storage.StorageChange; },
 			area: string
 		) => {
 			if (
@@ -73,13 +73,19 @@ export function useAuth(): AuthState {
 		};
 		try {
 			chrome.storage.onChanged.addListener(onStorageChange);
-		} catch {}
+		} catch {
+			/* noop */
+			void 0;
+		}
 
 		return () => {
 			mounted = false;
 			try {
 				chrome.storage.onChanged.removeListener(onStorageChange);
-			} catch {}
+			} catch {
+				/* noop */
+				void 0;
+			}
 		};
 	}, []);
 

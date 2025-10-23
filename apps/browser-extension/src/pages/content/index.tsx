@@ -2,9 +2,10 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import TrackingWidget from '../../widget/TrackingWidget';
 import styles from './content.css?inline';
+import { createLogger } from '../../lib/logger';
+const log = createLogger('content', 'widget:ui');
 
 import './provider-runtime'; // Initialize provider runtime
-console.debug('[content] Provider runtime initialized');
 
 // Declare Tailwind CSS browser global
 declare global {
@@ -31,7 +32,9 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'italic', weight: '100 900' }
 			);
 			faces.push(pjItalic);
-		} catch { }
+		} catch {
+			/* noop */
+		}
 		try {
 			const baloo = new FontFace(
 				'Baloo 2',
@@ -39,14 +42,19 @@ async function loadFontsUsingFontFace(): Promise<void> {
 				{ style: 'normal', weight: '400 800' }
 			);
 			faces.push(baloo);
-		} catch { }
+		} catch {
+			/* noop */
+		}
 		const loads = faces.map(f => f.load());
 		const loaded = await Promise.all(loads);
 		loaded.forEach(f => {
 			document.fonts.add(f);
 		});
-		document.documentElement.classList.add('sn-fonts-ready');
-	} catch { }
+		// Avoid mutating the host page's <html> to prevent React hydration mismatches
+		// Previously: document.documentElement.classList.add('sn-fonts-ready');
+	} catch {
+		/* noop */
+	}
 }
 
 function WidgetGate() {
@@ -106,6 +114,14 @@ host.id = '__stupid-neko-host';
 document.body.appendChild(host);
 const shadow = host.attachShadow({ mode: 'open' });
 
+// Ensure the host and portal sit above page content
+(host as HTMLElement).style.position = 'fixed';
+(host as HTMLElement).style.top = '0';
+(host as HTMLElement).style.left = '0';
+(host as HTMLElement).style.width = '0';
+(host as HTMLElement).style.height = '0';
+(host as HTMLElement).style.zIndex = '2147483647';
+
 // Shadow root children: style, app root, and portal root for Radix
 const appRoot = document.createElement('div');
 appRoot.id = '__stupid-neko-root';
@@ -115,6 +131,10 @@ portalRoot.id = '__stupid-neko-portal';
 	portalRoot;
 // Ensure overlays are interactive even if CSS isn't loaded yet
 portalRoot.style.pointerEvents = 'auto';
+portalRoot.style.position = 'fixed';
+portalRoot.style.top = '0';
+portalRoot.style.left = '0';
+portalRoot.style.zIndex = '2147483647';
 shadow.appendChild(appRoot);
 shadow.appendChild(portalRoot);
 //REM fix
@@ -129,7 +149,7 @@ shadow.adoptedStyleSheets = [sheet];
 
 // Initialize the app
 async function initializeApp() {
-	await loadFontsUsingFontFace().catch(() => { });
+	await loadFontsUsingFontFace().catch(() => { /* noop */ });
 
 	// Wait a bit for CSS to load
 	await new Promise(resolve => setTimeout(resolve, 100));
@@ -146,5 +166,5 @@ async function initializeApp() {
 }
 
 // Start the app
-console.debug('[content] Content script loaded and initializing...');
+log.info('Content script loaded and initializing...');
 initializeApp();

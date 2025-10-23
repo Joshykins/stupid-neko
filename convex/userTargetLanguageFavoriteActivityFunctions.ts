@@ -12,7 +12,7 @@ export const createFavorite = mutation({
 		title: v.string(),
 		description: v.optional(v.string()),
 		externalUrl: v.optional(v.string()),
-		defaultDurationInMinutes: v.optional(v.number()),
+		defaultDurationInMs: v.optional(v.number()),
 	},
 	returns: v.object({
 		favoriteId: v.id('userTargetLanguageFavoriteActivities'),
@@ -37,7 +37,7 @@ export const createFavorite = mutation({
 				// store canonical ms
 				defaultDurationInMs: Math.max(
 					0,
-					Math.round((args.defaultDurationInMinutes ?? 10) * 60 * 1000)
+					Math.round(args.defaultDurationInMs ?? 10 * 60 * 1000)
 				),
 				createdFromLanguageActivityId: undefined,
 				usageCount: 0,
@@ -59,7 +59,7 @@ export const listFavorites = query({
 			title: v.string(),
 			description: v.optional(v.string()),
 			externalUrl: v.optional(v.string()),
-			defaultDurationInMinutes: v.optional(v.number()),
+			defaultDurationInMs: v.optional(v.number()),
 			createdFromLanguageActivityId: v.optional(
 				v.id('userTargetLanguageActivities')
 			),
@@ -94,10 +94,7 @@ export const listFavorites = query({
 			createdFromLanguageActivityId: f.createdFromLanguageActivityId,
 			usageCount: f.usageCount,
 			lastUsedAt: f.lastUsedAt,
-			defaultDurationInMinutes:
-				typeof f.defaultDurationInMs === 'number'
-					? Math.max(0, Math.round(f.defaultDurationInMs / 1000 / 60))
-					: undefined,
+			defaultDurationInMs: f.defaultDurationInMs,
 		}));
 		return mapped as unknown as Array<{
 			_id: Id<'userTargetLanguageFavoriteActivities'>;
@@ -107,10 +104,10 @@ export const listFavorites = query({
 			title: string;
 			description?: string | undefined;
 			externalUrl?: string | undefined;
-			defaultDurationInMinutes?: number | undefined;
+			defaultDurationInMs?: number | undefined;
 			createdFromLanguageActivityId?:
-				| Id<'userTargetLanguageActivities'>
-				| undefined;
+			| Id<'userTargetLanguageActivities'>
+			| undefined;
 			usageCount?: number | undefined;
 			lastUsedAt?: number | undefined;
 		}>;
@@ -129,7 +126,7 @@ export const listFavoritesPaginated = query({
 				title: v.string(),
 				description: v.optional(v.string()),
 				externalUrl: v.optional(v.string()),
-				defaultDurationInMinutes: v.optional(v.number()),
+				defaultDurationInMs: v.optional(v.number()),
 				createdFromLanguageActivityId: v.optional(
 					v.id('userTargetLanguageActivities')
 				),
@@ -173,10 +170,7 @@ export const listFavoritesPaginated = query({
 			createdFromLanguageActivityId: f.createdFromLanguageActivityId,
 			usageCount: f.usageCount,
 			lastUsedAt: f.lastUsedAt,
-			defaultDurationInMinutes:
-				typeof f.defaultDurationInMs === 'number'
-					? Math.max(0, Math.round(f.defaultDurationInMs / 1000 / 60))
-					: undefined,
+			defaultDurationInMs: f.defaultDurationInMs,
 		}));
 
 		return {
@@ -188,10 +182,10 @@ export const listFavoritesPaginated = query({
 				title: string;
 				description?: string | undefined;
 				externalUrl?: string | undefined;
-				defaultDurationInMinutes?: number | undefined;
+				defaultDurationInMs?: number | undefined;
 				createdFromLanguageActivityId?:
-					| Id<'userTargetLanguageActivities'>
-					| undefined;
+				| Id<'userTargetLanguageActivities'>
+				| undefined;
 				usageCount?: number | undefined;
 				lastUsedAt?: number | undefined;
 			}>,
@@ -217,7 +211,11 @@ export const listManualActivitiesWithFavoriteMatch = query({
 				durationInSeconds: v.optional(v.number()),
 				occurredAt: v.optional(v.number()),
 				userTargetLanguageId: v.id('userTargetLanguages'),
-				isManuallyTracked: v.optional(v.boolean()),
+				source: v.union(
+					v.literal('manual'),
+					v.literal('browser-extension-youtube-provider'),
+					v.literal('browser-extension-website-provider')
+				),
 				matchedFavoriteId: v.optional(
 					v.id('userTargetLanguageFavoriteActivities')
 				),
@@ -239,7 +237,7 @@ export const listManualActivitiesWithFavoriteMatch = query({
 			durationInSeconds?: number;
 			occurredAt?: number;
 			userTargetLanguageId: Id<'userTargetLanguages'>;
-			isManuallyTracked?: boolean;
+			source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
 			matchedFavoriteId?: Id<'userTargetLanguageFavoriteActivities'>;
 		};
 		const page: Array<ManualActivityRow> = [];
@@ -264,9 +262,9 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		while (page.length < pageLimit) {
 			const q = ctx.db
 				.query('userTargetLanguageActivities')
-				.withIndex('by_user_and_occurred', q =>
+				.withIndex('by_user', q => 
 					typeof cursor === 'number'
-						? q.eq('userId', userId).lt('occurredAt', cursor)
+						? q.eq('userId', userId).lt('_creationTime', cursor)
 						: q.eq('userId', userId)
 				)
 				.order('desc');
@@ -275,9 +273,9 @@ export const listManualActivitiesWithFavoriteMatch = query({
 				break;
 			}
 			for (const it of batch) {
-				const occurredAt = it.occurredAt ?? it._creationTime;
+				const occurredAt =  it._creationTime;
 				cursor = occurredAt;
-				if (!it.isManuallyTracked) continue;
+				if (it.source !== 'manual') continue;
 
 				// Check if this activity matches an existing favorite by title
 				const title = (it.title ?? '').trim();
@@ -297,7 +295,7 @@ export const listManualActivitiesWithFavoriteMatch = query({
 					),
 					occurredAt,
 					userTargetLanguageId: it.userTargetLanguageId,
-					isManuallyTracked: it.isManuallyTracked,
+					source: it.source,
 					matchedFavoriteId,
 				});
 				if (page.length >= pageLimit) break;
@@ -328,7 +326,7 @@ export const addFavoriteFromActivity = mutation({
 		const act = await ctx.db.get(args.activityId);
 		if (!act) throw new Error('Activity not found');
 		if (act.userId !== userId) throw new Error('Forbidden');
-		if (!act.isManuallyTracked)
+		if (act.source !== 'manual')
 			throw new Error('Only manual activities can be favorited');
 
 		const utlId = act.userTargetLanguageId as Id<'userTargetLanguages'>;
@@ -380,7 +378,7 @@ export const updateFavorite = mutation({
 		title: v.optional(v.string()),
 		description: v.optional(v.string()),
 		externalUrl: v.optional(v.string()),
-		defaultDurationInMinutes: v.optional(v.number()),
+		defaultDurationInMs: v.optional(v.number()),
 	},
 	returns: v.object({ updated: v.boolean() }),
 	handler: async (ctx, args) => {
@@ -401,10 +399,10 @@ export const updateFavorite = mutation({
 			patch.description = args.description;
 		if (typeof args.externalUrl !== 'undefined')
 			patch.externalUrl = args.externalUrl;
-		if (typeof args.defaultDurationInMinutes !== 'undefined')
+		if (typeof args.defaultDurationInMs !== 'undefined')
 			patch.defaultDurationInMs = Math.max(
 				0,
-				Math.round(args.defaultDurationInMinutes * 60 * 1000)
+				Math.round(args.defaultDurationInMs)
 			);
 
 		await ctx.db.patch(args.favoriteId, patch);

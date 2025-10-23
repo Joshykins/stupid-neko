@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import { internalAction, internalMutation } from '../_generated/server';
 import * as YouTubeProcessing from './integrations/youtubeProcessing';
+import * as WebsiteProcessing from './integrations/websiteProcessing';
 import dayjs from '../../lib/dayjs';
 import { tryCatch } from '../../lib/tryCatch';
 import { languageCodeValidator } from '../schema';
@@ -22,6 +23,8 @@ const contentLabelPatchValidator = v.object({
 	fullDurationInMs: v.optional(v.number()),
 	contentLanguageCode: v.optional(languageCodeValidator),
 	languageEvidence: v.optional(v.array(v.string())),
+	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)),
+	geminiLanguageEvidence: v.optional(v.string()),
 });
 
 
@@ -60,14 +63,14 @@ export const processContentLabelTransaction = internalMutation({
 				updatedAt: now,
 			});
 
-			// Schedule cleanup of activities for users with mismatched target languages
+			// Update language activities when labeling completes
 			if (args.patch?.contentLanguageCode) {
 				// Get the contentKey from the label
 				const label = await ctx.db.get(args.contentLabelId);
 				if (label?.contentKey) {
 					await ctx.scheduler.runAfter(
 						0,
-						internal.labelingEngine.contentLabelFunctions.cleanActivitiesForLabel,
+						internal.userTargetLanguageActivityFunctions.updateLanguageActivitiesForContentLabel,
 						{
 							contentKey: label.contentKey,
 							contentLanguageCode: args.patch.contentLanguageCode,
@@ -144,6 +147,8 @@ export const processOneContentLabel = internalAction({
 				fullDurationInMs?: number;
 				contentLanguageCode?: 'en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr';
 				languageEvidence?: string[];
+				isAboutTargetLanguages?: ('en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr')[];
+				geminiLanguageEvidence?: string;
 			};
 			error?: string;
 		};
@@ -153,6 +158,11 @@ export const processOneContentLabel = internalAction({
 				switch (source) {
 					case 'youtube':
 						return await YouTubeProcessing.processYouTubeContentLabel(
+							ctx,
+							{ contentLabelId: args.contentLabelId }
+						);
+					case 'website':
+						return await WebsiteProcessing.processWebsiteContentLabel(
 							ctx,
 							{ contentLabelId: args.contentLabelId }
 						);

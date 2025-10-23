@@ -176,6 +176,9 @@ function TopNavContent() {
 											<Link href="/account">My account</Link>
 										</DropdownMenuItem>
 										<DropdownMenuItem asChild>
+											<Link href="/account/content-policies">Content policies</Link>
+										</DropdownMenuItem>
+										<DropdownMenuItem asChild>
 											<Link href="/dashboard">Dashboard</Link>
 										</DropdownMenuItem>
 										<DropdownMenuSeparator />
