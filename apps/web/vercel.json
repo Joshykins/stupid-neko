@@ -2,5 +2,5 @@
   "buildCommand": "cd ../.. && pnpm turbo build --filter=web",
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
-  "rootDirectory": "apps/web"
+  "outputDirectory": ".next"
 }

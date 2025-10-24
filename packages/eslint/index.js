@@ -5,6 +5,7 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import unusedImports from 'eslint-plugin-unused-imports';
 import prettier from 'eslint-config-prettier';
+import nextPlugin from '@next/eslint-plugin-next';
 
 export default [
 	js.configs.recommended,
@@ -53,6 +54,17 @@ export default [
 			react: {
 				version: 'detect',
 			},
+		},
+	},
+	// Next.js specific configuration
+	{
+		files: ['**/apps/web/**/*.{js,jsx,ts,tsx}'],
+		plugins: {
+			'@next/next': nextPlugin,
+		},
+		rules: {
+			...nextPlugin.configs.recommended.rules,
+			...nextPlugin.configs['core-web-vitals'].rules,
 		},
 	},
 	prettier,
