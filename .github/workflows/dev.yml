@@ -57,7 +57,8 @@ jobs:
           echo "Testing Infisical connection..."
           echo "Token starts with: ${INFISICAL_TOKEN_DEV:0:10}..."
           echo "Project ID: $INFISICAL_PROJECT_ID"
-          pnpm pull-env:dev
+          echo "Running: tsx scripts/pull-env.ts dev"
+          tsx scripts/pull-env.ts dev
         env:
           INFISICAL_TOKEN_DEV: ${{ secrets.INFISICAL_TOKEN_DEV }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
