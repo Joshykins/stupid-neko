@@ -22,6 +22,7 @@ const DEBUG =
 	!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0';
 
 function log(scope: string, message: string, color: ChalkColor = 'cyan'): void {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const tag = (chalk as any)[color](`[${scope}]`);
 	console.log(`${tag} ${message}`);
 }
@@ -34,7 +35,9 @@ function fail(scope: string, message: string): never {
 function ensureDir(path: string): void {
 	try {
 		mkdirSync(path, { recursive: true });
-	} catch {}
+	} catch {
+		// Ignore errors - directory might already exist
+	}
 }
 
 function readEnv(name: string): string | null {
@@ -42,7 +45,7 @@ function readEnv(name: string): string | null {
 	return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
-function detectConvexDeployment(stage: Stage): string | null {
+function detectConvexDeployment(_stage: Stage): string | null {
 	// Only respect explicit env to avoid CLI compatibility issues
 	const explicit = readEnv('CONVEX_DEPLOYMENT');
 	if (explicit) return explicit;
@@ -55,19 +58,25 @@ function getInfisicalToken(stage: Stage): string | null {
 		stage === 'production' ? 'INFISICAL_TOKEN_PROD' : 'INFISICAL_TOKEN_DEV'
 	);
 	const fallback = readEnv('INFISICAL_TOKEN');
-	
+
 	// Debug logging (hide secrets)
 	console.log(`[DEBUG] Looking for token for stage: ${stage}`);
-	console.log(`[DEBUG] INFISICAL_TOKEN_${stage === 'production' ? 'PROD' : 'DEV'} exists: ${!!perStage}`);
+	console.log(
+		`[DEBUG] INFISICAL_TOKEN_${stage === 'production' ? 'PROD' : 'DEV'} exists: ${!!perStage}`
+	);
 	console.log(`[DEBUG] INFISICAL_TOKEN fallback exists: ${!!fallback}`);
 	if (perStage) {
-		console.log(`[DEBUG] Using ${stage === 'production' ? 'PROD' : 'DEV'} token, starts with: ${perStage.substring(0, 10)}...`);
+		console.log(
+			`[DEBUG] Using ${stage === 'production' ? 'PROD' : 'DEV'} token, starts with: ${perStage.substring(0, 10)}...`
+		);
 	} else if (fallback) {
-		console.log(`[DEBUG] Using fallback token, starts with: ${fallback.substring(0, 10)}...`);
+		console.log(
+			`[DEBUG] Using fallback token, starts with: ${fallback.substring(0, 10)}...`
+		);
 	} else {
 		console.log(`[DEBUG] No token found for stage ${stage}`);
 	}
-	
+
 	return perStage || fallback;
 }
 
@@ -78,9 +87,11 @@ function exportSecretsMap(
 	const projectId =
 		readEnv('INFISICAL_PROJECT_ID') || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
-	
+
 	// Debug logging for project ID
-	console.log(`[DEBUG] Project ID from env: ${readEnv('INFISICAL_PROJECT_ID') ? 'YES' : 'NO'}`);
+	console.log(
+		`[DEBUG] Project ID from env: ${readEnv('INFISICAL_PROJECT_ID') ? 'YES' : 'NO'}`
+	);
 	console.log(`[DEBUG] Using project ID: ${projectId.substring(0, 8)}...`);
 	console.log(`[DEBUG] Token available: ${!!token}`);
 	// Build args; prefer explicit project and token to avoid cross-account confusion
@@ -143,6 +154,7 @@ function exportSecretsMap(
 		// Expected format is an object mapping key -> value
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const [k, v] of Object.entries(parsed as Record<string, any>)) {
 				map[String(k)] = String(v ?? '');
 			}
@@ -151,6 +163,7 @@ function exportSecretsMap(
 		// Fallback: array of { key, value }
 		if (Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const item of parsed as Array<any>) {
 				const k = String(item?.key ?? item?.secretKey ?? '');
 				if (!k) continue;
@@ -194,12 +207,14 @@ function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
 		const parsed = JSON.parse(String(res.stdout || '').trim());
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const [k, v] of Object.entries(parsed as Record<string, any>))
 				map[String(k)] = String(v ?? '');
 			return map;
 		}
 		if (Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const item of parsed as Array<any>) {
 				const k = String(item?.key ?? item?.secretKey ?? '');
 				if (!k) continue;
@@ -213,7 +228,7 @@ function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
 	}
 }
 
-function parseSlugList(value: string | null, defaults: string[]): string[] {
+function _parseSlugList(value: string | null, defaults: string[]): string[] {
 	const list = (value || '')
 		.split(',')
 		.map(s => s.trim())
@@ -229,6 +244,7 @@ function exportSecretsMapTryTags(
 	const matched: Array<{ slug: string; count: number }> = [];
 	const aggregate: StringMap = {};
 	for (const slug of slugs) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const map = exportSecretsMap(stage, slug as any);
 		const count = Object.keys(map).length;
 		matched.push({ slug, count });
@@ -247,7 +263,7 @@ function exportSecretsMapTryTags(
 	return { map: aggregate, matched };
 }
 
-function exportSecretsMapTryPaths(
+function _exportSecretsMapTryPaths(
 	stage: Stage,
 	paths: string[],
 	label: string
@@ -406,20 +422,33 @@ async function main(): Promise<void> {
 			`Usage: tsx scripts/pull-env.ts <dev|production> [--debug]`
 		);
 	}
-	if (debugFlag) (globalThis as any).PULL_ENV_DEBUG = '1';
+	if (debugFlag) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(globalThis as any).PULL_ENV_DEBUG = '1';
+	}
 	if (!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0') {
 		log('pull-env', 'Debug mode enabled', 'yellow');
 	}
-	
+
 	// Debug environment variables
 	console.log(`[DEBUG] === Environment Variables Debug ===`);
 	console.log(`[DEBUG] Stage: ${stage}`);
-	console.log(`[DEBUG] INFISICAL_TOKEN_DEV exists: ${!!readEnv('INFISICAL_TOKEN_DEV')}`);
-	console.log(`[DEBUG] INFISICAL_TOKEN_PROD exists: ${!!readEnv('INFISICAL_TOKEN_PROD')}`);
-	console.log(`[DEBUG] INFISICAL_TOKEN exists: ${!!readEnv('INFISICAL_TOKEN')}`);
-	console.log(`[DEBUG] INFISICAL_PROJECT_ID exists: ${!!readEnv('INFISICAL_PROJECT_ID')}`);
+	console.log(
+		`[DEBUG] INFISICAL_TOKEN_DEV exists: ${!!readEnv('INFISICAL_TOKEN_DEV')}`
+	);
+	console.log(
+		`[DEBUG] INFISICAL_TOKEN_PROD exists: ${!!readEnv('INFISICAL_TOKEN_PROD')}`
+	);
+	console.log(
+		`[DEBUG] INFISICAL_TOKEN exists: ${!!readEnv('INFISICAL_TOKEN')}`
+	);
+	console.log(
+		`[DEBUG] INFISICAL_PROJECT_ID exists: ${!!readEnv('INFISICAL_PROJECT_ID')}`
+	);
 	if (readEnv('INFISICAL_PROJECT_ID')) {
-		console.log(`[DEBUG] INFISICAL_PROJECT_ID value: ${readEnv('INFISICAL_PROJECT_ID')?.substring(0, 8)}...`);
+		console.log(
+			`[DEBUG] INFISICAL_PROJECT_ID value: ${readEnv('INFISICAL_PROJECT_ID')?.substring(0, 8)}...`
+		);
 	}
 	console.log(`[DEBUG] ======================================`);
 

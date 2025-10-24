@@ -168,22 +168,42 @@ export default [
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
-  // Global ignores (workspace level)
-  {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'build/**',
-      '.next/**',
-      'coverage/**',
-      '*.config.js',
-      '*.config.mjs',
-      // Do not lint built browser extension output
-      'apps/browser-extension/dist_chrome/**',
-      // Do not lint Next.js build output
-      'apps/web/.next/**',
-      'apps/web/next-env.d.ts',
-      'apps/web/.next/types/**',
-    ],
-  },
+        // Script files (Node.js context)
+        {
+          files: ['scripts/**/*.{js,ts}'],
+          languageOptions: {
+            globals: {
+              process: 'readonly',
+              console: 'readonly',
+              __dirname: 'readonly',
+              __filename: 'readonly',
+              module: 'readonly',
+              require: 'readonly',
+              Buffer: 'readonly',
+              global: 'readonly',
+              globalThis: 'readonly',
+            },
+          },
+          rules: {
+            'no-console': 'off', // Allow console in scripts
+          },
+        },
+        // Global ignores (workspace level)
+        {
+          ignores: [
+            'node_modules/**',
+            'dist/**',
+            'build/**',
+            '.next/**',
+            'coverage/**',
+            '*.config.js',
+            '*.config.mjs',
+            // Do not lint built browser extension output
+            'apps/browser-extension/dist_chrome/**',
+            // Do not lint Next.js build output
+            'apps/web/.next/**',
+            'apps/web/next-env.d.ts',
+            'apps/web/.next/types/**',
+          ],
+        },
 ];
