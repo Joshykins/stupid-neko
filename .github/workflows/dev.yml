@@ -46,8 +46,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Debug secrets availability
+        run: |
+          echo "INFISICAL_TOKEN_DEV exists: ${{ secrets.INFISICAL_TOKEN_DEV != '' }}"
+          echo "INFISICAL_TOKEN_DEV length: ${{ length(secrets.INFISICAL_TOKEN_DEV) }}"
+          echo "INFISICAL_PROJECT_ID exists: ${{ secrets.INFISICAL_PROJECT_ID != '' }}"
+          echo "INFISICAL_PROJECT_ID value: ${{ secrets.INFISICAL_PROJECT_ID }}"
+
       - name: Pull environment variables (dev)
-        run: pnpm pull-env:dev
+        run: |
+          echo "Testing Infisical connection..."
+          echo "Token starts with: ${INFISICAL_TOKEN_DEV:0:10}..."
+          echo "Project ID: $INFISICAL_PROJECT_ID"
+          pnpm pull-env:dev
         env:
           INFISICAL_TOKEN_DEV: ${{ secrets.INFISICAL_TOKEN_DEV }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
