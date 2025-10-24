@@ -162,7 +162,7 @@ export default function LevelExperienceInfo({
 								content={(props: {
 									active?: boolean;
 									payload?: Array<{ payload: BucketPoint }>;
-									label?: string;
+									label?: string | number;
 								}) => (
 									<ChartTooltipContent
 										{...props}
