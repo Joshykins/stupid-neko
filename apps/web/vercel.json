@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm build --filter=web",
+  "buildCommand": "cd ../.. && pnpm turbo build --filter=web",
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
   "framework": "nextjs"
 }

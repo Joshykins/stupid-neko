@@ -58,12 +58,12 @@ jobs:
 
       - name: Deploy Convex (prod)
         run: |
-          npx convex deploy --cmd 'pnpm build' --cmd-url-env-var-name CONVEX_URL --prod
+          npx convex deploy --cmd 'pnpm turbo build --filter=backend' --cmd-url-env-var-name CONVEX_URL --prod
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
       - name: Build browser extension
-        run: pnpm build:extension
+        run: pnpm turbo build --filter=browser-extension
 
       - name: Upload Chrome extension artifact
         uses: actions/upload-artifact@v4
@@ -81,11 +81,33 @@ jobs:
 
       - name: Deploy to Vercel (production)
         run: |
-          # Copy workspace files to apps/web for Vercel monorepo support
-          cp pnpm-lock.yaml apps/web/
-          cp pnpm-workspace.yaml apps/web/
-          cp package.json apps/web/workspace-package.json
+          # Create a standalone package.json for Vercel with resolved dependencies
           cd apps/web
+          # Create a temporary package.json with resolved versions instead of catalog:
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            
+            // Replace catalog: entries with actual versions
+            const resolvedDeps = {};
+            for (const [name, version] of Object.entries(pkg.dependencies)) {
+              if (version.startsWith('catalog:')) {
+                // Use a reasonable default version for catalog entries
+                if (name === 'react' || name === 'react-dom') {
+                  resolvedDeps[name] = '^18.0.0';
+                } else if (name === 'typescript') {
+                  resolvedDeps[name] = '^5.0.0';
+                } else {
+                  resolvedDeps[name] = 'latest';
+                }
+              } else {
+                resolvedDeps[name] = version;
+              }
+            }
+            
+            pkg.dependencies = resolvedDeps;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
           npx vercel@latest deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }}
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
