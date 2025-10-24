@@ -59,23 +59,6 @@ function getInfisicalToken(stage: Stage): string | null {
 	);
 	const fallback = readEnv('INFISICAL_TOKEN');
 
-	// Debug logging (hide secrets)
-	console.log(`[DEBUG] Looking for token for stage: ${stage}`);
-	console.log(
-		`[DEBUG] INFISICAL_TOKEN_${stage === 'production' ? 'PROD' : 'DEV'} exists: ${!!perStage}`
-	);
-	console.log(`[DEBUG] INFISICAL_TOKEN fallback exists: ${!!fallback}`);
-	if (perStage) {
-		console.log(
-			`[DEBUG] Using ${stage === 'production' ? 'PROD' : 'DEV'} token, starts with: ${perStage.substring(0, 10)}...`
-		);
-	} else if (fallback) {
-		console.log(
-			`[DEBUG] Using fallback token, starts with: ${fallback.substring(0, 10)}...`
-		);
-	} else {
-		console.log(`[DEBUG] No token found for stage ${stage}`);
-	}
 
 	return perStage || fallback;
 }
@@ -88,12 +71,6 @@ function exportSecretsMap(
 		readEnv('INFISICAL_PROJECT_ID') || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
 
-	// Debug logging for project ID
-	console.log(
-		`[DEBUG] Project ID from env: ${readEnv('INFISICAL_PROJECT_ID') ? 'YES' : 'NO'}`
-	);
-	console.log(`[DEBUG] Using project ID: ${projectId.substring(0, 8)}...`);
-	console.log(`[DEBUG] Token available: ${!!token}`);
 	// Build args; prefer explicit project and token to avoid cross-account confusion
 	const args = [
 		'export',
@@ -131,15 +108,10 @@ function exportSecretsMap(
 	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length)
 		displayArgs[tokenIdx + 1] = '***';
 	log('infisical', chalk.gray(`infisical ${displayArgs.join(' ')}`));
-	console.log(`[DEBUG] About to run: infisical ${displayArgs.join(' ')}`);
-	console.log(`[DEBUG] Full command args: ${JSON.stringify(args)}`);
 	const res = spawnSync('infisical', args, {
 		stdio: ['ignore', 'pipe', 'pipe'],
 		encoding: 'utf8',
 	});
-	console.log(`[DEBUG] Infisical exit code: ${res.status}`);
-	console.log(`[DEBUG] Infisical stdout length: ${(res.stdout || '').length}`);
-	console.log(`[DEBUG] Infisical stderr length: ${(res.stderr || '').length}`);
 	if (res.status !== 0) {
 		const stderr = (res.stderr || '').trim();
 		if (!token) {
@@ -435,30 +407,6 @@ async function main(): Promise<void> {
 		log('pull-env', 'Debug mode enabled', 'yellow');
 	}
 
-	// Debug environment variables
-	console.log(`[DEBUG] === Environment Variables Debug ===`);
-	console.log(`[DEBUG] Stage: ${stage}`);
-	console.log(
-		`[DEBUG] INFISICAL_TOKEN_DEV exists: ${!!readEnv('INFISICAL_TOKEN_DEV')}`
-	);
-	console.log(
-		`[DEBUG] INFISICAL_TOKEN_PROD exists: ${!!readEnv('INFISICAL_TOKEN_PROD')}`
-	);
-	console.log(
-		`[DEBUG] INFISICAL_TOKEN exists: ${!!readEnv('INFISICAL_TOKEN')}`
-	);
-	console.log(
-		`[DEBUG] INFISICAL_PROJECT_ID exists: ${!!readEnv('INFISICAL_PROJECT_ID')}`
-	);
-	if (readEnv('INFISICAL_PROJECT_ID')) {
-		console.log(
-			`[DEBUG] INFISICAL_PROJECT_ID value: ${readEnv('INFISICAL_PROJECT_ID')?.substring(0, 8)}...`
-		);
-	}
-	console.log(`[DEBUG] Node version: ${process.version}`);
-	console.log(`[DEBUG] Platform: ${process.platform}`);
-	console.log(`[DEBUG] Working directory: ${process.cwd()}`);
-	console.log(`[DEBUG] ======================================`);
 
 	log(
 		'pull-env',
