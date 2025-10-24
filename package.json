@@ -23,6 +23,7 @@
 		"prebuild": "node scripts/check-pnpm.js",
 		"start": "turbo run start",
 		"build:extension": "turbo run build --filter=browser-extension",
+		"build:web": "turbo run build --filter=web",
 		"prestart": "node scripts/check-pnpm.js",
 		"lint": "turbo run lint",
 		"lint:fix": "eslint . --fix",
