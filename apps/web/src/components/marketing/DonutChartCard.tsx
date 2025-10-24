@@ -87,7 +87,8 @@ export function DonutChartCard() {
 										const key = item?.payload?.key as keyof typeof chartConfig;
 
 										const label =
-											(chartConfig as Record<string, { label: string; }>)[key]?.label || item?.name;
+											(chartConfig as Record<string, { label: string }>)[key]
+												?.label || item?.name;
 										const value = (item?.payload?.value ?? item?.value) as
 											| number
 											| undefined;
