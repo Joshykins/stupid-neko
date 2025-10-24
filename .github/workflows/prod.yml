@@ -82,7 +82,9 @@ jobs:
       - name: Deploy to Vercel (production)
         run: |
           pnpm turbo build --filter=web
-          pnpm turbo vercel deploy --filter=web --prod
+          cd apps/web
+          npx vercel@latest deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }}
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
