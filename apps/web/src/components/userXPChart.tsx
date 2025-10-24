@@ -3,15 +3,7 @@
 import { useQuery } from 'convex/react';
 import { Rocket } from 'lucide-react';
 import * as React from 'react';
-import {
-	Area,
-	AreaChart,
-	CartesianGrid,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { api } from '../../../../convex/_generated/api';
 import { useCountUp } from '../lib/useCountUp';
 import { Badge } from './ui/badge';
@@ -78,7 +70,7 @@ export default function UserXPChart({
 		isLiveVersion ? ({ range } as { range: Range }) : 'skip'
 	);
 	const gradientRawId = React.useId();
-	const gradientId = React.useMemo(
+	const _gradientId = React.useMemo(
 		() => `xpGradient_${gradientRawId.replace(/:/g, '')}`,
 		[gradientRawId]
 	);
@@ -155,15 +147,18 @@ export default function UserXPChart({
 						/>
 						<ChartTooltip
 							content={
+								// eslint-disable-next-line @typescript-eslint/no-explicit-any
 								((props: any) => (
 									<ChartTooltipContent
 										{...props}
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
 										labelFormatter={(value: any) => String(value)}
 										formatter={(v: number) => [
 											`${Number(v).toLocaleString()} XP`,
 											'',
 										]}
 									/>
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 								)) as any
 							}
 						/>

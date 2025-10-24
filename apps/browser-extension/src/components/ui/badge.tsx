@@ -15,7 +15,8 @@ const badgeVariants = cva(
 				dark: 'snbex:bg-background snbex:text-foreground',
 				card: 'snbex:bg-foreground snbex:text-main-foreground',
 				white: 'snbex:bg-white/40 snbex:text-background',
-				devOnly: 'snbex:bg-dev-only snbex:text-background data-[dev-hidden=true]:snbex:hidden',
+				devOnly:
+					'snbex:bg-dev-only snbex:text-background data-[dev-hidden=true]:snbex:hidden',
 			},
 		},
 		defaultVariants: {
@@ -27,9 +28,9 @@ const badgeVariants = cva(
 const Badge = React.forwardRef<
 	React.ElementRef<'span'>,
 	React.ComponentPropsWithoutRef<'span'> &
-	VariantProps<typeof badgeVariants> & {
-		asChild?: boolean;
-	}
+		VariantProps<typeof badgeVariants> & {
+			asChild?: boolean;
+		}
 >(({ className, variant, asChild = false, ...props }, ref) => {
 	const Comp = asChild ? Slot : 'span';
 	const devHidden =

@@ -51,15 +51,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	const widgetState = useWidgetState();
 	const userInfo = useUserInfo(props);
 	useWidgetActions();
-	const {
-		position,
-		controls,
-		dragMovedRef,
-		onDragStart,
-		onDrag,
-		onDragEnd,
-	} = useWidgetPosition();
-
+	const { position, controls, dragMovedRef, onDragStart, onDrag, onDragEnd } =
+		useWidgetPosition();
 
 	// Calculate optimal popover side based on widget position
 	const popoverSide = useMemo(() => {
@@ -74,7 +67,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	//Widget state config
 	const config = getWidgetStateConfig(widgetState.state);
 	// Check if we're in dangerous testing mode
-	const isDangerousTesting = import.meta.env.VITE_DANGEROUS_TESTING === 'enabled';
+	const isDangerousTesting =
+		import.meta.env.VITE_DANGEROUS_TESTING === 'enabled';
 
 	useEffect(() => {
 		try {
@@ -92,7 +86,10 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// Update timer every second when tracking; pause while tab is hidden
 	useEffect(() => {
 		// Show timer for tracking states
-		const trackingStates = ['website-provider-tracking', 'youtube-tracking-verified'];
+		const trackingStates = [
+			'website-provider-tracking',
+			'youtube-tracking-verified',
+		];
 		if (trackingStates.includes(widgetState.state) && widgetState.startTime) {
 			const interval = setInterval(() => {
 				if (document.visibilityState !== 'visible') return;
@@ -132,14 +129,12 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 	// 	}
 	// }, [isDragging, widgetState, expanded]);
 
-
 	// Auth/me state from background
-
 
 	// Enhanced drag handlers with popover management
 	const handleDrag = (
 		_e: unknown,
-		info: { offset: { x: number; y: number; }; }
+		info: { offset: { x: number; y: number } }
 	) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
@@ -153,7 +148,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	const handleDragEnd = (
 		_e: unknown,
-		info: { offset: { x: number; y: number; }; }
+		info: { offset: { x: number; y: number } }
 	) => {
 		// Temporarily suppress the immediate click that can fire after drag release
 		suppressNextClickRef.current = true;
@@ -182,9 +177,7 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 		if (!widgetState) {
 			// Default content when no state is provided
-			return (
-				<>Problems loading widget</>
-			);
+			return <>Problems loading widget</>;
 		}
 
 		switch (widgetState.state) {
@@ -313,7 +306,6 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 			className={`snbex:pointer-events-auto snbex:select-none snbex:transition-opacity ${hovered ? 'snbex:opacity-100' : 'snbex:opacity-70'}`}
 			onMouseEnter={() => setHovered(true)}
 			onMouseLeave={() => setHovered(false)}
-
 			drag
 			dragMomentum={false}
 			dragElastic={0}
@@ -334,8 +326,12 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 				}
 			}}
 			// Prevent click immediately after drag to avoid unintended popover open
-			onClickCapture={(e) => {
-				if (suppressNextClickRef.current || dragMovedRef.current || isDragging) {
+			onClickCapture={e => {
+				if (
+					suppressNextClickRef.current ||
+					dragMovedRef.current ||
+					isDragging
+				) {
 					suppressNextClickRef.current = false;
 					e.preventDefault();
 					e.stopPropagation();
@@ -358,7 +354,8 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 				<img
 					src={iconUrl}
 					alt="stupid-neko"
-					className={cn("snbex:h-10 snbex:w-10 snbex:rounded-full snbex:border-2 snbex:border-black snbex:shadow-[4px_4px_0_0_#000] snbex:bg-white",
+					className={cn(
+						'snbex:h-10 snbex:w-10 snbex:rounded-full snbex:border-2 snbex:border-black snbex:shadow-[4px_4px_0_0_#000] snbex:bg-white',
 						// Make black and white if not tracking
 						!config.isTracking ? 'snbex:grayscale-75' : ''
 					)}
@@ -371,10 +368,13 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 						display: 'block',
 					}}
 				/>
-				<span className={cn("snbex:absolute snbex:right-2 snbex:top-2 snbex:inline-flex snbex:items-center snbex:justify-center transition-opacity duration-300",
-					// Make black and white if not tracking
-					!config.isTracking ? 'snbex:opacity-0' : 'snbex:opacity-100'
-				)}>
+				<span
+					className={cn(
+						'snbex:absolute snbex:right-2 snbex:top-2 snbex:inline-flex snbex:items-center snbex:justify-center transition-opacity duration-300',
+						// Make black and white if not tracking
+						!config.isTracking ? 'snbex:opacity-0' : 'snbex:opacity-100'
+					)}
+				>
 					<span className="snbex:absolute snbex:h-2 snbex:w-2 snbex:rounded-full snbex:bg-red-500" />
 					<span className="snbex:absolute snbex:h-5 snbex:w-5 snbex:rounded-full snbex:bg-red-500/40" />
 				</span>
@@ -400,17 +400,9 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 
 	log.debug('expanded', expanded);
 	return (
-		<Popover
-			open={expanded}
-			onOpenChange={handleOpenChange}
-		>
-			<PopoverTrigger asChild>
-				{WidgetContainer}
-			</PopoverTrigger>
-			<PopoverContent
-				side={popoverSide}
-				className='snbex:p-4 snbex:relative'
-			>
+		<Popover open={expanded} onOpenChange={handleOpenChange}>
+			<PopoverTrigger asChild>{WidgetContainer}</PopoverTrigger>
+			<PopoverContent side={popoverSide} className="snbex:p-4 snbex:relative">
 				{/* Minimize button - only show if not forceAlwaysExpanded */}
 				{!getWidgetStateConfig(widgetState.state).forceAlwaysExpanded && (
 					<IconButton
@@ -427,4 +419,3 @@ export default function TrackingWidget(props: TrackingWidgetProps) {
 		</Popover>
 	);
 }
-

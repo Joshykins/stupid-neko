@@ -1,6 +1,5 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import { api, internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { dangerousTestingEnabled, getEffectiveNow } from './utils';
 import { addLanguageActivity } from './userTargetLanguageActivityFunctions';
@@ -76,13 +75,12 @@ export const stepDevDate = mutation({
 
 		await ctx.db.patch(userId, { devDate: next } as any);
 
-
 		await nudgeUserStreak({
 			ctx,
 			args: {
 				userId,
 				now: next,
-			}
+			},
 		});
 
 		if (args.seedEachStep) {
@@ -101,11 +99,11 @@ export const stepDevDate = mutation({
 				const weights =
 					sum > 0
 						? {
-							manual: pm / sum,
-							youtube: py / sum,
-							spotify: ps / sum,
-							anki: pa / sum,
-						}
+								manual: pm / sum,
+								youtube: py / sum,
+								spotify: ps / sum,
+								anki: pa / sum,
+							}
 						: { manual: 0.25, youtube: 0.25, spotify: 0.25, anki: 0.25 };
 
 				// Helper to sample a source by weight
@@ -158,10 +156,14 @@ export const stepDevDate = mutation({
 											: ['other'],
 							userTargetLanguageId:
 								userTargetLanguageId as Id<'userTargetLanguages'>,
-							source: source === 'manual' ? 'manual' : 
-								   source === 'youtube' ? 'browser-extension-youtube-provider' :
-								   source === 'spotify' ? 'browser-extension-website-provider' :
-								   'browser-extension-website-provider',
+							source:
+								source === 'manual'
+									? 'manual'
+									: source === 'youtube'
+										? 'browser-extension-youtube-provider'
+										: source === 'spotify'
+											? 'browser-extension-website-provider'
+											: 'browser-extension-website-provider',
 						},
 					});
 				}
@@ -219,11 +221,11 @@ export const seedAtDevDate = mutation({
 		const weights =
 			sum > 0
 				? {
-					manual: pm / sum,
-					youtube: py / sum,
-					spotify: ps / sum,
-					anki: pa / sum,
-				}
+						manual: pm / sum,
+						youtube: py / sum,
+						spotify: ps / sum,
+						anki: pa / sum,
+					}
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
@@ -266,10 +268,14 @@ export const seedAtDevDate = mutation({
 									: ['other'],
 					userTargetLanguageId:
 						userTargetLanguageId as Id<'userTargetLanguages'>,
-					source: source === 'manual' ? 'manual' : 
-						   source === 'youtube' ? 'browser-extension-youtube-provider' :
-						   source === 'spotify' ? 'browser-extension-website-provider' :
-						   'browser-extension-website-provider',
+					source:
+						source === 'manual'
+							? 'manual'
+							: source === 'youtube'
+								? 'browser-extension-youtube-provider'
+								: source === 'spotify'
+									? 'browser-extension-website-provider'
+									: 'browser-extension-website-provider',
 				},
 			});
 
@@ -328,11 +334,11 @@ export const seedToTargetAtDevDate = mutation({
 		const weights =
 			sum > 0
 				? {
-					manual: pm / sum,
-					youtube: py / sum,
-					spotify: ps / sum,
-					anki: pa / sum,
-				}
+						manual: pm / sum,
+						youtube: py / sum,
+						spotify: ps / sum,
+						anki: pa / sum,
+					}
 				: { manual: 1, youtube: 0, spotify: 0, anki: 0 };
 
 		function pickSource() {
@@ -384,10 +390,14 @@ export const seedToTargetAtDevDate = mutation({
 									: ['other'],
 					userTargetLanguageId:
 						userTargetLanguageId as Id<'userTargetLanguages'>,
-					source: source === 'manual' ? 'manual' : 
-						   source === 'youtube' ? 'browser-extension-youtube-provider' :
-						   source === 'spotify' ? 'browser-extension-website-provider' :
-						   'browser-extension-website-provider',
+					source:
+						source === 'manual'
+							? 'manual'
+							: source === 'youtube'
+								? 'browser-extension-youtube-provider'
+								: source === 'spotify'
+									? 'browser-extension-website-provider'
+									: 'browser-extension-website-provider',
 				},
 			});
 
@@ -417,7 +427,6 @@ export const resetMyDevState = mutation({
 		for (const a of activities) {
 			await ctx.db.delete(a._id);
 		}
-
 
 		// 2) Delete experience records for the user
 		const exps = await ctx.db

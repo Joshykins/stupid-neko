@@ -10,117 +10,117 @@ import { useMemo, useState, useEffect } from 'react';
 // Universal encouragements (work for all languages)
 const universalEncouragements = [
 	// Cat-themed encouragements
-	"Keep it up, nya!",
+	'Keep it up, nya!',
 	"You're doing great, kitty!",
-	"Purr-fect progress!",
-	"Meow-velous work!",
-	"Paws-itively amazing!",
-	"Claw-some dedication!",
-	"Fur-tastic effort!",
-	"Cat-ching up nicely!",
-	"Whisker-licking good!",
-	"Tail-wagging progress!",
+	'Purr-fect progress!',
+	'Meow-velous work!',
+	'Paws-itively amazing!',
+	'Claw-some dedication!',
+	'Fur-tastic effort!',
+	'Cat-ching up nicely!',
+	'Whisker-licking good!',
+	'Tail-wagging progress!',
 
 	// Language learning themed
-	"Keep learning!",
+	'Keep learning!',
 	"You're getting better!",
-	"Amazing progress!",
-	"Stay consistent!",
-	"Every day counts!",
+	'Amazing progress!',
+	'Stay consistent!',
+	'Every day counts!',
 	"You're on fire!",
-	"Keep the momentum!",
-	"Fantastic work!",
+	'Keep the momentum!',
+	'Fantastic work!',
 	"Don't give up!",
 	"You've got this!",
 
 	// Playful mixed
-	"Learning like a pro!",
-	"Crushing it!",
-	"On fire today!",
-	"Absolutely killing it!",
-	"Unstoppable!",
-	"Rocking it!",
-	"Slaying the game!",
-	"Boss mode activated!",
-	"Legendary effort!",
-	"Champion status!",
+	'Learning like a pro!',
+	'Crushing it!',
+	'On fire today!',
+	'Absolutely killing it!',
+	'Unstoppable!',
+	'Rocking it!',
+	'Slaying the game!',
+	'Boss mode activated!',
+	'Legendary effort!',
+	'Champion status!',
 ];
 
 // Japanese-specific encouragements
 const japaneseEncouragements = [
-	"Ganbatte!",
-	"Sugoi!",
-	"Yoku yatta!",
-	"Tsuzukete!",
-	"Otsukaresama!",
-	"Keep it up, neko!",
-	"Yatta!",
-	"Subarashii!",
-	"Keep going, nya!",
-	"Omedetou!",
+	'Ganbatte!',
+	'Sugoi!',
+	'Yoku yatta!',
+	'Tsuzukete!',
+	'Otsukaresama!',
+	'Keep it up, neko!',
+	'Yatta!',
+	'Subarashii!',
+	'Keep going, nya!',
+	'Omedetou!',
 ];
 
 // Various content labels for different learning activities
 const contentLabels = [
 	// Reading activities
-	"Read to learn",
-	"Study with books",
-	"Read articles",
-	"Practice reading",
-	"Dive into texts",
-	"Explore literature",
-	"Read manga",
-	"Study newspapers",
-	"Read blogs",
-	"Practice kanji",
+	'Read to learn',
+	'Study with books',
+	'Read articles',
+	'Practice reading',
+	'Dive into texts',
+	'Explore literature',
+	'Read manga',
+	'Study newspapers',
+	'Read blogs',
+	'Practice kanji',
 
 	// Watching activities
-	"Watch videos",
-	"Watch anime",
-	"Watch shows",
-	"Watch movies",
-	"Watch tutorials",
-	"Watch documentaries",
-	"Watch streams",
-	"Watch lessons",
-	"Watch content",
-	"Study with videos",
+	'Watch videos',
+	'Watch anime',
+	'Watch shows',
+	'Watch movies',
+	'Watch tutorials',
+	'Watch documentaries',
+	'Watch streams',
+	'Watch lessons',
+	'Watch content',
+	'Study with videos',
 
 	// Listening activities
-	"Listen to music",
-	"Listen to podcasts",
-	"Listen to audiobooks",
-	"Listen to radio",
-	"Practice listening",
-	"Listen to conversations",
-	"Study with audio",
-	"Listen to news",
-	"Practice pronunciation",
-	"Listen to stories",
+	'Listen to music',
+	'Listen to podcasts',
+	'Listen to audiobooks',
+	'Listen to radio',
+	'Practice listening',
+	'Listen to conversations',
+	'Study with audio',
+	'Listen to news',
+	'Practice pronunciation',
+	'Listen to stories',
 
 	// Interactive activities
-	"Play games",
-	"Use flashcards",
-	"Practice speaking",
-	"Chat with natives",
-	"Join conversations",
-	"Practice writing",
-	"Take quizzes",
-	"Solve puzzles",
-	"Practice grammar",
-	"Use language apps",
+	'Play games',
+	'Use flashcards',
+	'Practice speaking',
+	'Chat with natives',
+	'Join conversations',
+	'Practice writing',
+	'Take quizzes',
+	'Solve puzzles',
+	'Practice grammar',
+	'Use language apps',
 
 	// General learning
-	"Learn actively",
-	"Study daily",
-	"Practice regularly",
-	"Immerse yourself",
-	"Keep learning",
-	"Stay consistent",
-	"Build habits",
-	"Track progress",
-	"Stay motivated",
-	"Enjoy the journey",
+	'Learn actively',
+	'Study daily',
+	'Practice regularly',
+	'Immerse yourself',
+	'Keep learning',
+	'Stay consistent',
+	'Build habits',
+	'Track progress',
+	'Stay motivated',
+	'Enjoy the journey',
 ];
 
 interface MainViewProps {
@@ -145,7 +145,10 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 	// Calculate XP progress
 	const experienceTowardsNextLevel = progress?.experienceTowardsNextLevel || 0;
 	const nextLevelXp = progress?.nextLevelXp || 1;
-	const xpPercent = Math.min(100, Math.round((experienceTowardsNextLevel / nextLevelXp) * 100));
+	const xpPercent = Math.min(
+		100,
+		Math.round((experienceTowardsNextLevel / nextLevelXp) * 100)
+	);
 	const displayedXpPercent = isMounted ? xpPercent : 0;
 	const xpString = `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`;
 
@@ -156,7 +159,9 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 			? [...universalEncouragements, ...japaneseEncouragements]
 			: universalEncouragements;
 
-		return availableEncouragements[Math.floor(Math.random() * availableEncouragements.length)];
+		return availableEncouragements[
+			Math.floor(Math.random() * availableEncouragements.length)
+		];
 	}, [auth.me?.languageCode]);
 
 	// Get a random content label that changes on each render
@@ -189,11 +194,7 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 			{auth.isAuthed && (
 				<div className="snbex:w-full snbex:flex snbex:flex-col snbex:items-start snbex:gap-3">
 					<div className="snbex:text-xl snbex:font-bold snbex:leading-snug">
-						Hey{' '}
-						<span className="snbex:font-black">
-							{auth.me?.name}
-						</span>
-						!{' '}
+						Hey <span className="snbex:font-black">{auth.me?.name}</span>!{' '}
 						<span className="snbex:opacity-80 snbex:font-semibold">
 							{encouragement}
 						</span>
@@ -203,9 +204,14 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 					{progress && !progressLoading && (
 						<div className="snbex:w-full snbex:flex snbex:gap-4 snbex:items-baseline">
 							<div className="snbex:shadow-shadow snbex:border-border snbex:border-2 snbex:rounded-base snbex:mt-2 snbex:p-2">
-								<div className="snbex:font-semibold snbex:text-xs">Tracked Hours</div>
+								<div className="snbex:font-semibold snbex:text-xs">
+									Tracked Hours
+								</div>
 								<div className="snbex:text-2xl snbex:font-bold snbex:text-main-foreground">
-									{Math.floor(((progress.totalMsLearning || 0) / 1000 / 60 / 60) * 10) / 10} hrs
+									{Math.floor(
+										((progress.totalMsLearning || 0) / 1000 / 60 / 60) * 10
+									) / 10}{' '}
+									hrs
 								</div>
 							</div>
 							<div className="snbex:flex-1">
@@ -228,8 +234,11 @@ export function MainView({ onOpenSettings }: MainViewProps) {
 						<span className="snbex:font-semibold snbex:italic">
 							{contentLabel}
 						</span>{' '}
-						to learn <span className="snbex:font-black">{languageLabel || 'Japanese'}</span>!
-
+						to learn{' '}
+						<span className="snbex:font-black">
+							{languageLabel || 'Japanese'}
+						</span>
+						!
 					</div>
 				</div>
 			)}

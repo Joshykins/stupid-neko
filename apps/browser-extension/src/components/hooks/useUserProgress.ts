@@ -29,9 +29,9 @@ export function useUserProgress() {
 			try {
 				setLoading(true);
 				setError(null);
-				
+
 				const result = await callBackground('GET_USER_PROGRESS', {});
-				
+
 				if (result.success && result.data) {
 					setProgress(result.data);
 				} else {

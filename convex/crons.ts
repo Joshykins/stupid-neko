@@ -5,8 +5,6 @@ import { internalAction } from './_generated/server';
 
 const crons = cronJobs();
 
-
-
 // Hourly vacation enforcement via streak nudge mimicking TestingComponent behavior
 export const hourlyNudge = internalAction({
 	args: {},
@@ -20,10 +18,13 @@ export const hourlyNudge = internalAction({
 		const batch = users.slice(0, 250);
 		for (const u of batch) {
 			const now = (u as any).devDate ?? Date.now();
-			await ctx.runMutation(internal.userStreakFunctions.nudgeUserStreakMutation, {
-				userId: u._id,
-				now,
-			});
+			await ctx.runMutation(
+				internal.userStreakFunctions.nudgeUserStreakMutation,
+				{
+					userId: u._id,
+					now,
+				}
+			);
 		}
 		return null;
 	},
@@ -33,12 +34,13 @@ export const hourlyNudge = internalAction({
 export const processStaleActivities = internalAction({
 	args: {},
 	returns: v.null(),
-	handler: async (ctx) => {
+	handler: async ctx => {
 		const batchSize = 250;
 		console.log(`Processing stale activities at ${Date.now()}`);
-		
+
 		const staleActivities = await ctx.runQuery(
-			internal.userTargetLanguageActivityFunctions.listStaleInProgressActivities,
+			internal.userTargetLanguageActivityFunctions
+				.listStaleInProgressActivities,
 			{ batchSize }
 		);
 
@@ -51,13 +53,15 @@ export const processStaleActivities = internalAction({
 				internal.userTargetLanguageActivityFunctions.processStaleActivity,
 				{ activityId: activity._id }
 			);
-			
+
 			if (result.action === 'completed') completed++;
 			else if (result.action === 'deleted') deleted++;
 			else skipped++;
 		}
 
-		console.log(`Processed ${staleActivities.length} stale activities: ${completed} completed, ${deleted} deleted, ${skipped} skipped`);
+		console.log(
+			`Processed ${staleActivities.length} stale activities: ${completed} completed, ${deleted} deleted, ${skipped} skipped`
+		);
 		return null;
 	},
 });
@@ -73,6 +77,13 @@ crons.interval(
 	'process stale activities',
 	{ minutes: 1 },
 	internal.crons.processStaleActivities,
+	{}
+);
+
+crons.interval(
+	'poll spotify listening',
+	{ seconds: 60 },
+	internal.spotifyActions.pollAllUsers,
 	{}
 );
 

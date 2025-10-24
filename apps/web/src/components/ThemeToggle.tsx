@@ -14,14 +14,18 @@ export function ThemeToggle() {
 				return;
 			}
 			setTheme('light'); // default brand look
-		} catch {}
+		} catch {
+			// Ignore localStorage errors
+		}
 	}, []);
 
 	React.useEffect(() => {
 		try {
 			document.documentElement.dataset.theme = theme;
 			localStorage.setItem('theme', theme);
-		} catch {}
+		} catch {
+			// ignore errors
+		}
 	}, [theme]);
 
 	const toggle = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));

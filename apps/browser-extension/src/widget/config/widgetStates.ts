@@ -20,7 +20,7 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		visibility: 'hidden',
 		openOnLoad: false,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
 	},
 
 	'website-provider-idle': {
@@ -28,7 +28,7 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		visibility: 'visible',
 		openOnLoad: false,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
 	},
 
 	// New website provider states
@@ -53,7 +53,7 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
-		isTracking: true
+		isTracking: true,
 	},
 
 	'website-provider-tracking-stopped': {
@@ -72,13 +72,12 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		isTracking: false,
 	},
 
-
 	'youtube-tracking-unverified': {
 		state: 'youtube-tracking-unverified',
 		visibility: 'hidden',
 		openOnLoad: false,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
 	},
 
 	'youtube-not-tracking': {
@@ -86,16 +85,15 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		visibility: 'hidden',
 		openOnLoad: false,
 		forceAlwaysExpanded: false,
-		isTracking: false
+		isTracking: false,
 	},
-
 
 	'youtube-tracking-verified': {
 		state: 'youtube-tracking-verified',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
-		isTracking: true
+		isTracking: true,
 	},
 
 	// New: YouTube provider stopped state
@@ -116,17 +114,18 @@ export const WIDGET_STATES: Record<WidgetState['state'], WidgetStateConfig> = {
 		isTracking: false,
 	},
 
-	'error': {
+	error: {
 		state: 'error',
 		visibility: 'visible',
 		openOnLoad: true,
 		forceAlwaysExpanded: false,
-		isTracking: false
-	}
+		isTracking: false,
+	},
 };
 
 // Single getter function that returns the full config object
-export function getWidgetStateConfig(state: WidgetState['state']): WidgetStateConfig {
+export function getWidgetStateConfig(
+	state: WidgetState['state']
+): WidgetStateConfig {
 	return WIDGET_STATES[state] || WIDGET_STATES['error'];
 }
-

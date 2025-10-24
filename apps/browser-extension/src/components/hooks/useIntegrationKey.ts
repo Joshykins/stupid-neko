@@ -41,7 +41,7 @@ export function useIntegrationKey() {
 				// Refresh auth state with timeout
 				const response = await new Promise<{
 					ok: boolean;
-					auth?: { isAuthed: boolean; me: unknown; };
+					auth?: { isAuthed: boolean; me: unknown };
 				}>((resolve, reject) => {
 					const timeout = setTimeout(() => {
 						reject(

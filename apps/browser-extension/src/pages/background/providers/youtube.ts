@@ -31,7 +31,7 @@ const getVideo = (): HTMLVideoElement | null => {
 		'video',
 		'#movie_player video',
 		'#player video',
-		'.html5-video-player video'
+		'.html5-video-player video',
 	];
 
 	for (const selector of selectors) {
@@ -130,7 +130,9 @@ const attach = (p: HTMLVideoElement): void => {
 			emit('start');
 			try {
 				const videoId = getCurrentVideoId();
-				const key = videoId ? `snbex_youtube_baseline_${videoId}` : 'snbex_youtube_baseline';
+				const key = videoId
+					? `snbex_youtube_baseline_${videoId}`
+					: 'snbex_youtube_baseline';
 				const startCT = Math.floor(p.currentTime || 0);
 				const payload = { startCT, startTS: Date.now() } as const;
 				localStorage.setItem(key, JSON.stringify(payload));
@@ -231,7 +233,6 @@ const watchForVideo = (): void => {
 		attach(p);
 	}
 };
-
 
 // Public API for content script
 export const youtubeContentHandler: ContentHandler = {

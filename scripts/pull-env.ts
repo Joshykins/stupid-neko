@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import chalk from 'chalk';
@@ -22,6 +22,7 @@ const DEBUG =
 	!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0';
 
 function log(scope: string, message: string, color: ChalkColor = 'cyan'): void {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const tag = (chalk as any)[color](`[${scope}]`);
 	console.log(`${tag} ${message}`);
 }
@@ -34,7 +35,9 @@ function fail(scope: string, message: string): never {
 function ensureDir(path: string): void {
 	try {
 		mkdirSync(path, { recursive: true });
-	} catch {}
+	} catch {
+		// Ignore errors - directory might already exist
+	}
 }
 
 function readEnv(name: string): string | null {
@@ -42,7 +45,7 @@ function readEnv(name: string): string | null {
 	return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
 }
 
-function detectConvexDeployment(stage: Stage): string | null {
+function detectConvexDeployment(_stage: Stage): string | null {
 	// Only respect explicit env to avoid CLI compatibility issues
 	const explicit = readEnv('CONVEX_DEPLOYMENT');
 	if (explicit) return explicit;
@@ -54,7 +57,9 @@ function getInfisicalToken(stage: Stage): string | null {
 	const perStage = readEnv(
 		stage === 'production' ? 'INFISICAL_TOKEN_PROD' : 'INFISICAL_TOKEN_DEV'
 	);
-	return perStage || readEnv('INFISICAL_TOKEN');
+	const fallback = readEnv('INFISICAL_TOKEN');
+
+	return perStage || fallback;
 }
 
 function exportSecretsMap(
@@ -64,6 +69,7 @@ function exportSecretsMap(
 	const projectId =
 		readEnv('INFISICAL_PROJECT_ID') || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
+
 	// Build args; prefer explicit project and token to avoid cross-account confusion
 	const args = [
 		'export',
@@ -124,6 +130,7 @@ function exportSecretsMap(
 		// Expected format is an object mapping key -> value
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const [k, v] of Object.entries(parsed as Record<string, any>)) {
 				map[String(k)] = String(v ?? '');
 			}
@@ -132,6 +139,7 @@ function exportSecretsMap(
 		// Fallback: array of { key, value }
 		if (Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const item of parsed as Array<any>) {
 				const k = String(item?.key ?? item?.secretKey ?? '');
 				if (!k) continue;
@@ -175,12 +183,14 @@ function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
 		const parsed = JSON.parse(String(res.stdout || '').trim());
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const [k, v] of Object.entries(parsed as Record<string, any>))
 				map[String(k)] = String(v ?? '');
 			return map;
 		}
 		if (Array.isArray(parsed)) {
 			const map: StringMap = {};
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			for (const item of parsed as Array<any>) {
 				const k = String(item?.key ?? item?.secretKey ?? '');
 				if (!k) continue;
@@ -194,7 +204,7 @@ function exportSecretsMapByPath(stage: Stage, pathValue: string): StringMap {
 	}
 }
 
-function parseSlugList(value: string | null, defaults: string[]): string[] {
+function _parseSlugList(value: string | null, defaults: string[]): string[] {
 	const list = (value || '')
 		.split(',')
 		.map(s => s.trim())
@@ -210,6 +220,7 @@ function exportSecretsMapTryTags(
 	const matched: Array<{ slug: string; count: number }> = [];
 	const aggregate: StringMap = {};
 	for (const slug of slugs) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const map = exportSecretsMap(stage, slug as any);
 		const count = Object.keys(map).length;
 		matched.push({ slug, count });
@@ -228,7 +239,7 @@ function exportSecretsMapTryTags(
 	return { map: aggregate, matched };
 }
 
-function exportSecretsMapTryPaths(
+function _exportSecretsMapTryPaths(
 	stage: Stage,
 	paths: string[],
 	label: string
@@ -387,7 +398,10 @@ async function main(): Promise<void> {
 			`Usage: tsx scripts/pull-env.ts <dev|production> [--debug]`
 		);
 	}
-	if (debugFlag) (globalThis as any).PULL_ENV_DEBUG = '1';
+	if (debugFlag) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(globalThis as any).PULL_ENV_DEBUG = '1';
+	}
 	if (!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0') {
 		log('pull-env', 'Debug mode enabled', 'yellow');
 	}

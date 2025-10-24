@@ -111,6 +111,7 @@ export const UnreleasedBanner = ({ className }: { className?: string }) => {
 				'bg-slate-900 border-main !shadow-[4px_4px_0px_0px_var(--main)] p-4 relative overflow-hidden',
 				className
 			)}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			style={{ ['--card-bg' as any]: 'oklch(0.2441 0.0096 34.94)' }}
 		>
 			{stars.map((p, index) => (

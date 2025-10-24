@@ -1,5 +1,9 @@
-import type { LanguageCode } from "../../schema";
-import { callGeminiWithStructuredOutput, createLanguageDetectionConfig, type GeminiInput } from "./geminiUtils";
+import type { LanguageCode } from '../../schema';
+import {
+	callGeminiWithStructuredOutput,
+	createLanguageDetectionConfig,
+	type GeminiInput,
+} from './geminiUtils';
 
 // Type definitions for Gemini API structured output
 export type GeminiLanguageDetection = {
@@ -27,21 +31,21 @@ export type GeminiDetectionResult = {
 // Map detected language codes to our supported LanguageCode type
 function mapToSupportedLanguageCode(langCode: string): LanguageCode | null {
 	const langMap: Record<string, LanguageCode> = {
-		'en': 'en',
-		'es': 'es',
-		'fr': 'fr',
-		'de': 'de',
-		'it': 'it',
-		'pt': 'pt',
-		'ru': 'ru',
-		'ja': 'ja',
-		'ko': 'ko',
-		'zh': 'zh',
+		en: 'en',
+		es: 'es',
+		fr: 'fr',
+		de: 'de',
+		it: 'it',
+		pt: 'pt',
+		ru: 'ru',
+		ja: 'ja',
+		ko: 'ko',
+		zh: 'zh',
 		'zh-CN': 'zh',
 		'zh-TW': 'zh',
-		'ar': 'ar',
-		'hi': 'hi',
-		'tr': 'tr',
+		ar: 'ar',
+		hi: 'hi',
+		tr: 'tr',
 	};
 	return langMap[langCode] || null;
 }
@@ -58,7 +62,6 @@ export async function detectLanguageWithGemini(
 		title: input.title,
 		description: input.description,
 	});
-	
 
 	// Use the generic Gemini utility
 	const result = await callGeminiWithStructuredOutput<GeminiLanguageDetection>(
@@ -72,7 +75,7 @@ export async function detectLanguageWithGemini(
 			dominant_language: null,
 			reason: result.reason || 'Detection failed',
 			success: false,
-			error: result.error
+			error: result.error,
 		};
 	}
 
@@ -81,20 +84,22 @@ export async function detectLanguageWithGemini(
 		.map(mapToSupportedLanguageCode)
 		.filter((lang): lang is LanguageCode => lang !== null);
 
-	const mappedDominantLanguage = mapToSupportedLanguageCode(result.data.dominant_language);
+	const mappedDominantLanguage = mapToSupportedLanguageCode(
+		result.data.dominant_language
+	);
 
 	console.debug('[geminiLanguageDetection] Detection completed', {
 		original: result.data,
 		mapped: {
 			target_languages: mappedTargetLanguages,
-			dominant_language: mappedDominantLanguage
-		}
+			dominant_language: mappedDominantLanguage,
+		},
 	});
 
 	return {
 		target_languages: mappedTargetLanguages,
 		dominant_language: mappedDominantLanguage,
 		reason: result.data.reason,
-		success: true
+		success: true,
 	};
 }

@@ -32,7 +32,7 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function GET(request: Request) {
-	console.log('GET /api/convex/token');
+	// console.log('GET /api/convex/token');
 	const origin = request.headers.get('origin');
 	const allowOrigin =
 		origin &&

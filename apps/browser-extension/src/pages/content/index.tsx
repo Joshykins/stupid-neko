@@ -127,7 +127,7 @@ const appRoot = document.createElement('div');
 appRoot.id = '__stupid-neko-root';
 const portalRoot = document.createElement('div');
 portalRoot.id = '__stupid-neko-portal';
-(window as { __stupidNekoPortalEl?: HTMLElement; }).__stupidNekoPortalEl =
+(window as { __stupidNekoPortalEl?: HTMLElement }).__stupidNekoPortalEl =
 	portalRoot;
 // Ensure overlays are interactive even if CSS isn't loaded yet
 portalRoot.style.pointerEvents = 'auto';
@@ -149,7 +149,9 @@ shadow.adoptedStyleSheets = [sheet];
 
 // Initialize the app
 async function initializeApp() {
-	await loadFontsUsingFontFace().catch(() => { /* noop */ });
+	await loadFontsUsingFontFace().catch(() => {
+		/* noop */
+	});
 
 	// Wait a bit for CSS to load
 	await new Promise(resolve => setTimeout(resolve, 100));

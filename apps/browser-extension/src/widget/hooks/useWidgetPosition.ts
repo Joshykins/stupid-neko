@@ -8,7 +8,7 @@ const H_PAD = 32;
 const V_PAD = 32;
 const SNAP_THRESHOLD = 32;
 
-type Position = { left: number; top: number; };
+type Position = { left: number; top: number };
 
 function clampToViewport(left: number, top: number): Position {
 	const maxLeft = Math.max(H_PAD, window.innerWidth - ICON_PX - H_PAD);
@@ -85,7 +85,7 @@ export function useWidgetPosition() {
 		// (Framer handles this internally; we just reset our flags here)
 	};
 
-	const onDrag = (_e: unknown, info: { offset: { x: number; y: number; }; }) => {
+	const onDrag = (_e: unknown, info: { offset: { x: number; y: number } }) => {
 		const dx = Math.abs(info?.offset?.x || 0);
 		const dy = Math.abs(info?.offset?.y || 0);
 		if (dx > 2 || dy > 2) {
@@ -95,7 +95,7 @@ export function useWidgetPosition() {
 
 	const onDragEnd = async (
 		_e: unknown,
-		info: { offset: { x: number; y: number; }; }
+		info: { offset: { x: number; y: number } }
 	) => {
 		const start = startRef.current || {
 			left: position.left,
@@ -108,7 +108,10 @@ export function useWidgetPosition() {
 
 		log.debug('=== DRAG END DEBUG ===');
 		log.debug('1. Start position:', start);
-		log.debug('2. Drag offset:', { x: info?.offset?.x || 0, y: info?.offset?.y || 0 });
+		log.debug('2. Drag offset:', {
+			x: info?.offset?.x || 0,
+			y: info?.offset?.y || 0,
+		});
 		log.debug('3. Let-go position:', { left: nextLeft, top: nextTop });
 		log.debug('4. Snapped position:', snapped);
 

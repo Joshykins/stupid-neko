@@ -6,7 +6,7 @@ import {
 	useQuery,
 } from 'convex/react';
 import React from 'react';
-import { Button, FlatList, Text, View } from 'react-native';
+import { Button, Text, View } from 'react-native';
 import { api } from '../../../convex/_generated/api';
 
 function HomeSignedIn() {
@@ -25,7 +25,7 @@ function HomeSignedIn() {
 			if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
 				try {
 					currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-				} catch (e) {
+				} catch {
 					// Fallback to UTC if timezone detection fails
 					currentTimezone = 'UTC';
 				}
@@ -39,7 +39,7 @@ function HomeSignedIn() {
 	}, [result, updateTimezone]);
 
 	const onAddRandom = async () => {
-		const value = Math.floor(Math.random() * 1000);
+		const _value = Math.floor(Math.random() * 1000);
 		// await addNumber({ value });
 	};
 	return (
@@ -82,8 +82,9 @@ function HomeSignedOut() {
 	const onSignIn = async () => {
 		try {
 			await signIn('discord');
-		} catch (e) {
-			console.warn('SSO error', e);
+		} catch {
+			// Handle SSO error silently for now
+			// console.warn('SSO error', e);
 		}
 	};
 	return (

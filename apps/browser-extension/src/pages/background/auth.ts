@@ -6,7 +6,6 @@ import { tryCatch } from '../../../../../lib/tryCatch';
 import type { AuthMe } from '../../messaging/messages';
 import { createLogger } from '../../lib/logger';
 
-
 // Constants
 const AUTH_CACHE_DURATION_MS = 60_000;
 const log = createLogger('service-worker', 'auth:get-me');
@@ -67,9 +66,9 @@ function getEnv(
 const CONVEX_URL = getEnv('CONVEX_URL') || getEnv('CONVEX_SITE_URL');
 export const convex = CONVEX_URL
 	? new ConvexHttpClient(CONVEX_URL, {
-		// Allow using .convex.site host during development if needed
-		skipConvexDeploymentUrlCheck: /\.convex\.site$/i.test(CONVEX_URL),
-	})
+			// Allow using .convex.site host during development if needed
+			skipConvexDeploymentUrlCheck: /\.convex\.site$/i.test(CONVEX_URL),
+		})
 	: null;
 
 // Integration ID storage helpers
@@ -107,9 +106,12 @@ export async function fetchMe(): Promise<AuthState> {
 
 	log.info('fetchMe - calling meFromIntegration');
 	const { data: me, error: meError } = await tryCatch(
-		convex.query(api.browserExtension.browserExtensionCoreFunctions.meFromIntegration, {
-			integrationId,
-		})
+		convex.query(
+			api.browserExtension.browserExtensionCoreFunctions.meFromIntegration,
+			{
+				integrationId,
+			}
+		)
 	);
 
 	log.info('fetchMe - meFromIntegration result:', { me, meError });
@@ -123,7 +125,8 @@ export async function fetchMe(): Promise<AuthState> {
 	log.info('fetchMe - marking integration key as used');
 	const { error: markError } = await tryCatch(
 		convex.mutation(
-			api.browserExtension.browserExtensionCoreFunctions.markIntegrationKeyAsUsedFromExtension,
+			api.browserExtension.browserExtensionCoreFunctions
+				.markIntegrationKeyAsUsedFromExtension,
 			{
 				integrationId,
 			}

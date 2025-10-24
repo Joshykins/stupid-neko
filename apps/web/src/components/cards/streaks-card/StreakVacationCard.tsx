@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from 'convex/react';
-import { Info, Palmtree } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 import { api } from '../../../../../../convex/_generated/api';
@@ -34,7 +33,7 @@ export const StreakVacationCard = ({
 	const percent = isLiveVersion
 		? (status?.percentTowardsNext ?? 0)
 		: demo.percent;
-	const autoHours = isLiveVersion
+	const _autoHours = isLiveVersion
 		? (status?.autoApplyHours ?? 24)
 		: demo.autoHours;
 	const cap = isLiveVersion ? (status?.cap ?? 7) : demo.cap;
@@ -58,14 +57,12 @@ export const StreakVacationCard = ({
 				<div className="flex-1">
 					{/* Count and label */}
 					<div className="text-left flex items-end justify-start gap-1">
-						<div className="font-display text-xl font-black">
-							{balance}
-						</div>
+						<div className="font-display text-xl font-black">{balance}</div>
 						<div className="font-display text-xl font-normal">
-							/ {cap} <span className="font-display text-xl font-black">Vacations</span>
+							/ {cap}{' '}
+							<span className="font-display text-xl font-black">Vacations</span>
 						</div>
 					</div>
-
 
 					{/* Info row */}
 					<div className="flex items-center gap-2 text-main-foreground">
@@ -104,6 +101,6 @@ export const StreakVacationCard = ({
 					</div>
 				</div>
 			</div>
-		</Card >
+		</Card>
 	);
 };

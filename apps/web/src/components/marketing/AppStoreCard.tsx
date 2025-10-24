@@ -1,7 +1,5 @@
 'use client';
-import Image from 'next/image';
 import { cn } from '../../lib/utils';
-import { Card } from '../ui/card';
 
 export default function AppStoreCard({ className }: { className?: string }) {
 	return (

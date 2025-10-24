@@ -3,9 +3,7 @@ import React from 'react';
 import { Button } from '../../ui/button';
 import { AddActivityDialog } from './AddActivityDialog';
 
-type AddManualActivityButtonProps = {};
-
-export function AddManualActivityButton({ }: AddManualActivityButtonProps = {}) {
+export function AddManualActivityButton() {
 	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
 	return (
@@ -20,10 +18,7 @@ export function AddManualActivityButton({ }: AddManualActivityButtonProps = {}) 
 				<PlusCircle className="!size-6 !stroke-2.5 ml-2 flex-shrink-0" />
 			</Button>
 
-			<AddActivityDialog
-				open={isDialogOpen}
-				onOpenChange={setIsDialogOpen}
-			/>
+			<AddActivityDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
 		</>
 	);
 }

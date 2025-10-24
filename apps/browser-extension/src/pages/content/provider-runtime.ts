@@ -15,11 +15,14 @@ type ProviderContent = {
 	stop(): void;
 };
 
-let active: { id: string; api: ProviderContent; } | null = null;
+let active: { id: string; api: ProviderContent } | null = null;
 
 onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 	try {
-		log.debug('onContent ACTIVATE_PROVIDER handler called:', { providerId, targetLanguage });
+		log.debug('onContent ACTIVATE_PROVIDER handler called:', {
+			providerId,
+			targetLanguage,
+		});
 
 		if (active?.id === providerId) {
 			log.debug('Provider already active:', providerId);
@@ -44,7 +47,7 @@ onContent('ACTIVATE_PROVIDER', async ({ providerId, targetLanguage }) => {
 		}
 
 		log.debug('Loading provider content:', key);
-		const mod = (await loadContent[key]!()) as { default: ProviderContent; };
+		const mod = (await loadContent[key]!()) as { default: ProviderContent };
 		const api: ProviderContent = mod.default;
 
 		log.debug('Starting provider:', providerId);

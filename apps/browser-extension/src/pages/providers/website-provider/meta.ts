@@ -15,4 +15,3 @@ const meta: ProviderMeta = {
 };
 
 export default meta;
-

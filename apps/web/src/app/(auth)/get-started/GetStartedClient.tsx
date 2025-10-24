@@ -412,10 +412,14 @@ export default function GetStartedClient() {
 				} finally {
 					try {
 						window.localStorage.removeItem('preReleaseCode');
-					} catch {}
+					} catch {
+						// Ignore localStorage errors
+					}
 				}
 			})();
-		} catch {}
+		} catch {
+			// Ignore errors
+		}
 	}, [redeem, router]);
 
 	const handleComplete = React.useCallback(async () => {
@@ -431,8 +435,8 @@ export default function GetStartedClient() {
 				document.cookie = `onboarding=false; path=/; max-age=${60 * 60 * 24 * 365}`;
 			}
 			router.replace('/dashboard');
-		} catch (e) {
-			// no-op
+		} catch {
+			// ignore errors
 		}
 	}, [
 		completeOnboarding,

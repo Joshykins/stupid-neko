@@ -4,7 +4,6 @@ import { motion, useAnimationFrame, useReducedMotion } from 'framer-motion';
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 
 // --- Types

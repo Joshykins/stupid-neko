@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import { tryCatch } from "../../../lib/tryCatch";
+import { GoogleGenAI } from '@google/genai';
+import { tryCatch } from '../../../lib/tryCatch';
 
 // Fixed model type - only gemini-2.5-flash-lite is supported
 type GeminiModel = 'gemini-2.5-flash-lite';
@@ -37,23 +37,25 @@ export async function callGeminiWithStructuredOutput<T>(
 		console.debug('[geminiUtils] No API key available');
 		return {
 			success: false,
-			error: 'GEMINI_API_KEY not configured'
+			error: 'GEMINI_API_KEY not configured',
 		};
 	}
 
 	// Fixed model - only gemini-2.5-flash-lite is supported
 	const model: GeminiModel = 'gemini-2.5-flash-lite';
-	
+
 	try {
 		const genAI = new GoogleGenAI({ apiKey });
-		
+
 		// Construct the content to analyze - prioritize title/description, URL is just for context
 		let content: string;
 		const titleDesc = [
 			(input.title || '').trim(),
-			(input.description || '').trim()
-		].filter(Boolean).join('\n\n');
-		
+			(input.description || '').trim(),
+		]
+			.filter(Boolean)
+			.join('\n\n');
+
 		if (titleDesc) {
 			// Use title and description as primary content, include URL for context if available
 			content = titleDesc;
@@ -73,7 +75,7 @@ export async function callGeminiWithStructuredOutput<T>(
 		if (!content.trim()) {
 			return {
 				success: false,
-				error: 'No content provided for analysis'
+				error: 'No content provided for analysis',
 			};
 		}
 
@@ -85,13 +87,13 @@ export async function callGeminiWithStructuredOutput<T>(
 			hasUrl: Boolean(input.url),
 			hasTitle: Boolean(input.title),
 			hasDescription: Boolean(input.description),
-			hasContent: Boolean(input.content)
+			hasContent: Boolean(input.content),
 		});
 
 		const { data: response, error } = await tryCatch(
 			genAI.models.generateContent({
 				model,
-				contents: fullPrompt
+				contents: fullPrompt,
 			})
 		);
 
@@ -99,7 +101,7 @@ export async function callGeminiWithStructuredOutput<T>(
 			console.debug('[geminiUtils] API call failed', { error: error.message });
 			return {
 				success: false,
-				error: error.message
+				error: error.message,
 			};
 		}
 
@@ -109,7 +111,7 @@ export async function callGeminiWithStructuredOutput<T>(
 			console.debug('[geminiUtils] No response text received');
 			return {
 				success: false,
-				error: 'Empty response'
+				error: 'Empty response',
 			};
 		}
 
@@ -118,9 +120,13 @@ export async function callGeminiWithStructuredOutput<T>(
 		// Clean the response text by removing markdown code blocks if present
 		let cleanedResponse = responseText.trim();
 		if (cleanedResponse.startsWith('```json')) {
-			cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+			cleanedResponse = cleanedResponse
+				.replace(/^```json\s*/, '')
+				.replace(/\s*```$/, '');
 		} else if (cleanedResponse.startsWith('```')) {
-			cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+			cleanedResponse = cleanedResponse
+				.replace(/^```\s*/, '')
+				.replace(/\s*```$/, '');
 		}
 
 		console.debug('[geminiUtils] Cleaned response', { cleanedResponse });
@@ -130,14 +136,14 @@ export async function callGeminiWithStructuredOutput<T>(
 		);
 
 		if (parseError) {
-			console.debug('[geminiUtils] JSON parse failed', { 
+			console.debug('[geminiUtils] JSON parse failed', {
 				error: parseError.message,
-				responseText 
+				responseText,
 			});
 			return {
 				success: false,
 				error: `JSON parse failed: ${parseError.message}`,
-				reason: 'Invalid JSON response'
+				reason: 'Invalid JSON response',
 			};
 		}
 
@@ -145,15 +151,14 @@ export async function callGeminiWithStructuredOutput<T>(
 
 		return {
 			success: true,
-			data: parsedResult
+			data: parsedResult,
 		};
-
 	} catch (error: any) {
 		console.debug('[geminiUtils] Unexpected error', { error: error.message });
 		return {
 			success: false,
 			error: error.message,
-			reason: 'Unexpected error occurred'
+			reason: 'Unexpected error occurred',
 		};
 	}
 }
@@ -164,23 +169,25 @@ export async function callGeminiWithStructuredOutput<T>(
 export function createLanguageDetectionConfig(): GeminiConfig {
 	return {
 		responseSchema: {
-			type: "object",
+			type: 'object',
 			properties: {
 				target_languages: {
-					type: "array",
-					items: { type: "string" },
-					description: "Array of ISO 639-1 language codes that the content is about or teaches"
+					type: 'array',
+					items: { type: 'string' },
+					description:
+						'Array of ISO 639-1 language codes that the content is about or teaches',
 				},
 				dominant_language: {
-					type: "string",
-					description: "The primary language code if content is about learning a specific language"
+					type: 'string',
+					description:
+						'The primary language code if content is about learning a specific language',
 				},
 				reason: {
-					type: "string",
-					description: "Brief explanation of the detection reasoning"
-				}
+					type: 'string',
+					description: 'Brief explanation of the detection reasoning',
+				},
 			},
-			required: ["target_languages", "dominant_language", "reason"]
+			required: ['target_languages', 'dominant_language', 'reason'],
 		},
 		prompt: `You are a language detection and classification model for a language learning app.
 
@@ -197,6 +204,6 @@ IMPORTANT: You must respond with valid JSON in exactly this format:
   "target_languages": ["ja", "en"],
   "dominant_language": "ja",
   "reason": "Content is about learning Japanese language"
-}`
+}`,
 	};
 }

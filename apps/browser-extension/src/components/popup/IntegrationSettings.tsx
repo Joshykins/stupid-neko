@@ -29,7 +29,6 @@ export function IntegrationSettings({
 		}
 	};
 
-
 	// Show setup flow if no integration key is set
 	if (!integrationKey.hasKey) {
 		return (

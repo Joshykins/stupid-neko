@@ -10,7 +10,7 @@ export default {
 
 		const forward = (e: ContentActivityEvent) => {
 			if (cb) cb(e);
-			callBackground('CONTENT_ACTIVITY_EVENT', { payload: e }).catch(() => { });
+			callBackground('CONTENT_ACTIVITY_EVENT', { payload: e }).catch(() => {});
 		};
 		websiteContentHandler.start(forward);
 
@@ -25,4 +25,3 @@ export default {
 		websiteContentHandler.stop();
 	},
 };
-

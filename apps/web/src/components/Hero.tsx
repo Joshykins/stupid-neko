@@ -6,11 +6,10 @@ import type * as React from 'react';
 import LanguageFlagSVG from './LanguageFlagSVG';
 import AppStoreCard from './marketing/AppStoreCard';
 import { UnreleasedBanner } from './marketing/UnreleasedBanner';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-function SakuraBranch({
+function _SakuraBranch({
 	className,
 	style,
 }: {
@@ -58,7 +57,7 @@ function SakuraBranch({
 	);
 }
 
-function MountainCat() {
+function _MountainCat() {
 	return (
 		<svg
 			viewBox="0 0 640 420"
@@ -128,8 +127,6 @@ export function Hero() {
 							<UnreleasedBanner />
 
 							<Card className="p-6 md:p-10 relative">
-
-
 								<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
 									Do you want to{' '}
 									<span className="underline decoration-4 decoration-main ">

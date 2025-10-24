@@ -90,18 +90,120 @@ export default [
       },
     },
   },
-  // Global ignores (workspace level)
+  // Mobile app files (React Native/Expo)
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'build/**',
-      '.next/**',
-      'coverage/**',
-      '*.config.js',
-      '*.config.mjs',
-      // Do not lint built browser extension output
-      'apps/browser-extension/dist_chrome/**',
+    files: [
+      'apps/mobile/**/*.{js,ts,tsx}',
+      'apps/mobile/*.config.*',
     ],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
+    },
   },
+  // Web app files (Next.js/React)
+  {
+    files: [
+      'apps/web/**/*.{js,ts,tsx}',
+      'apps/web/*.config.*',
+    ],
+    languageOptions: {
+      globals: {
+        // Browser globals
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        location: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        // DOM types
+        HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLSpanElement: 'readonly',
+        HTMLVideoElement: 'readonly',
+        SVGSVGElement: 'readonly',
+        CSSStyleSheet: 'readonly',
+        FontFace: 'readonly',
+        Node: 'readonly',
+        MutationObserver: 'readonly',
+        IntersectionObserver: 'readonly',
+        ResizeObserver: 'readonly',
+        BroadcastChannel: 'readonly',
+        // Timers
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        // Fetch API
+        Request: 'readonly',
+        Response: 'readonly',
+        fetch: 'readonly',
+        // React globals
+        React: 'readonly',
+        // Additional browser globals
+        self: 'readonly',
+        FormData: 'readonly',
+        XMLHttpRequest: 'readonly',
+        // Build-time env
+        process: 'readonly',
+      },
+    },
+  },
+  // Allow require() usage in metro.config.js
+  {
+    files: ['apps/mobile/metro.config.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+        // Script files (Node.js context)
+        {
+          files: ['scripts/**/*.{js,ts}'],
+          languageOptions: {
+            globals: {
+              process: 'readonly',
+              console: 'readonly',
+              __dirname: 'readonly',
+              __filename: 'readonly',
+              module: 'readonly',
+              require: 'readonly',
+              Buffer: 'readonly',
+              global: 'readonly',
+              globalThis: 'readonly',
+            },
+          },
+          rules: {
+            'no-console': 'off', // Allow console in scripts
+          },
+        },
+        // Global ignores (workspace level)
+        {
+          ignores: [
+            'node_modules/**',
+            'dist/**',
+            'build/**',
+            '.next/**',
+            'coverage/**',
+            '*.config.js',
+            '*.config.mjs',
+            // Do not lint built browser extension output
+            'apps/browser-extension/dist_chrome/**',
+            // Do not lint Next.js build output
+            'apps/web/.next/**',
+            'apps/web/next-env.d.ts',
+            'apps/web/.next/types/**',
+          ],
+        },
 ];

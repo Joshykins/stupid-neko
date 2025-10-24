@@ -192,7 +192,9 @@ export default function StreakDisplayCard({
 			if (!me) return;
 			try {
 				await updateMode({ mode: next });
-			} catch {}
+			} catch {
+				// Ignore errors
+			}
 		},
 		[updateMode, liveVersion, me]
 	);

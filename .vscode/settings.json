@@ -1,3 +1,28 @@
 {
-	"workbench.colorTheme": "Bearded Theme Coffee Reversed"
+	"workbench.colorTheme": "Bearded Theme Coffee Reversed",
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+	"prettier.useTabs": true,
+	"prettier.tabWidth": 2,
+	"prettier.singleQuote": true,
+	"prettier.semi": true,
+	"prettier.trailingComma": "es5",
+	"prettier.printWidth": 80,
+	"prettier.bracketSpacing": true,
+	"prettier.arrowParens": "avoid",
+	"[json]": {
+		"editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+		"editor.formatOnSave": true,
+		"editor.insertSpaces": false,
+		"editor.tabSize": 2
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+		"editor.formatOnSave": true,
+		"editor.insertSpaces": false,
+		"editor.tabSize": 2
+	},
+	"files.associations": {
+		"*.json": "json"
+	}
 }

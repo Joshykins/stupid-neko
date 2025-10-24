@@ -1,13 +1,9 @@
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
-import { internalMutation, internalQuery } from '../_generated/server';
+import { internalQuery } from '../_generated/server';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
-import {
-	contentSourceValidator,
-	languageCodeValidator,
-	mediaTypeValidator,
-} from '../schema';
+
 import dayjs from '../../lib/dayjs';
 
 export const getContentLabelByContentKey = async ({
@@ -20,12 +16,7 @@ export const getContentLabelByContentKey = async ({
 	_id: Id<'contentLabels'>;
 	contentKey: string;
 	stage: 'queued' | 'processing' | 'completed' | 'failed';
-	contentSource:
-		| 'youtube'
-		| 'spotify'
-		| 'anki'
-		| 'manual'
-		| 'website';
+	contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website';
 	contentUrl?: string;
 	contentMediaType?: 'audio' | 'video' | 'text';
 	title?: string;
@@ -125,8 +116,6 @@ export const getOrCreateContentLabel = async ({
 	};
 };
 
-
-
 // Base: read minimal label details (usable from actions)
 export const getLabelBasics = internalQuery({
 	args: v.object({ contentLabelId: v.id('contentLabels') }),
@@ -142,6 +131,34 @@ export const getLabelBasics = internalQuery({
 			_id: doc._id,
 			contentKey: doc.contentKey,
 			contentUrl: doc.contentUrl,
+		};
+	},
+});
+
+export const getLabelWithMetadata = internalQuery({
+	args: v.object({ contentLabelId: v.id('contentLabels') }),
+	returns: v.object({
+		_id: v.id('contentLabels'),
+		contentKey: v.optional(v.string()),
+		contentUrl: v.optional(v.string()),
+		title: v.optional(v.string()),
+		authorName: v.optional(v.string()),
+		thumbnailUrl: v.optional(v.string()),
+		fullDurationInMs: v.optional(v.number()),
+		description: v.optional(v.string()),
+	}),
+	handler: async (ctx, args) => {
+		const doc = await ctx.db.get(args.contentLabelId);
+		if (!doc) throw new Error('contentLabel not found');
+		return {
+			_id: doc._id,
+			contentKey: doc.contentKey,
+			contentUrl: doc.contentUrl,
+			title: doc.title,
+			authorName: doc.authorName,
+			thumbnailUrl: doc.thumbnailUrl,
+			fullDurationInMs: doc.fullDurationInMs,
+			description: doc.description,
 		};
 	},
 });

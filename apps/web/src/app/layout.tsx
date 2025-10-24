@@ -53,7 +53,10 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable}`}>
+		<html
+			lang="en"
+			className={`${plusJakarta.variable} ${geistMono.variable} ${baloo.variable}`}
+		>
 			<head>
 				<link
 					rel="stylesheet"
@@ -72,10 +75,7 @@ export default async function RootLayout({
 				<meta name="theme-color" content="#000000" />
 				<meta name="apple-mobile-web-app-capable" content="yes" />
 			</head>
-			<body
-				suppressHydrationWarning
-				className="antialiased relative"
-			>
+			<body suppressHydrationWarning className="antialiased relative">
 				<ConvexAuthNextjsServerProvider>
 					<ConvexClientProvider>
 						<TestingComponent />

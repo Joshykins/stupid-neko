@@ -13,33 +13,48 @@ const logYoutube = createLogger('service-worker', 'providers:youtube');
 const logActivation = createLogger('service-worker', 'providers:activation');
 const logDetermine = createLogger('service-worker', 'providers:determine');
 
-
 /**
  * Set the widget state to determining-provider
  * This is called when starting the provider determination process
  */
-export function setDeterminingProviderState(domain?: string, tabId?: number): void {
+export function setDeterminingProviderState(
+	domain?: string,
+	tabId?: number
+): void {
 	// Explicitly clear startTime to avoid cross-domain timer carryover while determining provider
-	updateWidgetState({
-		state: 'determining-provider',
-		domain,
-		startTime: undefined,
-	}, tabId);
+	updateWidgetState(
+		{
+			state: 'determining-provider',
+			domain,
+			startTime: undefined,
+		},
+		tabId
+	);
 }
 
 /**
  * Transition from determining-provider state to the appropriate provider idle state
  * This is called after the provider has been determined
  */
-export function transitionFromDeterminingProvider(providerName: ProviderName, domain: string, tabId?: number): void {
+export function transitionFromDeterminingProvider(
+	providerName: ProviderName,
+	domain: string,
+	tabId?: number
+): void {
 	// Transition from determining-provider to appropriate provider idle state
-	const idleState = providerName === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-idle';
+	const idleState =
+		providerName === 'youtube'
+			? 'youtube-tracking-unverified'
+			: 'website-provider-idle';
 
-	updateWidgetState({
-		state: idleState,
-		provider: providerName,
-		domain,
-	}, tabId);
+	updateWidgetState(
+		{
+			state: idleState,
+			provider: providerName,
+			domain,
+		},
+		tabId
+	);
 }
 
 /**
@@ -75,23 +90,41 @@ export async function determineAndActivateProvider(
 					const { checkDomainPolicyAllowed } = await import('./domainPolicy');
 					const res = await checkDomainPolicyAllowed(domain);
 					if (res) {
-						const { updateConsentForDomain } = await import('./content-activity-router');
+						const { updateConsentForDomain } = await import(
+							'./content-activity-router'
+						);
 						// Treat allow policy as implicit consent; block leaves consent false
 						updateConsentForDomain(tabId, domain, res.allowed);
-						logDefault.info('determine: policy check', { tabId, domain, allowed: res.allowed });
+						logDefault.info('determine: policy check', {
+							tabId,
+							domain,
+							allowed: res.allowed,
+						});
 						if (res.allowed) {
 							defaultAllowed = true;
-							const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+							const { updateWidgetState, getCurrentWidgetState } = await import(
+								'./widget'
+							);
 							const prev = getCurrentWidgetState(tabId);
-							const preservedStart = (prev?.domain === domain && prev?.startTime) ? prev.startTime : Date.now();
-							updateWidgetState({
-								state: 'website-provider-tracking',
-								provider: 'website-provider',
+							const preservedStart =
+								prev?.domain === domain && prev?.startTime
+									? prev.startTime
+									: Date.now();
+							updateWidgetState(
+								{
+									state: 'website-provider-tracking',
+									provider: 'website-provider',
+									domain,
+									startTime: preservedStart,
+									autoStartedByPolicy: true,
+								},
+								tabId
+							);
+							logDefault.info('determine: tracking due to allow policy', {
+								tabId,
 								domain,
-								startTime: preservedStart,
-								autoStartedByPolicy: true,
-							}, tabId);
-							logDefault.info('determine: tracking due to allow policy', { tabId, domain, preservedStart });
+								preservedStart,
+							});
 						}
 					}
 				}
@@ -108,18 +141,32 @@ export async function determineAndActivateProvider(
 		// Check if the tab supports content scripts before trying to send messages
 		try {
 			const tab = await chrome.tabs.get(tabId);
-			if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
-				logActivation.debug(`Skipping content script activation for system page: ${tab.url}`);
+			if (
+				!tab.url ||
+				tab.url.startsWith('chrome://') ||
+				tab.url.startsWith('chrome-extension://') ||
+				tab.url.startsWith('moz-extension://')
+			) {
+				logActivation.debug(
+					`Skipping content script activation for system page: ${tab.url}`
+				);
 				return;
 			}
 		} catch (error) {
-			logActivation.debug(`Could not get tab info for ${tabId}: ${String(error)}`);
+			logActivation.debug(
+				`Could not get tab info for ${tabId}: ${String(error)}`
+			);
 			return;
 		}
 
 		// Activate the provider in the content script with retry
 		{
-			const logger = providerId === 'website-provider' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
+			const logger =
+				providerId === 'website-provider'
+					? logDefault
+					: providerId === 'youtube'
+						? logYoutube
+						: undefined;
 			logger?.debug('Starting retry activation for provider:', providerId);
 		}
 		await retryActivateProvider(tabId, providerId, targetLanguage, url);
@@ -154,7 +201,10 @@ export function getProviderName(url: string): ProviderName {
 /**
  * Check if a URL matches a specific provider
  */
-export function matchesProvider(url: string, providerId: ProviderName): boolean {
+export function matchesProvider(
+	url: string,
+	providerId: ProviderName
+): boolean {
 	const meta = getMetaForUrl(url);
 	return meta.id === providerId;
 }
@@ -169,35 +219,50 @@ async function retryActivateProvider(
 	url: string,
 	maxRetries: number = 5
 ): Promise<void> {
-	const logger = providerId === 'website-provider' ? logDefault : providerId === 'youtube' ? logYoutube : undefined;
+	const logger =
+		providerId === 'website-provider'
+			? logDefault
+			: providerId === 'youtube'
+				? logYoutube
+				: undefined;
 
 	for (let attempt = 1; attempt <= maxRetries; attempt++) {
 		try {
-			logger?.debug(`Attempting to send ACTIVATE_PROVIDER message (attempt ${attempt}/${maxRetries})`);
+			logger?.debug(
+				`Attempting to send ACTIVATE_PROVIDER message (attempt ${attempt}/${maxRetries})`
+			);
 			await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
 				providerId,
 				targetLanguage,
 			});
 
-			logger?.debug(`activated provider: ${providerId} for URL: ${url} (attempt ${attempt})`);
+			logger?.debug(
+				`activated provider: ${providerId} for URL: ${url} (attempt ${attempt})`
+			);
 			return; // Success!
 		} catch (error) {
 			const isLastAttempt = attempt === maxRetries;
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
 
 			logger?.debug(`Attempt ${attempt} failed: ${errorMessage}`);
 
-			if (errorMessage.includes('Receiving end does not exist') ||
-				errorMessage.includes('Could not establish connection')) {
-
+			if (
+				errorMessage.includes('Receiving end does not exist') ||
+				errorMessage.includes('Could not establish connection')
+			) {
 				if (isLastAttempt) {
-					logger?.debug(`Content script not ready for tab ${tabId} after ${maxRetries} attempts: ${errorMessage}`);
+					logger?.debug(
+						`Content script not ready for tab ${tabId} after ${maxRetries} attempts: ${errorMessage}`
+					);
 					return; // Give up gracefully
 				}
 
 				// Wait with exponential backoff before retrying
 				const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-				logger?.debug(`Content script not ready, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+				logger?.debug(
+					`Content script not ready, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
+				);
 				await new Promise(resolve => setTimeout(resolve, delay));
 			} else {
 				// Non-connection error, don't retry

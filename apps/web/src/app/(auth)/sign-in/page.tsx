@@ -3,13 +3,7 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useForm } from '@tanstack/react-form';
 import { useQuery } from 'convex/react';
-import {
-	ArrowBigLeft,
-	ArrowBigLeftDash,
-	ArrowLeft,
-	Loader2,
-	Sparkles,
-} from 'lucide-react';
+import { ArrowBigLeftDash, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,7 +16,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 
 export default function SignInPage() {
-	const router = useRouter();
+	const _router = useRouter();
 	const { signIn } = useAuthActions();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [lastUsedProvider, setLastUsedProvider] = useState<string | null>(null);
@@ -53,7 +47,9 @@ export default function SignInPage() {
 				const saved = window.localStorage.getItem('lastAuthProvider');
 				if (saved) setLastUsedProvider(saved);
 			}
-		} catch {}
+		} catch {
+			// Ignore localStorage errors
+		}
 	}, []);
 
 	const [preReleaseCode, setPreReleaseCode] = useState('');
@@ -67,7 +63,7 @@ export default function SignInPage() {
 	const validation = useQuery(api.preReleaseCodeFunctions.validateCode, {
 		code: debouncedCode,
 	});
-	const derivedFormatted = validation?.formatted ?? preReleaseCode;
+	const _derivedFormatted = validation?.formatted ?? preReleaseCode;
 	const isDebouncing = debouncedCode !== preReleaseCode;
 	const codeIsValid =
 		preReleaseCode.trim().length > 0 && validation?.valid === true;
@@ -85,7 +81,7 @@ export default function SignInPage() {
 		if (validation !== undefined) setIsValidating(false);
 	}, [validation, debouncedCode]);
 
-	const form = useForm<{ email: string; password: string }>({
+	const _form = useForm<{ email: string; password: string }>({
 		defaultValues: {
 			email: '',
 			password: '',
@@ -97,7 +93,7 @@ export default function SignInPage() {
 		},
 	});
 
-	const oauthProviders = useMemo(
+	const _oauthProviders = useMemo(
 		() => [
 			{ name: 'Discord', strategy: 'oauth_discord' as const },
 			{ name: 'Google', strategy: 'oauth_google' as const },
@@ -183,7 +179,9 @@ export default function SignInPage() {
 														const formatted = parts.join('-');
 														setPreReleaseCode(formatted);
 													}
-												} catch {}
+												} catch {
+													// Ignore formatting errors
+												}
 											}}
 											className="uppercase tracking-widest pr-8"
 										/>
@@ -242,11 +240,16 @@ export default function SignInPage() {
 												);
 												setLastUsedProvider('discord');
 											}
-										} catch {}
+										} catch {
+											// Ignore localStorage errors
+										}
 										await signIn('discord', { redirectTo: '/get-started' });
-									} catch (err: any) {
+									} catch (err: unknown) {
+										const error = err as {
+											errors?: Array<{ message?: string }>;
+										};
 										setErrorMessage(
-											err?.errors?.[0]?.message || 'OAuth failed'
+											error?.errors?.[0]?.message || 'OAuth failed'
 										);
 									}
 								}}
@@ -292,11 +295,16 @@ export default function SignInPage() {
 												);
 												setLastUsedProvider('google');
 											}
-										} catch {}
+										} catch {
+											// Ignore localStorage errors
+										}
 										await signIn('google', { redirectTo: '/get-started' });
-									} catch (err: any) {
+									} catch (err: unknown) {
+										const error = err as {
+											errors?: Array<{ message?: string }>;
+										};
 										setErrorMessage(
-											err?.errors?.[0]?.message || 'OAuth failed'
+											error?.errors?.[0]?.message || 'OAuth failed'
 										);
 									}
 								}}

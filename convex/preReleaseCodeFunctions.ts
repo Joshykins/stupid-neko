@@ -110,7 +110,7 @@ export const createPreReleaseAccessCode = internalMutation({
 		const length = 12;
 		// ensure uniqueness by checking index
 		let code: string;
-		// eslint-disable-next-line no-constant-condition
+
 		while (true) {
 			const letters = randomChars(length);
 			const a = letters.slice(0, 4);

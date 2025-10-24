@@ -9,22 +9,22 @@ export type MessageMap = {
 	// Auth messages
 	GET_AUTH_STATE: {
 		req: Record<string, never>;
-		res: { isAuthed: boolean; me: AuthMe | null; };
+		res: { isAuthed: boolean; me: AuthMe | null };
 	};
 
 	REFRESH_AUTH: {
 		req: Record<string, never>;
 		res: {
 			ok: boolean;
-			auth?: { isAuthed: boolean; me: AuthMe | null; };
+			auth?: { isAuthed: boolean; me: AuthMe | null };
 			error?: string;
 		};
 	};
 
 	// Content messages
 	GET_CONTENT_LABEL: {
-		req: { contentKey: string; };
-		res: { contentLabel: unknown; };
+		req: { contentKey: string };
+		res: { contentLabel: unknown };
 	};
 
 	// Widget messages
@@ -34,41 +34,40 @@ export type MessageMap = {
 	};
 
 	WIDGET_ACTION: {
-		req: { action: string; payload?: Record<string, unknown>; };
-		res: { success: boolean; error?: string; };
+		req: { action: string; payload?: Record<string, unknown> };
+		res: { success: boolean; error?: string };
 	};
 
 	// Popup messages
 	START_TRACKING: {
 		req: Record<string, never>;
-		res: { success: boolean; error?: string; };
+		res: { success: boolean; error?: string };
 	};
 
 	GET_USER_PROGRESS: {
 		req: Record<string, never>;
-		res: { success: boolean; data?: UserProgress; error?: string; };
+		res: { success: boolean; data?: UserProgress; error?: string };
 	};
 
 	WIDGET_STATE_UPDATE: {
-		req: { payload: WidgetStateUpdate; };
+		req: { payload: WidgetStateUpdate };
 		res: Record<string, never>;
 	};
 
-
 	// Playback messages
 	PLAYBACK_EVENT: {
-		req: { payload: PlaybackEvent; };
+		req: { payload: PlaybackEvent };
 		res: Record<string, never>;
 	};
 
 	CONTENT_ACTIVITY_EVENT: {
-		req: { payload: ContentActivityEvent; };
+		req: { payload: ContentActivityEvent };
 		res: Record<string, never>;
 	};
 
 	// Lifecycle messages (BG -> content)
 	ACTIVATE_PROVIDER: {
-		req: { providerId: string; targetLanguage?: string; };
+		req: { providerId: string; targetLanguage?: string };
 		res: Record<string, never>;
 	};
 	DEACTIVATE_PROVIDER: {
@@ -106,19 +105,19 @@ import type { ProviderName } from '../pages/background/providers/types';
 
 export type WidgetStateUpdate = {
 	state:
-	| 'website-provider-idle'
-	| 'website-provider-idle-detected'
-	| 'website-provider-always-track-question'
-	| 'website-provider-tracking'
-	| 'website-provider-tracking-stopped'
-	| 'website-provider-not-tracking'
-	| 'youtube-not-tracking'
-	| 'youtube-tracking-unverified'
-	| 'youtube-tracking-verified'
-	| 'youtube-provider-tracking-stopped'
-	| 'content-blocked'
-	| 'determining-provider'
-	| 'error';
+		| 'website-provider-idle'
+		| 'website-provider-idle-detected'
+		| 'website-provider-always-track-question'
+		| 'website-provider-tracking'
+		| 'website-provider-tracking-stopped'
+		| 'website-provider-not-tracking'
+		| 'youtube-not-tracking'
+		| 'youtube-tracking-unverified'
+		| 'youtube-tracking-verified'
+		| 'youtube-provider-tracking-stopped'
+		| 'content-blocked'
+		| 'determining-provider'
+		| 'error';
 	provider?: ProviderName;
 	domain?: string;
 	metadata?: Record<string, unknown>;
@@ -148,12 +147,12 @@ export type PlaybackEvent = {
 
 // Helpers to derive request/response types by key
 export type MsgKey = keyof MessageMap;
-export type Req<K extends MsgKey> = { type: K; } & MessageMap[K]['req'];
+export type Req<K extends MsgKey> = { type: K } & MessageMap[K]['req'];
 export type Res<K extends MsgKey> = MessageMap[K]['res'];
 
 // Narrowed runtime predicate (handy but optional)
 export function isReq<K extends MsgKey>(type: K, m: unknown): m is Req<K> {
 	return Boolean(
-		m && typeof m === 'object' && (m as { type?: string; }).type === type
+		m && typeof m === 'object' && (m as { type?: string }).type === type
 	);
 }

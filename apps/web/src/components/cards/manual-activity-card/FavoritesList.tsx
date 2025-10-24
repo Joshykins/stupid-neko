@@ -24,6 +24,7 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { ScrollArea } from '../../ui/scroll-area';
 import { Textarea } from '../../ui/textarea';
+import { Doc, Id } from '../../../../../../convex/_generated/dataModel';
 
 function FavoriteRow({
 	favorite,
@@ -31,25 +32,31 @@ function FavoriteRow({
 	onUpdate,
 	onDelete,
 }: {
-	favorite: any;
-	onAutoFill: (favorite: any) => void;
-	onUpdate: any;
-	onDelete: any;
+	favorite: Doc<'userTargetLanguageFavoriteActivities'>;
+	onAutoFill: (favorite: Doc<'userTargetLanguageFavoriteActivities'>) => void;
+	onUpdate: (args: {
+		favoriteId: Id<'userTargetLanguageFavoriteActivities'>;
+		title: string;
+		description: string;
+		externalUrl: string;
+		defaultDurationInMs: number;
+	}) => void;
+	onDelete: (args: {
+		favoriteId: Id<'userTargetLanguageFavoriteActivities'>;
+	}) => void;
 }) {
 	const [isOpen, setIsOpen] = React.useState(false);
-	const [title, setTitle] = React.useState((favorite as any).title ?? '');
+	const [title, setTitle] = React.useState(favorite.title ?? '');
 	const [minutes, setMinutes] = React.useState<number>(
 		Math.max(
 			0,
-			Math.round(((((favorite as any).defaultDurationInMs ?? 10 * 60 * 1000) as number)) / 60000)
+			Math.round(
+				((favorite.defaultDurationInMs ?? 10 * 60 * 1000) as number) / 60000
+			)
 		)
 	);
-	const [desc, setDesc] = React.useState<string>(
-		(favorite as any).description ?? ''
-	);
-	const [url, setUrl] = React.useState<string>(
-		(favorite as any).externalUrl ?? ''
-	);
+	const [desc, setDesc] = React.useState<string>(favorite.description ?? '');
+	const [url, setUrl] = React.useState<string>(favorite.externalUrl ?? '');
 	const [useCustomMinutes, setUseCustomMinutes] =
 		React.useState<boolean>(false);
 	const [customHours, setCustomHours] = React.useState<number>(
@@ -74,10 +81,10 @@ function FavoriteRow({
 		<li className="p-2 rounded-base border-2 border-border bg-secondary-background">
 			<div className="flex items-center justify-between gap-2 sm:gap-3">
 				<div className="min-w-0 flex-1">
-					{(favorite as any).externalUrl ? (
+					{favorite.externalUrl ? (
 						<span className="inline-flex items-center gap-1 max-w-full min-w-0">
 							<a
-								href={(favorite as any).externalUrl}
+								href={favorite.externalUrl}
 								target="_blank"
 								rel="noreferrer"
 								className="block font-bold truncate underline decoration-main text-background hover:text-background/80 max-w-[58vw] sm:max-w-[420px]"
@@ -85,7 +92,7 @@ function FavoriteRow({
 								{title || '(untitled)'}
 							</a>
 							<a
-								href={(favorite as any).externalUrl}
+								href={favorite.externalUrl}
 								target="_blank"
 								rel="noreferrer"
 								aria-label="Open link"
@@ -102,9 +109,9 @@ function FavoriteRow({
 					<div className="text-xs text-background/80 flex items-center gap-2">
 						<Clock className="!size-3" /> Default {minutes}m
 					</div>
-					{(favorite as any).description && (
+					{favorite.description && (
 						<div className="hidden sm:block text-xs text-background/70 truncate max-w-[420px]">
-							{(favorite as any).description}
+							{favorite.description}
 						</div>
 					)}
 				</div>
@@ -132,7 +139,7 @@ function FavoriteRow({
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								onClick={() => onDelete({ favoriteId: (favorite as any)._id })}
+								onClick={() => onDelete({ favoriteId: favorite._id })}
 							>
 								Remove
 							</DropdownMenuItem>
@@ -260,10 +267,10 @@ function FavoriteRow({
 						<Button
 							onClick={async () => {
 								await onUpdate({
-									favoriteId: (favorite as any)._id,
+									favoriteId: favorite._id,
 									title,
 									description: desc,
-									externalUrl: url || undefined,
+									externalUrl: url || '',
 									defaultDurationInMs: minutes * 60 * 1000,
 								});
 								setIsOpen(false);
@@ -279,7 +286,7 @@ function FavoriteRow({
 }
 
 type FavoritesListProps = {
-	onAutoFill?: (favorite: any) => void;
+	onAutoFill?: (favorite: Doc<'userTargetLanguageFavoriteActivities'>) => void;
 };
 
 export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
@@ -337,11 +344,11 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 					)}
 					{favorites && favorites.page?.length > 0 && (
 						<ul className="space-y-2">
-							{favorites.page.map((f: any) => (
+							{favorites.page.map(f => (
 								<FavoriteRow
-									key={(f as any)._id}
+									key={f._id}
 									favorite={f}
-									onAutoFill={onAutoFill || (() => { })}
+									onAutoFill={onAutoFill || (() => {})}
 									onUpdate={updateFavorite}
 									onDelete={deleteFavorite}
 								/>

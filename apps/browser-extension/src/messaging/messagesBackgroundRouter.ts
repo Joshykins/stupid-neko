@@ -53,10 +53,14 @@ export function sendToTab<K extends MsgKey>(
 			if (lastErr) {
 				// Handle specific cases where content script might not be ready
 				const errorMessage = lastErr.message || 'Unknown error';
-				if (errorMessage.includes('Receiving end does not exist') ||
-					errorMessage.includes('Could not establish connection')) {
+				if (
+					errorMessage.includes('Receiving end does not exist') ||
+					errorMessage.includes('Could not establish connection')
+				) {
 					// This is expected for some tabs, don't treat as error
-					log.debug(`Content script not ready for tab ${tabId}: ${errorMessage}`);
+					log.debug(
+						`Content script not ready for tab ${tabId}: ${errorMessage}`
+					);
 					return reject(new Error(errorMessage)); // Reject so retry mechanism can work
 				}
 				return reject(new Error(errorMessage));

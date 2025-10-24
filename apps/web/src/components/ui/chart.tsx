@@ -183,6 +183,7 @@ function ChartTooltipContent({
 		>
 			{!nestLabel ? tooltipLabel : null}
 			<div className="grid gap-1.5">
+				{/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
 				{payload.map((item: any, index: number) => {
 					const key = `${nameKey || item.name || item.dataKey || 'value'}`;
 					const itemConfig = getPayloadConfigFromPayload(config, item, key);
