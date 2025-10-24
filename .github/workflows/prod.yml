@@ -81,6 +81,8 @@ jobs:
 
       - name: Deploy to Vercel (production)
         run: |
+          # Copy pnpm-lock.yaml to apps/web for Vercel
+          cp pnpm-lock.yaml apps/web/
           cd apps/web
           npx vercel@latest deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }}
         env:
