@@ -90,7 +90,7 @@ export function AddActivityDialog({
         }
     }, [open, form]);
 
-    function formatMinutesLabel(totalMinutes: number): string {
+    function _formatMinutesLabel(totalMinutes: number): string {
         const minutes = Math.max(0, Math.round(totalMinutes || 0));
         const hours = Math.floor(minutes / 60);
         const rem = minutes % 60;

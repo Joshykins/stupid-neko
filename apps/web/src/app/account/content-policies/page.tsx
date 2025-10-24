@@ -12,7 +12,7 @@ import { Badge } from '../../../components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../../../components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../../components/ui/command';
-import { ChevronsUpDown, Check as CheckIcon, Ban, ExternalLink, Trash, Trash2 } from 'lucide-react';
+import { ChevronsUpDown, Check as CheckIcon, Ban, ExternalLink, Trash2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import Image from 'next/image';
 
@@ -39,7 +39,7 @@ export default function ContentPoliciesPage() {
                             <h1 className="font-display text-3xl font-black text-main-foreground">
                                 Content policies
                             </h1>
-                            <p className="text-sm text-main-foreground/70 mt-1">Configured automatic tracking behavior for specific contentKeys.Manage 'allow' (auto-start) and 'block' (never track) policies.</p>
+                            <p className="text-sm text-main-foreground/70 mt-1">Configured automatic tracking behavior for specific contentKeys.Manage &apos;allow&apos; (auto-start) and &apos;block&apos; (never track) policies.</p>
                         </div>
                     </div>
                     <PoliciesManager />
@@ -102,7 +102,7 @@ function PoliciesManager() {
         if (isRefreshing) {
             setIsRefreshing(false);
         }
-    }, [data]);
+    }, [data, autoLoading, isRefreshing, cursor, lastAutoCursor]);
 
     return (
         <div className="space-y-3">
@@ -299,7 +299,7 @@ function PoliciesManager() {
                             setAutoLoading(false);
                         }
                     }}
-                    disabled={!Boolean(data?.continueCursor) || autoLoading}
+                    disabled={!data?.continueCursor || autoLoading}
                 >
                     {autoLoading ? 'Loading…' : 'Load more'}
                 </Button>

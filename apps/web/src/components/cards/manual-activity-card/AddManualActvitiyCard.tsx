@@ -16,7 +16,7 @@ export const AddManualActvitiyCard = () => {
 				language activity.
 			</h1>
 			<p className="text-sm text-muted-foreground pb-6">
-				This is useful for activities that can't be tracked automatically.
+				This is useful for activities that can&apos;t be tracked automatically.
 			</p>
 			<div className="flex gap-3 w-full">
 				<AddManualActivityButton />

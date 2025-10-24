@@ -5,7 +5,6 @@ import { StreakVacationCard } from '../components/cards/streaks-card/StreakVacat
 import { UserProgressCard } from '../components/cards/UserProgressCard';
 import Hero from '../components/Hero';
 import { DiscordCard } from '../components/marketing/DiscordCard';
-import { DonutChartCard } from '../components/marketing/DonutChartCard';
 import { IntegrationsCard } from '../components/marketing/IntegrationsCard';
 import ReviewsShowcase, { demoReviews } from '../components/marketing/Reviews';
 import { WeeklyBarsCard } from '../components/marketing/WeeklyBarsCard';

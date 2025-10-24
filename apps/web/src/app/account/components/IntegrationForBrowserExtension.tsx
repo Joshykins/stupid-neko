@@ -66,7 +66,7 @@ export default function IntegrationForBrowserExtension() {
                             <h3 className="font-semibold text-sm">Step 1: Install the Extension</h3>
                             <div className="p-4 rounded-lg bg-muted/50 border">
                                 <p className="text-sm text-muted-foreground mb-3">
-                                    Download and install the browser extension from your browser's extension store.
+                                    Download and install the browser extension from your browser&apos;s extension store.
                                 </p>
                                 <Button
                                     variant="neutral"
@@ -107,7 +107,9 @@ export default function IntegrationForBrowserExtension() {
                                                     await navigator.clipboard.writeText(key);
                                                     setCopied(true);
                                                     setTimeout(() => setCopied(false), 1500);
-                                                } catch { }
+                                                } catch {
+                                                    // ignore errors
+                                                }
                                             }}
                                             disabled={!integrationKey?.integrationId}
                                             aria-label="Copy integration key"
@@ -126,7 +128,9 @@ export default function IntegrationForBrowserExtension() {
                                         onClick={async () => {
                                             try {
                                                 await regenerateIntegrationKey({});
-                                            } catch { }
+                                            } catch {
+                                                // ignore errors
+                                            }
                                         }}
                                     >
                                         {integrationKey?.integrationId ? 'Regenerate' : 'Generate'}
@@ -199,7 +203,9 @@ export default function IntegrationForBrowserExtension() {
                                                 await navigator.clipboard.writeText(key);
                                                 setCopied(true);
                                                 setTimeout(() => setCopied(false), 1500);
-                                            } catch { }
+                                            } catch {
+                                                // ignore errors
+                                            }
                                         }}
                                         disabled={!integrationKey?.integrationId}
                                         aria-label="Copy integration key"
@@ -223,7 +229,9 @@ export default function IntegrationForBrowserExtension() {
                             onClick={async () => {
                                 try {
                                     await clearIntegrationKey({});
-                                } catch { }
+                                } catch {
+                                    // ignore errors
+                                }
                                 setManageOpen(false);
                             }}
                         >

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { api } from '../../../../../../convex/_generated/api';
 import { Button } from '../../ui/button';
 import { ScrollArea } from '../../ui/scroll-area';
+import { Id } from '../../../../../../convex/_generated/dataModel';
 
 export const FavoritesPotentialManualRecordsList = ({
 	onFavoriteAdded,
@@ -121,19 +122,18 @@ export const FavoritesPotentialManualRecordsList = ({
 										type="button"
 										size="icon"
 										onClick={async () => {
-											const isCurrentlyFavorite = !!(r as any)
-												.matchedFavoriteId;
+											const isCurrentlyFavorite = !!r.matchedFavoriteId;
 											try {
 												if (isCurrentlyFavorite) {
 													// Remove from favorites
 													await deleteFavorite({
-														favoriteId: (r as any).matchedFavoriteId,
+														favoriteId: r.matchedFavoriteId as Id<'userTargetLanguageFavoriteActivities'>,
 													});
 													toast.success('Removed from favorites');
 												} else {
 													// Add to favorites
 													await setFavorite({
-														activityId: (r as any)._id,
+														activityId: r._id as Id<'userTargetLanguageActivities'>,
 														isFavorite: true,
 													});
 													toast.success('Added to favorites!');
@@ -151,11 +151,10 @@ export const FavoritesPotentialManualRecordsList = ({
 										}
 									>
 										<Star
-											className={`!size-5 transition-colors ${
-												r.matchedFavoriteId
-													? 'fill-yellow-300 stroke-border'
-													: 'stroke-background/60'
-											}`}
+											className={`!size-5 transition-colors ${r.matchedFavoriteId
+												? 'fill-yellow-300 stroke-border'
+												: 'stroke-background/60'
+												}`}
 										/>
 									</Button>
 								</li>
@@ -165,7 +164,7 @@ export const FavoritesPotentialManualRecordsList = ({
 				</div>
 			</ScrollArea>
 			{recentManuals &&
-				((recentManuals as any).continueCursor ||
+				(recentManuals.continueCursor ||
 					historyCursorStack.length > 0) && (
 					<div className="flex items-center justify-between pt-4">
 						<Button
@@ -187,10 +186,10 @@ export const FavoritesPotentialManualRecordsList = ({
 							variant="neutral"
 							onClick={() => {
 								setHistoryCursorStack(stack => [...stack, cursor]);
-								setCursor((recentManuals as any).continueCursor);
+								setCursor(recentManuals.continueCursor);
 							}}
 							disabled={
-								Boolean(recentManuals) && Boolean((recentManuals as any).isDone)
+								Boolean(recentManuals) && Boolean(recentManuals.isDone)
 							}
 						>
 							Load more

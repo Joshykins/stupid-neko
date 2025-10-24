@@ -15,9 +15,7 @@ type FavoriteData = {
 	defaultDurationInMs: number;
 };
 
-type AddFavoriteButtonProps = {};
-
-export const AddFavoriteButton = ({ }: AddFavoriteButtonProps = {}) => {
+export const AddFavoriteButton = () => {
 	const [mode, setMode] = React.useState<'favorites' | 'history'>('favorites');
 	const [isOpen, setIsOpen] = React.useState(false);
 	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -82,7 +80,7 @@ export const AddFavoriteButton = ({ }: AddFavoriteButtonProps = {}) => {
 								</Button>
 							</div>
 							{mode === 'favorites' && (
-								<FavoritesList onAutoFill={handleFavoriteSelect} />
+								<FavoritesList onAutoFill={(favorite) => handleFavoriteSelect(favorite as FavoriteData)} />
 							)}
 							{mode === 'history' && (
 								<FavoritesPotentialManualRecordsList

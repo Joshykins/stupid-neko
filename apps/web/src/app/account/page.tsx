@@ -23,7 +23,7 @@ import { Label } from '../../components/ui/label';
 import IntegrationsCard from './components/IntegrationsCard';
 
 export default function AccountPage() {
-	const { signOut } = useAuthActions();
+	const { signOut: _signOut } = useAuthActions();
 	const me = useQuery(api.userFunctions.me);
 	const updateMe = useMutation(api.userFunctions.updateMe);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -166,7 +166,7 @@ function EditForm({
 							{field.state.meta.errors?.[0] && (
 								<p className="text-sm text-red-500">
 									{String(
-										(field.state.meta.errors?.[0] as any)?.message ??
+										(field.state.meta.errors?.[0] as { message?: string; })?.message ??
 										field.state.meta.errors?.[0]
 									)}
 								</p>

@@ -1,11 +1,8 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import {
 	internalMutation,
-	internalQuery,
-	mutation,
 	MutationCtx,
 	query,
 	QueryCtx,
@@ -384,7 +381,6 @@ export const updateStreakOnActivity = async ({
 
 import {
 	calculateStreakBonusMultiplier,
-	HABIT_CAP_DAYS,
 } from '../lib/streakBonus';
 
 export const getStreakBonusMultiplier = async (

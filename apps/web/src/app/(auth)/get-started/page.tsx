@@ -19,7 +19,7 @@ export default async function GetStartedPage() {
 		{},
 		{ token }
 	);
-	console.log('needsOnboarding', needsOnboarding);
+	// console.log('needsOnboarding', needsOnboarding);
 	if (needsOnboarding === false) {
 		redirect('/dashboard');
 	}

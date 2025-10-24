@@ -22,6 +22,7 @@ export function WeeklyBarsCard() {
 		return `${r}m`;
 	};
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const Tick = (props: any) => {
 		const { x, y, payload } = props;
 		return (
@@ -49,7 +50,7 @@ export function WeeklyBarsCard() {
 		api.userTargetLanguageActivityFunctions.getWeeklySourceDistribution,
 		{}
 	);
-	const demoData = [
+	const demoData = React.useMemo(() => [
 		{ day: 'Mon', youtube: 60, spotify: 35, website: 20, manual: 10 },
 		{ day: 'Tue', youtube: 40, spotify: 28, website: 26, manual: 12 },
 		{ day: 'Wed', youtube: 30, spotify: 22, website: 18, manual: 8 },
@@ -57,24 +58,25 @@ export function WeeklyBarsCard() {
 		{ day: 'Fri', youtube: 42, spotify: 25, website: 20, manual: 9 },
 		{ day: 'Sat', youtube: 24, spotify: 14, website: 16, manual: 6 },
 		{ day: 'Sun', youtube: 36, spotify: 20, website: 18, manual: 7 },
-	];
+	], []);
 	const data = React.useMemo(() => {
 		if (weekly && weekly.length === 7) return weekly;
 		return demoData;
-	}, [weekly]);
+	}, [weekly, demoData]);
 
 	// Compute totals and prepare placeholder values for zero days
 	const { prepared, maxTotal } = React.useMemo(() => {
 		const withTotals = data.map(d => {
 			const total =
-				(Number((d as any).youtube) || 0) +
-				(Number((d as any).spotify) || 0) +
-				(Number((d as any).website) || 0) +
-				(Number((d as any).manual) || 0);
-			return { ...d, __total: total } as any;
+				(Number((d).youtube) || 0) +
+				(Number((d).spotify) || 0) +
+				(Number((d).website) || 0) +
+				(Number((d).manual) || 0);
+			return { ...d, __total: total };
 		});
-		const max = Math.max(0, ...withTotals.map((d: any) => d.__total));
+		const max = Math.max(0, ...withTotals.map((d) => d.__total));
 		const placeholderHeight = max > 0 ? max : 60; // default height if all zero
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const out = withTotals.map((d: any) => ({
 			...d,
 			__placeholder: d.__total === 0 ? placeholderHeight : 0,
@@ -82,26 +84,6 @@ export function WeeklyBarsCard() {
 		return { prepared: out, maxTotal: placeholderHeight };
 	}, [data]);
 
-	const PlaceholderShape = React.useCallback((props: any) => {
-		const { x, y, width, height, value } = props;
-		if (!value || height <= 0) return null;
-		return (
-			<g pointerEvents="none">
-				<rect
-					x={x}
-					y={y}
-					width={width}
-					height={height}
-					rx={2}
-					ry={2}
-					fill="none"
-					stroke="var(--color-border)"
-					strokeDasharray="4 3"
-					strokeWidth={2}
-				/>
-			</g>
-		);
-	}, []);
 	return (
 		<Card>
 			<CardHeader>
@@ -160,9 +142,11 @@ export function WeeklyBarsCard() {
 						/>
 						<ChartTooltip
 							cursor={false}
+							// eslint-disable-next-line @typescript-eslint/no-explicit-any
 							content={(props: any) => {
 								const payload =
 									props?.payload?.filter(
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
 										(p: any) => p?.dataKey !== '__placeholder'
 									) ?? [];
 								return (
@@ -173,10 +157,13 @@ export function WeeklyBarsCard() {
 										formatter={(
 											value: number,
 											name: string,
+											// eslint-disable-next-line @typescript-eslint/no-explicit-any
 											item: any,
 											index: number,
+											// eslint-disable-next-line @typescript-eslint/no-explicit-any
 											payloadItem: any
 										) => {
+											// eslint-disable-next-line @typescript-eslint/no-explicit-any
 											const label = (chartConfig as any)[name]?.label || name;
 											const color = (payloadItem?.fill ??
 												item?.payload?.fill ??

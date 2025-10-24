@@ -3,9 +3,7 @@ import React from 'react';
 import { Button } from '../../ui/button';
 import { AddActivityDialog } from './AddActivityDialog';
 
-type AddManualActivityButtonProps = {};
-
-export function AddManualActivityButton({ }: AddManualActivityButtonProps = {}) {
+export function AddManualActivityButton() {
 	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
 	return (

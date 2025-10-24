@@ -99,7 +99,9 @@ export default function IntegrationForSpotify() {
                             onClick={async () => {
                                 try {
                                     await disconnect({});
-                                } catch { }
+                                } catch {
+                                    // ignore errors
+                                }
                                 setConfirmOpen(false);
                             }}
                         >

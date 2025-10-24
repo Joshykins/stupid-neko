@@ -1,13 +1,10 @@
 import { v } from 'convex/values';
 import { internal } from '../_generated/api';
 import type { Id } from '../_generated/dataModel';
-import { internalMutation, internalQuery } from '../_generated/server';
+import { internalQuery } from '../_generated/server';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
-import {
-	contentSourceValidator,
-	languageCodeValidator,
-	mediaTypeValidator,
-} from '../schema';
+
+
 import dayjs from '../../lib/dayjs';
 
 export const getContentLabelByContentKey = async ({

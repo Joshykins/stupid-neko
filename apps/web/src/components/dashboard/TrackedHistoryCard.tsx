@@ -159,7 +159,6 @@ const TrackedHistoryItem = ({
 
 	// Calculate XP - use awarded experience for completed, estimate for in-progress
 	const isInProgress = item.state == 'in-progress';
-	console.log(item.state, "STAte?", isInProgress);
 	const xp = Math.max(0, Math.floor(item.awardedExperience ?? 0));
 
 	const SOURCE_STYLES: Record<
@@ -240,7 +239,7 @@ const TrackedHistoryItem = ({
 	const onConfirmDelete = async () => {
 		setDeleting(true);
 		try {
-			await deleteActivity({ activityId: item._id as any });
+			await deleteActivity({ activityId: item._id });
 		} finally {
 			setDeleting(false);
 			setShowConfirmDialog(false);

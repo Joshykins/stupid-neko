@@ -23,7 +23,7 @@ interface TimezoneOption {
 	searchText: string;
 }
 
-export default function Combobox({
+export default function TimezoneCombobox({
 	value,
 	setValue,
 }: {
@@ -31,19 +31,20 @@ export default function Combobox({
 	setValue: (value: string) => void;
 }) {
 	// timezones.default contains the array of timezone objects
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const timezoneList = (timezones as any).default || timezones;
 
 	// Debug: Log the structure to see what we're working with
-	console.log('Timezone data structure:', timezones);
-	console.log('Timezone list:', timezoneList);
+	// console.log('Timezone data structure:', timezones);
+	// console.log('Timezone list:', timezoneList);
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const options: TimezoneOption[] = timezoneList.map((tz: any) => ({
 		value: tz.tzCode,
 		label: tz.label, // Use tz.label instead of tz.name
 		searchText: `${tz.tzCode} ${tz.label} ${tz.utc}`.toLowerCase(),
 	}));
 
-	console.log('Processed options:', options.slice(0, 3)); // Log first 3 options
 
 	const [open, setOpen] = React.useState(false);
 

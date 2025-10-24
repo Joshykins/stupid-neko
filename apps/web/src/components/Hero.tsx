@@ -6,11 +6,10 @@ import type * as React from 'react';
 import LanguageFlagSVG from './LanguageFlagSVG';
 import AppStoreCard from './marketing/AppStoreCard';
 import { UnreleasedBanner } from './marketing/UnreleasedBanner';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-function SakuraBranch({
+function _SakuraBranch({
 	className,
 	style,
 }: {
@@ -58,7 +57,7 @@ function SakuraBranch({
 	);
 }
 
-function MountainCat() {
+function _MountainCat() {
 	return (
 		<svg
 			viewBox="0 0 640 420"

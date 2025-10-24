@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /*
  Simple prefixed logger for the browser extension.
 

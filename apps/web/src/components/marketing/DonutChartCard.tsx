@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Cell, Pie, PieChart } from 'recharts';
 import { useCountUp } from '../../lib/useCountUp';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart';
+import { ChartContainer, ChartTooltip } from '../ui/chart';
 
 export function DonutChartCard() {
 	const chartConfig = {
@@ -16,7 +16,7 @@ export function DonutChartCard() {
 		},
 	} as const;
 
-	const data = [
+	const data = React.useMemo(() => [
 		{ key: 'new', name: 'New', value: 48, fill: 'var(--color-flashcards-new)' },
 		{
 			key: 'learning',
@@ -36,7 +36,7 @@ export function DonutChartCard() {
 			value: 6,
 			fill: 'var(--color-flashcards-suspended)',
 		},
-	];
+	], []);
 	const total = React.useMemo(
 		() => data.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
 		[data]
@@ -71,13 +71,14 @@ export function DonutChartCard() {
 								</Pie>
 								<ChartTooltip
 									cursor={false}
+									// eslint-disable-next-line @typescript-eslint/no-explicit-any
 									content={(props: any) => {
 										const { active, payload } = props || {};
 										if (!active || !payload?.length) return null;
 										const item = payload[0];
 										const key = item?.payload?.key as keyof typeof chartConfig;
-										const label =
-											(chartConfig as any)[key]?.label || item?.name;
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										const label = (chartConfig as any)[key]?.label || item?.name;
 										const value = (item?.payload?.value ?? item?.value) as
 											| number
 											| undefined;

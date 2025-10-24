@@ -12,7 +12,7 @@ const isRootPage = createRouteMatcher(['/']);
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
 	const isAuthenticated = await convexAuth.isAuthenticated();
 	const url = new URL(request.url);
-	const pathname = url.pathname;
+	const _pathname = url.pathname;
 	const oauthError = url.searchParams.get('oauthError');
 
 	// Handle sign-in page redirects

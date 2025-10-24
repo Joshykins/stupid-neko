@@ -1,6 +1,5 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import { api, internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { dangerousTestingEnabled, getEffectiveNow } from './utils';
 import { addLanguageActivity } from './userTargetLanguageActivityFunctions';

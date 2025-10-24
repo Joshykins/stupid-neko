@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from 'convex/react';
-import { Info, Palmtree } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 import { api } from '../../../../../../convex/_generated/api';
@@ -34,7 +33,7 @@ export const StreakVacationCard = ({
 	const percent = isLiveVersion
 		? (status?.percentTowardsNext ?? 0)
 		: demo.percent;
-	const autoHours = isLiveVersion
+	const _autoHours = isLiveVersion
 		? (status?.autoApplyHours ?? 24)
 		: demo.autoHours;
 	const cap = isLiveVersion ? (status?.cap ?? 7) : demo.cap;

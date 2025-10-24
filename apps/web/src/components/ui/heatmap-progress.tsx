@@ -26,7 +26,7 @@ export function HeatmapProgress({
 	const is100Percent = value === 100;
 
 	return (
-		<div className="relative scale-y-80 mx-0.75 mt-0.5">
+		<div className={cn("relative scale-y-80 mx-0.75 mt-0.5", className)}>
 			{is100Percent && <div className="absolute overflow-hidden blur-sm -inset-1 rounded-lg">
 				<div
 					className={cn(

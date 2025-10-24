@@ -1,14 +1,11 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
 import {
-	internalMutation,
-	internalQuery,
 	mutation,
 	MutationCtx,
 	query,
 	QueryCtx,
 } from './_generated/server';
-import { Id } from './_generated/dataModel';
 // Use Web Crypto (available in Convex runtime) to generate random IDs
 
 export function generateIntegrationKey(): string {

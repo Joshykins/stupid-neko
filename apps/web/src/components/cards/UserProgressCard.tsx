@@ -56,7 +56,7 @@ export const UserProgressCard = ({
     // Only use real data when it's fully loaded (not undefined)
     const displayData = userProgress ? userProgress : mockUserProgress;
 
-    const currentLevel = displayData.currentLevel;
+    const _currentLevel = displayData.currentLevel;
     const experienceTowardsNextLevel = displayData.experienceTowardsNextLevel;
     const nextLevelXp = displayData.nextLevelXp;
 
@@ -64,7 +64,7 @@ export const UserProgressCard = ({
         100,
         Math.round((experienceTowardsNextLevel / nextLevelXp) * 100)
     );
-    const xpString = `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`;
+    const _xpString = `${experienceTowardsNextLevel?.toLocaleString() || 0} / ${nextLevelXp?.toLocaleString() || 0} XP`;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {

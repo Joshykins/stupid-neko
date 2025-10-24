@@ -3,7 +3,6 @@ import type { LanguageCode } from '../../schema';
 import type { Id } from '../../_generated/dataModel';
 import { internal } from '../../_generated/api';
 import { detectLanguageWithGemini } from './geminiLanguageDetection';
-import { tryCatch } from '../../../lib/tryCatch';
 
 // Define the patch type for content label updates
 type ContentLabelPatch = {

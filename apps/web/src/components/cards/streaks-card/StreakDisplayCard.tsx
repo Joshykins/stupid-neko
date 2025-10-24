@@ -192,7 +192,9 @@ export default function StreakDisplayCard({
 			if (!me) return;
 			try {
 				await updateMode({ mode: next });
-			} catch {}
+			} catch {
+				// Ignore errors
+			}
 		},
 		[updateMode, liveVersion, me]
 	);
@@ -308,8 +310,8 @@ export default function StreakDisplayCard({
 
 		const isVacation = Boolean(
 			vacationFlags &&
-				vacationFlags.length === totalDaysEffective &&
-				vacationFlags[absoluteIndex]
+			vacationFlags.length === totalDaysEffective &&
+			vacationFlags[absoluteIndex]
 		);
 		const vacationSuffix = isVacation ? ' • Vacation' : '';
 
@@ -322,10 +324,10 @@ export default function StreakDisplayCard({
 		setTooltip(t =>
 			t.visible
 				? {
-						...t,
-						x: ev.clientX - rect.left + 12,
-						y: ev.clientY - rect.top + 12,
-					}
+					...t,
+					x: ev.clientX - rect.left + 12,
+					y: ev.clientY - rect.top + 12,
+				}
 				: t
 		);
 	};

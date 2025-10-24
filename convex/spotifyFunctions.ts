@@ -1,15 +1,9 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import { internal } from './_generated/api';
 import {
-	action,
-	httpAction,
-	internalMutation,
-	internalQuery,
 	mutation,
 	query,
 } from './_generated/server';
-import { Id } from './_generated/dataModel';
 
 // Utilities
 function encodeQuery(

@@ -59,6 +59,7 @@ function Cloud({
 	const travelStyle: CSSProperties = {
 		willChange: 'transform',
 		animation: `cloud-travel ${speedSec}s linear ${delaySec}s infinite`,
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		['--cloud-distance' as any]: `calc(100vw + ${2 * CLOUD_TRAVEL_MARGIN_PX}px + ${2 * CLOUD_BASE_WIDTH_PX * scale}px)`,
 	};
 	const cloudStyle: CSSProperties = {

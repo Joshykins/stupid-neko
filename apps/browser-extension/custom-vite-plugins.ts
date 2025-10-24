@@ -17,9 +17,11 @@ export function stripDevIcons(isDev: boolean) {
 			const outDir = outputOptions.dir;
 			if (!outDir) return;
 			fs.rm(resolve(outDir, 'dev-icon-32.png'), () =>
+				// eslint-disable-next-line no-console
 				console.log(`Deleted dev-icon-32.png from prod build`)
 			);
 			fs.rm(resolve(outDir, 'dev-icon-128.png'), () =>
+				// eslint-disable-next-line no-console
 				console.log(`Deleted dev-icon-128.png from prod build`)
 			);
 		},
