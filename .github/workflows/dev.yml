@@ -49,7 +49,6 @@ jobs:
       - name: Debug secrets availability
         run: |
           echo "INFISICAL_TOKEN_DEV exists: ${{ secrets.INFISICAL_TOKEN_DEV != '' }}"
-          echo "INFISICAL_TOKEN_DEV length: ${{ length(secrets.INFISICAL_TOKEN_DEV) }}"
           echo "INFISICAL_PROJECT_ID exists: ${{ secrets.INFISICAL_PROJECT_ID != '' }}"
           echo "INFISICAL_PROJECT_ID value: ${{ secrets.INFISICAL_PROJECT_ID }}"
 
