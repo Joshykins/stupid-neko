@@ -54,7 +54,21 @@ function getInfisicalToken(stage: Stage): string | null {
 	const perStage = readEnv(
 		stage === 'production' ? 'INFISICAL_TOKEN_PROD' : 'INFISICAL_TOKEN_DEV'
 	);
-	return perStage || readEnv('INFISICAL_TOKEN');
+	const fallback = readEnv('INFISICAL_TOKEN');
+	
+	// Debug logging (hide secrets)
+	console.log(`[DEBUG] Looking for token for stage: ${stage}`);
+	console.log(`[DEBUG] INFISICAL_TOKEN_${stage === 'production' ? 'PROD' : 'DEV'} exists: ${!!perStage}`);
+	console.log(`[DEBUG] INFISICAL_TOKEN fallback exists: ${!!fallback}`);
+	if (perStage) {
+		console.log(`[DEBUG] Using ${stage === 'production' ? 'PROD' : 'DEV'} token, starts with: ${perStage.substring(0, 10)}...`);
+	} else if (fallback) {
+		console.log(`[DEBUG] Using fallback token, starts with: ${fallback.substring(0, 10)}...`);
+	} else {
+		console.log(`[DEBUG] No token found for stage ${stage}`);
+	}
+	
+	return perStage || fallback;
 }
 
 function exportSecretsMap(
@@ -64,6 +78,11 @@ function exportSecretsMap(
 	const projectId =
 		readEnv('INFISICAL_PROJECT_ID') || DEFAULT_INFISICAL_PROJECT_ID;
 	const token = getInfisicalToken(stage);
+	
+	// Debug logging for project ID
+	console.log(`[DEBUG] Project ID from env: ${readEnv('INFISICAL_PROJECT_ID') ? 'YES' : 'NO'}`);
+	console.log(`[DEBUG] Using project ID: ${projectId.substring(0, 8)}...`);
+	console.log(`[DEBUG] Token available: ${!!token}`);
 	// Build args; prefer explicit project and token to avoid cross-account confusion
 	const args = [
 		'export',
@@ -391,6 +410,18 @@ async function main(): Promise<void> {
 	if (!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0') {
 		log('pull-env', 'Debug mode enabled', 'yellow');
 	}
+	
+	// Debug environment variables
+	console.log(`[DEBUG] === Environment Variables Debug ===`);
+	console.log(`[DEBUG] Stage: ${stage}`);
+	console.log(`[DEBUG] INFISICAL_TOKEN_DEV exists: ${!!readEnv('INFISICAL_TOKEN_DEV')}`);
+	console.log(`[DEBUG] INFISICAL_TOKEN_PROD exists: ${!!readEnv('INFISICAL_TOKEN_PROD')}`);
+	console.log(`[DEBUG] INFISICAL_TOKEN exists: ${!!readEnv('INFISICAL_TOKEN')}`);
+	console.log(`[DEBUG] INFISICAL_PROJECT_ID exists: ${!!readEnv('INFISICAL_PROJECT_ID')}`);
+	if (readEnv('INFISICAL_PROJECT_ID')) {
+		console.log(`[DEBUG] INFISICAL_PROJECT_ID value: ${readEnv('INFISICAL_PROJECT_ID')?.substring(0, 8)}...`);
+	}
+	console.log(`[DEBUG] ======================================`);
 
 	log(
 		'pull-env',
