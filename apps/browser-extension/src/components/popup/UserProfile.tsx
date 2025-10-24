@@ -1,15 +1,12 @@
-
 import { cn } from '../../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 
-
-export function UserProfile({ className }: { className?: string; }) {
+export function UserProfile({ className }: { className?: string }) {
 	const auth = useAuth();
 
 	if (!auth.isAuthed || !auth.me) {
 		return null;
 	}
-
 
 	return (
 		<div

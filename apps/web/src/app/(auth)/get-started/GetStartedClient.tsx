@@ -140,7 +140,7 @@ function LanguageStep({ state, setState }: StepRenderProps<State>) {
 function HeardStep({ state, setState }: StepRenderProps<State>) {
 	const adorn = (label: string) => {
 		const base = 'inline-flex items-center justify-center size-7 rounded-md';
-		const map: Record<string, { node: React.ReactNode; className: string; }> = {
+		const map: Record<string, { node: React.ReactNode; className: string }> = {
 			'News/article/blog': {
 				node: <Newspaper className="size-4" />,
 				className: 'text-amber-700 bg-amber-100',
@@ -203,7 +203,7 @@ function HeardStep({ state, setState }: StepRenderProps<State>) {
 function ReasonStep({ state, setState }: StepRenderProps<State>) {
 	const adorn = (label: string) => {
 		const base = 'inline-flex items-center justify-center size-7 rounded-md';
-		const map: Record<string, { node: React.ReactNode; className: string; }> = {
+		const map: Record<string, { node: React.ReactNode; className: string }> = {
 			'Connect with people': {
 				node: <Users className="size-4" />,
 				className: 'text-emerald-700 bg-emerald-100',
@@ -256,7 +256,7 @@ function ReasonStep({ state, setState }: StepRenderProps<State>) {
 }
 
 function LevelStep({ state, setState }: StepRenderProps<State>) {
-	const WifiBars = ({ filled }: { filled: number; }) => {
+	const WifiBars = ({ filled }: { filled: number }) => {
 		const bars = [0, 1, 2, 3];
 		return (
 			<span className="inline-flex items-end gap-0.5 bg-foreground/80 rounded-md p-1">
@@ -335,7 +335,7 @@ export default function GetStartedClient() {
 		[]
 	);
 	const handleControlsChange = React.useCallback(
-		(c: { next: () => void; back: () => void; goTo: (i: number) => void; }) =>
+		(c: { next: () => void; back: () => void; goTo: (i: number) => void }) =>
 			setControls(c),
 		[]
 	);

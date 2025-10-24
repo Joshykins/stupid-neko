@@ -127,8 +127,6 @@ export function Hero() {
 							<UnreleasedBanner />
 
 							<Card className="p-6 md:p-10 relative">
-
-
 								<h1 className="font-display text-4xl md:text-6xl leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">
 									Do you want to{' '}
 									<span className="underline decoration-4 decoration-main ">

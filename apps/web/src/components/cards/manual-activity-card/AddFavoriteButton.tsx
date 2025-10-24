@@ -19,7 +19,8 @@ export const AddFavoriteButton = () => {
 	const [mode, setMode] = React.useState<'favorites' | 'history'>('favorites');
 	const [isOpen, setIsOpen] = React.useState(false);
 	const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-	const [selectedFavorite, setSelectedFavorite] = React.useState<FavoriteData | null>(null);
+	const [selectedFavorite, setSelectedFavorite] =
+		React.useState<FavoriteData | null>(null);
 
 	// Reset to favorites tab whenever popover opens
 	React.useEffect(() => {
@@ -29,14 +30,11 @@ export const AddFavoriteButton = () => {
 	}, [isOpen]);
 
 	// Handle favorite selection and open dialog
-	const handleFavoriteSelect = React.useCallback(
-		(favorite: FavoriteData) => {
-			setSelectedFavorite(favorite);
-			setIsOpen(false); // Close the popover
-			setIsDialogOpen(true); // Open the dialog
-		},
-		[]
-	);
+	const handleFavoriteSelect = React.useCallback((favorite: FavoriteData) => {
+		setSelectedFavorite(favorite);
+		setIsOpen(false); // Close the popover
+		setIsDialogOpen(true); // Open the dialog
+	}, []);
 
 	return (
 		<>
@@ -80,7 +78,11 @@ export const AddFavoriteButton = () => {
 								</Button>
 							</div>
 							{mode === 'favorites' && (
-								<FavoritesList onAutoFill={(favorite) => handleFavoriteSelect(favorite as FavoriteData)} />
+								<FavoritesList
+									onAutoFill={favorite =>
+										handleFavoriteSelect(favorite as FavoriteData)
+									}
+								/>
 							)}
 							{mode === 'history' && (
 								<FavoritesPotentialManualRecordsList
@@ -94,7 +96,7 @@ export const AddFavoriteButton = () => {
 
 			<AddActivityDialog
 				open={isDialogOpen}
-				onOpenChange={(open) => {
+				onOpenChange={open => {
 					setIsDialogOpen(open);
 					if (!open) {
 						setSelectedFavorite(null);

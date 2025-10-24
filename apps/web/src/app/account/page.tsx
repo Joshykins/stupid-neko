@@ -114,12 +114,12 @@ function EditForm({
 }: {
 	initialName: string;
 	initialTimezone: string;
-	onSave: (values: { name: string; timezone: string; }) => Promise<void>;
+	onSave: (values: { name: string; timezone: string }) => Promise<void>;
 	saving: boolean;
 	errorMessage: string | null;
 	successMessage: string | null;
 }) {
-	const form = useForm<{ name: string; timezone: string; }>({
+	const form = useForm<{ name: string; timezone: string }>({
 		defaultValues: {
 			name: initialName,
 			timezone: initialTimezone,
@@ -127,7 +127,7 @@ function EditForm({
 		onSubmit: async ({
 			value,
 		}: {
-			value: { name: string; timezone: string; };
+			value: { name: string; timezone: string };
 		}) => {
 			await onSave(value);
 		},
@@ -166,8 +166,8 @@ function EditForm({
 							{field.state.meta.errors?.[0] && (
 								<p className="text-sm text-red-500">
 									{String(
-										(field.state.meta.errors?.[0] as { message?: string; })?.message ??
-										field.state.meta.errors?.[0]
+										(field.state.meta.errors?.[0] as { message?: string })
+											?.message ?? field.state.meta.errors?.[0]
 									)}
 								</p>
 							)}

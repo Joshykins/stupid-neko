@@ -11,11 +11,9 @@ import { languageCodeValidator } from '../schema';
 // Define proper validators for the patch object
 const contentLabelPatchValidator = v.object({
 	contentUrl: v.optional(v.string()),
-	contentMediaType: v.optional(v.union(
-		v.literal('audio'),
-		v.literal('video'),
-		v.literal('text')
-	)),
+	contentMediaType: v.optional(
+		v.union(v.literal('audio'), v.literal('video'), v.literal('text'))
+	),
 	title: v.optional(v.string()),
 	authorName: v.optional(v.string()),
 	authorUrl: v.optional(v.string()),
@@ -27,7 +25,6 @@ const contentLabelPatchValidator = v.object({
 	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)),
 	geminiLanguageEvidence: v.optional(v.string()),
 });
-
 
 // Base: mark processing
 export const markProcessing = internalMutation({
@@ -41,7 +38,6 @@ export const markProcessing = internalMutation({
 		return null;
 	},
 });
-
 
 // Consolidated mutation that handles the entire content label processing in a single transaction
 export const processContentLabelTransaction = internalMutation({
@@ -71,7 +67,8 @@ export const processContentLabelTransaction = internalMutation({
 				if (label?.contentKey) {
 					await ctx.scheduler.runAfter(
 						0,
-						internal.userTargetLanguageActivityFunctions.updateLanguageActivitiesForContentLabel,
+						internal.userTargetLanguageActivityFunctions
+							.updateLanguageActivitiesForContentLabel,
 						{
 							contentKey: label.contentKey,
 							contentLanguageCode: args.patch.contentLanguageCode,
@@ -146,9 +143,36 @@ export const processOneContentLabel = internalAction({
 				description?: string;
 				thumbnailUrl?: string;
 				fullDurationInMs?: number;
-				contentLanguageCode?: 'en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr';
+				contentLanguageCode?:
+					| 'en'
+					| 'ja'
+					| 'es'
+					| 'fr'
+					| 'de'
+					| 'ko'
+					| 'it'
+					| 'zh'
+					| 'hi'
+					| 'ru'
+					| 'ar'
+					| 'pt'
+					| 'tr';
 				languageEvidence?: string[];
-				isAboutTargetLanguages?: ('en' | 'ja' | 'es' | 'fr' | 'de' | 'ko' | 'it' | 'zh' | 'hi' | 'ru' | 'ar' | 'pt' | 'tr')[];
+				isAboutTargetLanguages?: (
+					| 'en'
+					| 'ja'
+					| 'es'
+					| 'fr'
+					| 'de'
+					| 'ko'
+					| 'it'
+					| 'zh'
+					| 'hi'
+					| 'ru'
+					| 'ar'
+					| 'pt'
+					| 'tr'
+				)[];
 				geminiLanguageEvidence?: string;
 			};
 			error?: string;
@@ -158,20 +182,17 @@ export const processOneContentLabel = internalAction({
 			(async () => {
 				switch (source) {
 					case 'youtube':
-						return await YouTubeProcessing.processYouTubeContentLabel(
-							ctx,
-							{ contentLabelId: args.contentLabelId }
-						);
+						return await YouTubeProcessing.processYouTubeContentLabel(ctx, {
+							contentLabelId: args.contentLabelId,
+						});
 					case 'website':
-						return await WebsiteProcessing.processWebsiteContentLabel(
-							ctx,
-							{ contentLabelId: args.contentLabelId }
-						);
+						return await WebsiteProcessing.processWebsiteContentLabel(ctx, {
+							contentLabelId: args.contentLabelId,
+						});
 					case 'spotify':
-						return await SpotifyProcessing.processSpotifyContentLabel(
-							ctx,
-							{ contentLabelId: args.contentLabelId }
-						);
+						return await SpotifyProcessing.processSpotifyContentLabel(ctx, {
+							contentLabelId: args.contentLabelId,
+						});
 					default:
 						throw new Error(`source [${source}] not supported`);
 				}
@@ -189,12 +210,16 @@ export const processOneContentLabel = internalAction({
 
 		// Use a single mutation to complete or fail the processing
 		const { error: transactionError } = await tryCatch(
-			ctx.runMutation(internal.labelingEngine.contentLabelActions.processContentLabelTransaction, {
-				contentLabelId: args.contentLabelId,
-				success: processingResult.success,
-				patch: processingResult.patch,
-				error: processingResult.error,
-			})
+			ctx.runMutation(
+				internal.labelingEngine.contentLabelActions
+					.processContentLabelTransaction,
+				{
+					contentLabelId: args.contentLabelId,
+					success: processingResult.success,
+					patch: processingResult.patch,
+					error: processingResult.error,
+				}
+			)
 		);
 
 		if (transactionError) {

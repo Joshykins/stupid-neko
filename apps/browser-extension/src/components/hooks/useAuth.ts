@@ -59,7 +59,7 @@ export function useAuth(): AuthState {
 
 		// Re-fetch when integrationId changes in storage
 		const onStorageChange = (
-			changes: { [key: string]: chrome.storage.StorageChange; },
+			changes: { [key: string]: chrome.storage.StorageChange },
 			area: string
 		) => {
 			if (

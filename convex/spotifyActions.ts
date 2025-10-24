@@ -1,6 +1,10 @@
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import { internalAction, internalMutation, internalQuery } from './_generated/server';
+import {
+	internalAction,
+	internalMutation,
+	internalQuery,
+} from './_generated/server';
 import { tryCatch } from '../lib/tryCatch';
 import { recordContentActivity } from './labelingEngine/contentActivityFunctions';
 
@@ -16,11 +20,14 @@ export const finishAuth = internalAction({
 		code: v.string(),
 	},
 	returns: v.object({ ok: v.boolean() }),
-	handler: async (ctx, args): Promise<{ ok: boolean; }> => {
-		const result = await ctx.runMutation(internal.spotifyActions.finishAuthMutation, {
-			state: args.state,
-			code: args.code,
-		});
+	handler: async (ctx, args): Promise<{ ok: boolean }> => {
+		const result = await ctx.runMutation(
+			internal.spotifyActions.finishAuthMutation,
+			{
+				state: args.state,
+				code: args.code,
+			}
+		);
 		return result;
 	},
 });
@@ -31,16 +38,18 @@ export const finishAuthMutation = internalMutation({
 		code: v.string(),
 	},
 	returns: v.object({ ok: v.boolean() }),
-	handler: async (ctx, args): Promise<{ ok: boolean; }> => {
+	handler: async (ctx, args): Promise<{ ok: boolean }> => {
 		const row = await ctx.db
 			.query('spotifyAuthStates')
-			.withIndex('by_state', (q) => q.eq('state', args.state))
+			.withIndex('by_state', q => q.eq('state', args.state))
 			.unique();
 		if (!row) throw new Error('Invalid state');
 		const userId = row.userId;
 
 		const clientId = process.env.SPOTIFY_CLIENT_ID as string | undefined;
-		const clientSecret = process.env.SPOTIFY_CLIENT_SECRET as string | undefined;
+		const clientSecret = process.env.SPOTIFY_CLIENT_SECRET as
+			| string
+			| undefined;
 		const redirectUri = getRedirectUri();
 		if (!clientId || !clientSecret)
 			throw new Error('Missing Spotify client credentials');
@@ -89,7 +98,7 @@ export const finishAuthMutation = internalMutation({
 		// Upsert Spotify account
 		const existing = await ctx.db
 			.query('spotifyAccounts')
-			.withIndex('by_user', (q) => q.eq('userId', userId))
+			.withIndex('by_user', q => q.eq('userId', userId))
 			.unique();
 
 		if (existing) {
@@ -122,18 +131,22 @@ export const finishAuthMutation = internalMutation({
 	},
 });
 
-
 export const refreshToken = internalAction({
 	args: { userId: v.id('users') },
 	returns: v.object({ ok: v.boolean() }),
-	handler: async (ctx, args): Promise<{ ok: boolean; }> => {
+	handler: async (ctx, args): Promise<{ ok: boolean }> => {
 		// Get the account info first
-		const account = await ctx.runQuery(internal.spotifyActions.getSpotifyAccount, { userId: args.userId });
+		const account = await ctx.runQuery(
+			internal.spotifyActions.getSpotifyAccount,
+			{ userId: args.userId }
+		);
 		if (!account) return { ok: true };
 		if (account.expiresAt > Date.now() + 60_000) return { ok: true };
 
 		const clientId = process.env.SPOTIFY_CLIENT_ID as string | undefined;
-		const clientSecret = process.env.SPOTIFY_CLIENT_SECRET as string | undefined;
+		const clientSecret = process.env.SPOTIFY_CLIENT_SECRET as
+			| string
+			| undefined;
 		if (!clientId || !clientSecret) return { ok: true };
 
 		const body = new URLSearchParams({
@@ -141,7 +154,7 @@ export const refreshToken = internalAction({
 			refresh_token: account.refreshToken,
 		});
 		const basic = btoa(`${clientId}:${clientSecret}`);
-		
+
 		const { data: resp, error: fetchError } = await tryCatch(
 			fetch('https://accounts.spotify.com/api/token', {
 				method: 'POST',
@@ -157,7 +170,7 @@ export const refreshToken = internalAction({
 			console.debug('[spotifyActions.refreshToken] token refresh failed', {
 				userId: args.userId,
 				status: resp?.status,
-				error: fetchError?.message
+				error: fetchError?.message,
 			});
 			return { ok: false };
 		}
@@ -166,7 +179,7 @@ export const refreshToken = internalAction({
 		if (jsonError) {
 			console.debug('[spotifyActions.refreshToken] JSON parse failed', {
 				userId: args.userId,
-				error: jsonError.message
+				error: jsonError.message,
 			});
 			return { ok: false };
 		}
@@ -183,18 +196,24 @@ export const refreshToken = internalAction({
 				accessToken,
 				refreshToken,
 				expiresIn,
-				scope
+				scope,
 			});
-			
-			console.debug('[spotifyActions.refreshToken] token refreshed successfully', {
-				userId: args.userId,
-				newRefreshToken: !!refreshToken
-			});
+
+			console.debug(
+				'[spotifyActions.refreshToken] token refreshed successfully',
+				{
+					userId: args.userId,
+					newRefreshToken: !!refreshToken,
+				}
+			);
 		} else {
-			console.debug('[spotifyActions.refreshToken] no access token in response', {
-				userId: args.userId,
-				response: json
-			});
+			console.debug(
+				'[spotifyActions.refreshToken] no access token in response',
+				{
+					userId: args.userId,
+					response: json,
+				}
+			);
 			return { ok: false };
 		}
 
@@ -208,20 +227,21 @@ export const updateSpotifyTokens = internalMutation({
 		accessToken: v.string(),
 		refreshToken: v.optional(v.string()),
 		expiresIn: v.optional(v.number()),
-		scope: v.optional(v.string())
+		scope: v.optional(v.string()),
 	},
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const acct = await ctx.db
 			.query('spotifyAccounts')
-			.withIndex('by_user', (q) => q.eq('userId', args.userId))
+			.withIndex('by_user', q => q.eq('userId', args.userId))
 			.unique();
-		
+
 		if (!acct) return null;
 
 		const updateData: any = {
 			accessToken: args.accessToken,
-			expiresAt: Date.now() + Math.max(0, (args.expiresIn || 0) * 1000) - 30_000,
+			expiresAt:
+				Date.now() + Math.max(0, (args.expiresIn || 0) * 1000) - 30_000,
 		};
 
 		// Only update refresh token if a new one was provided
@@ -245,24 +265,32 @@ export const updateSpotifyTokens = internalMutation({
  */
 export const pollAllUsers = internalAction({
 	args: {},
-	returns: v.object({ 
+	returns: v.object({
 		processed: v.number(),
 		errors: v.number(),
-		skipped: v.number()
+		skipped: v.number(),
 	}),
-	handler: async (ctx): Promise<{ processed: number; errors: number; skipped: number }> => {
+	handler: async (
+		ctx
+	): Promise<{ processed: number; errors: number; skipped: number }> => {
 		console.debug('[spotifyActions.pollAllUsers] starting');
 
 		// Get all Spotify accounts with valid tokens
-		const accounts = await ctx.runQuery(internal.spotifyActions.getActiveSpotifyAccounts, {});
-		
+		const accounts = await ctx.runQuery(
+			internal.spotifyActions.getActiveSpotifyAccounts,
+			{}
+		);
+
 		let processed = 0;
 		let errors = 0;
 		let skipped = 0;
 
 		for (const account of accounts) {
 			try {
-				const result = await ctx.runAction(internal.spotifyActions.pollUserSpotify, { userId: account.userId });
+				const result = await ctx.runAction(
+					internal.spotifyActions.pollUserSpotify,
+					{ userId: account.userId }
+				);
 				if (result.success) {
 					processed++;
 				} else if (result.skipped) {
@@ -273,7 +301,7 @@ export const pollAllUsers = internalAction({
 			} catch (error) {
 				console.error('[spotifyActions.pollAllUsers] error for user', {
 					userId: account.userId,
-					error: error instanceof Error ? error.message : String(error)
+					error: error instanceof Error ? error.message : String(error),
 				});
 				errors++;
 			}
@@ -283,11 +311,11 @@ export const pollAllUsers = internalAction({
 			processed,
 			errors,
 			skipped,
-			total: accounts.length
+			total: accounts.length,
 		});
 
 		return { processed, errors, skipped };
-	}
+	},
 });
 
 /**
@@ -295,27 +323,31 @@ export const pollAllUsers = internalAction({
  */
 export const getActiveSpotifyAccounts = internalQuery({
 	args: {},
-	returns: v.array(v.object({
-		userId: v.id('users'),
-		spotifyUserId: v.optional(v.string()),
-		displayName: v.optional(v.string())
-	})),
-	handler: async (ctx) => {
+	returns: v.array(
+		v.object({
+			userId: v.id('users'),
+			spotifyUserId: v.optional(v.string()),
+			displayName: v.optional(v.string()),
+		})
+	),
+	handler: async ctx => {
 		// Get all Spotify accounts that have valid tokens
 		const accounts = await ctx.db
 			.query('spotifyAccounts')
-			.filter(q => q.and(
-				q.neq(q.field('accessToken'), ''),
-				q.neq(q.field('refreshToken'), ''),
-			))
+			.filter(q =>
+				q.and(
+					q.neq(q.field('accessToken'), ''),
+					q.neq(q.field('refreshToken'), '')
+				)
+			)
 			.collect();
 
 		return accounts.map(account => ({
 			userId: account.userId,
 			spotifyUserId: account.spotifyUserId,
-			displayName: account.displayName
+			displayName: account.displayName,
 		}));
-	}
+	},
 });
 
 /**
@@ -323,51 +355,68 @@ export const getActiveSpotifyAccounts = internalQuery({
  */
 export const pollUserSpotify = internalAction({
 	args: {
-		userId: v.id('users')
+		userId: v.id('users'),
 	},
 	returns: v.object({
 		success: v.boolean(),
 		skipped: v.boolean(),
-		error: v.optional(v.string())
+		error: v.optional(v.string()),
 	}),
-	handler: async (ctx, args): Promise<{ success: boolean; skipped: boolean; error?: string }> => {
-		console.debug('[spotifyActions.pollUserSpotify] starting', { userId: args.userId });
+	handler: async (
+		ctx,
+		args
+	): Promise<{ success: boolean; skipped: boolean; error?: string }> => {
+		console.debug('[spotifyActions.pollUserSpotify] starting', {
+			userId: args.userId,
+		});
 
 		try {
 			// Refresh token if needed
 			const { data: refreshResult, error: refreshError } = await tryCatch(
-				ctx.runAction(internal.spotifyActions.refreshToken, { userId: args.userId })
+				ctx.runAction(internal.spotifyActions.refreshToken, {
+					userId: args.userId,
+				})
 			);
 
 			if (refreshError || !refreshResult?.ok) {
 				console.debug('[spotifyActions.pollUserSpotify] token refresh failed', {
 					userId: args.userId,
-					error: refreshError?.message
+					error: refreshError?.message,
 				});
 				return { success: false, skipped: true, error: 'Token refresh failed' };
 			}
 
 			// Get the user's Spotify account
-			const account = await ctx.runQuery(internal.spotifyActions.getSpotifyAccount, { userId: args.userId });
+			const account = await ctx.runQuery(
+				internal.spotifyActions.getSpotifyAccount,
+				{ userId: args.userId }
+			);
 			if (!account) {
-				return { success: false, skipped: true, error: 'No Spotify account found' };
+				return {
+					success: false,
+					skipped: true,
+					error: 'No Spotify account found',
+				};
 			}
 
 			// Call Spotify API to get currently playing track/episode
 			// Include additional_types=episode to get podcast episode data
 			const { data: spotifyResponse, error: spotifyError } = await tryCatch(
-				fetch('https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode', {
-					headers: {
-						'Authorization': `Bearer ${account.accessToken}`,
-						'Content-Type': 'application/json'
+				fetch(
+					'https://api.spotify.com/v1/me/player/currently-playing?additional_types=episode',
+					{
+						headers: {
+							Authorization: `Bearer ${account.accessToken}`,
+							'Content-Type': 'application/json',
+						},
 					}
-				})
+				)
 			);
 
 			if (spotifyError) {
 				console.debug('[spotifyActions.pollUserSpotify] Spotify API error', {
 					userId: args.userId,
-					error: spotifyError.message
+					error: spotifyError.message,
 				});
 				return { success: false, skipped: true, error: spotifyError.message };
 			}
@@ -379,37 +428,57 @@ export const pollUserSpotify = internalAction({
 				}
 				if (spotifyResponse?.status === 401) {
 					// Token expired - mark account as needing refresh
-					console.debug('[spotifyActions.pollUserSpotify] token expired', { userId: args.userId });
+					console.debug('[spotifyActions.pollUserSpotify] token expired', {
+						userId: args.userId,
+					});
 					return { success: false, skipped: true, error: 'Token expired' };
 				}
 				if (spotifyResponse?.status === 403) {
 					// Forbidden - user may not be registered or app configuration issue
-					console.debug('[spotifyActions.pollUserSpotify] forbidden - check Spotify app settings', { 
-						userId: args.userId,
-						status: spotifyResponse.status
-					});
-					return { success: false, skipped: true, error: 'Spotify app configuration issue - check developer dashboard' };
+					console.debug(
+						'[spotifyActions.pollUserSpotify] forbidden - check Spotify app settings',
+						{
+							userId: args.userId,
+							status: spotifyResponse.status,
+						}
+					);
+					return {
+						success: false,
+						skipped: true,
+						error:
+							'Spotify app configuration issue - check developer dashboard',
+					};
 				}
 				if (spotifyResponse?.status === 429) {
 					// Rate limited - skip this user for now
-					console.debug('[spotifyActions.pollUserSpotify] rate limited', { userId: args.userId });
+					console.debug('[spotifyActions.pollUserSpotify] rate limited', {
+						userId: args.userId,
+					});
 					return { success: false, skipped: true, error: 'Rate limited' };
 				}
-				
-				const errorText = await spotifyResponse?.text().catch(() => 'Unknown error');
+
+				const errorText = await spotifyResponse
+					?.text()
+					.catch(() => 'Unknown error');
 				console.debug('[spotifyActions.pollUserSpotify] Spotify API error', {
 					userId: args.userId,
 					status: spotifyResponse?.status,
-					error: errorText
+					error: errorText,
 				});
-				return { success: false, skipped: true, error: `Spotify API error: ${spotifyResponse?.status}` };
+				return {
+					success: false,
+					skipped: true,
+					error: `Spotify API error: ${spotifyResponse?.status}`,
+				};
 			}
 
-			const { data: trackData, error: jsonError } = await tryCatch(spotifyResponse.json());
+			const { data: trackData, error: jsonError } = await tryCatch(
+				spotifyResponse.json()
+			);
 			if (jsonError) {
 				console.debug('[spotifyActions.pollUserSpotify] JSON parse error', {
 					userId: args.userId,
-					error: jsonError.message
+					error: jsonError.message,
 				});
 				return { success: false, skipped: true, error: jsonError.message };
 			}
@@ -422,50 +491,57 @@ export const pollUserSpotify = internalAction({
 				itemType: trackData?.item?.type,
 				itemName: trackData?.item?.name,
 				progress: trackData?.progress_ms,
-				device: trackData?.device?.name
+				device: trackData?.device?.name,
 			});
 
 			// Check if something is actually playing
 			if (!trackData?.is_playing) {
 				console.debug('[spotifyActions.pollUserSpotify] not playing', {
 					userId: args.userId,
-					isPlaying: trackData?.is_playing
+					isPlaying: trackData?.is_playing,
 				});
 				return { success: true, skipped: true };
 			}
 
 			// If playing but no item, this might be unsupported content type
 			if (!trackData?.item) {
-				console.debug('[spotifyActions.pollUserSpotify] playing but no item (unsupported content type)', {
-					userId: args.userId,
-					isPlaying: trackData?.is_playing,
-					progress: trackData?.progress_ms,
-					device: trackData?.device?.name
-				});
+				console.debug(
+					'[spotifyActions.pollUserSpotify] playing but no item (unsupported content type)',
+					{
+						userId: args.userId,
+						isPlaying: trackData?.is_playing,
+						progress: trackData?.progress_ms,
+						device: trackData?.device?.name,
+					}
+				);
 				return { success: true, skipped: true };
 			}
 
 			const track = trackData.item;
 			const trackId = track.id;
 			const trackName = track.name;
-			
+
 			// Handle both music tracks and podcast episodes
 			let artists: string;
 			let album: string;
-			
+
 			if (track.type === 'episode') {
 				// Podcast episode
 				artists = track.show?.name || 'Unknown Show';
 				album = track.show?.name || 'Unknown Show';
 			} else {
 				// Music track
-				artists = track.artists?.map((artist: any) => artist.name).join(', ') || 'Unknown Artist';
+				artists =
+					track.artists?.map((artist: any) => artist.name).join(', ') ||
+					'Unknown Artist';
 				album = track.album?.name || 'Unknown Album';
 			}
-			
+
 			const duration = track.duration_ms || 0;
 			const progress = trackData.progress_ms || 0;
-			const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${trackId}`;
+			const trackUrl =
+				track.external_urls?.spotify ||
+				`https://open.spotify.com/track/${trackId}`;
 
 			console.debug('[spotifyActions.pollUserSpotify] found playing track', {
 				userId: args.userId,
@@ -475,7 +551,7 @@ export const pollUserSpotify = internalAction({
 				album,
 				progress,
 				duration,
-				type: track.type
+				type: track.type,
 			});
 
 			// Create content key
@@ -491,38 +567,40 @@ export const pollUserSpotify = internalAction({
 					artists,
 					album,
 					duration,
-					progress
+					progress,
 				})
 			);
 
 			if (recordError) {
-				console.error('[spotifyActions.pollUserSpotify] failed to record activity', {
-					userId: args.userId,
-					error: recordError.message
-				});
+				console.error(
+					'[spotifyActions.pollUserSpotify] failed to record activity',
+					{
+						userId: args.userId,
+						error: recordError.message,
+					}
+				);
 				return { success: false, skipped: false, error: recordError.message };
 			}
 
 			console.debug('[spotifyActions.pollUserSpotify] recorded activity', {
 				userId: args.userId,
 				contentKey,
-				activityId: result?.languageActivityId
+				activityId: result?.languageActivityId,
 			});
 
 			return { success: true, skipped: false };
-
 		} catch (error) {
 			console.error('[spotifyActions.pollUserSpotify] unexpected error', {
 				userId: args.userId,
-				error: error instanceof Error ? error.message : String(error)
+				error: error instanceof Error ? error.message : String(error),
 			});
-			return { 
-				success: false, 
-				skipped: false, 
-				error: error instanceof Error ? error.message : 'Unknown error' 
+			return {
+				success: false,
+				skipped: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
 			};
 		}
-	}
+	},
 });
 
 /**
@@ -530,13 +608,13 @@ export const pollUserSpotify = internalAction({
  */
 export const getSpotifyAccount = internalQuery({
 	args: {
-		userId: v.id('users')
+		userId: v.id('users'),
 	},
 	returns: v.union(
 		v.object({
 			accessToken: v.string(),
 			refreshToken: v.string(),
-			expiresAt: v.number()
+			expiresAt: v.number(),
 		}),
 		v.null()
 	),
@@ -551,9 +629,9 @@ export const getSpotifyAccount = internalQuery({
 		return {
 			accessToken: account.accessToken,
 			refreshToken: account.refreshToken,
-			expiresAt: account.expiresAt
+			expiresAt: account.expiresAt,
 		};
-	}
+	},
 });
 
 /**
@@ -568,12 +646,12 @@ export const recordSpotifyActivity = internalMutation({
 		artists: v.string(),
 		album: v.string(),
 		duration: v.number(),
-		progress: v.number()
+		progress: v.number(),
 	},
 	returns: v.object({
 		languageActivityId: v.optional(v.id('userTargetLanguageActivities')),
 		contentLabelId: v.optional(v.id('contentLabels')),
-		isWaitingOnLabeling: v.optional(v.boolean())
+		isWaitingOnLabeling: v.optional(v.boolean()),
 	}),
 	handler: async (ctx, args) => {
 		// Record the content activity using the existing system
@@ -585,8 +663,8 @@ export const recordSpotifyActivity = internalMutation({
 				activityType: 'heartbeat',
 				contentKey: args.contentKey,
 				url: args.contentUrl,
-				occurredAt: Date.now()
-			}
+				occurredAt: Date.now(),
+			},
 		});
 
 		// If a content label was created, update it with track metadata
@@ -597,14 +675,14 @@ export const recordSpotifyActivity = internalMutation({
 				description: `${args.trackName} by ${args.artists} from ${args.album}`,
 				thumbnailUrl: undefined, // We don't have album art URL from the currently playing endpoint
 				fullDurationInMs: args.duration,
-				contentUrl: args.contentUrl
+				contentUrl: args.contentUrl,
 			});
 		}
 
 		return {
 			languageActivityId: result.languageActivityId,
 			contentLabelId: result.contentLabelId,
-			isWaitingOnLabeling: result.isWaitingOnLabeling
+			isWaitingOnLabeling: result.isWaitingOnLabeling,
 		};
-	}
+	},
 });

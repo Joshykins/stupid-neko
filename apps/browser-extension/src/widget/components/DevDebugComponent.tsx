@@ -16,7 +16,7 @@ interface DevDebugComponentProps {
 export function DevDebugComponent({
 	widgetState,
 	userInfo,
-	currentTime
+	currentTime,
 }: DevDebugComponentProps) {
 	const sessionDuration = widgetState.startTime
 		? Math.floor((currentTime - widgetState.startTime) / 1000)
@@ -32,8 +32,10 @@ export function DevDebugComponent({
 	};
 
 	const getProviderColor = (provider?: string) => {
-		if (provider === 'youtube') return 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30';
-		if (provider === 'website-provider') return 'snbex:bg-blue-500/20 snbex:text-blue-200 snbex:border-blue-400/30';
+		if (provider === 'youtube')
+			return 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30';
+		if (provider === 'website-provider')
+			return 'snbex:bg-blue-500/20 snbex:text-blue-200 snbex:border-blue-400/30';
 		return 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30';
 	};
 
@@ -50,8 +52,12 @@ export function DevDebugComponent({
 						{/* Widget State */}
 						<div className="snbex:space-y-1">
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">State:</span>
-								<Badge className={`snbex:px-2 snbex:py-1 snbex:rounded snbex:border ${getStateColor(widgetState.state)}`}>
+								<span className="snbex:font-medium snbex:text-white">
+									State:
+								</span>
+								<Badge
+									className={`snbex:px-2 snbex:py-1 snbex:rounded snbex:border ${getStateColor(widgetState.state)}`}
+								>
 									{widgetState.state}
 								</Badge>
 							</div>
@@ -60,21 +66,29 @@ export function DevDebugComponent({
 							<div className="snbex:ml-2 snbex:space-y-1">
 								<div className="snbex:flex snbex:items-center snbex:gap-2">
 									<span className="snbex:text-white/70">Visibility:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.visibility === 'visible' ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-yellow-500/20 snbex:text-yellow-200 snbex:border-yellow-400/30'}`}>
+									<Badge
+										className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.visibility === 'visible' ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-yellow-500/20 snbex:text-yellow-200 snbex:border-yellow-400/30'}`}
+									>
 										{stateConfig.visibility}
 									</Badge>
 								</div>
 
 								<div className="snbex:flex snbex:items-center snbex:gap-2">
 									<span className="snbex:text-white/70">Open On Load:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.openOnLoad ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
+									<Badge
+										className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.openOnLoad ? 'snbex:bg-green-500/20 snbex:text-green-200 snbex:border-green-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}
+									>
 										{stateConfig.openOnLoad ? 'Yes' : 'No'}
 									</Badge>
 								</div>
 
 								<div className="snbex:flex snbex:items-center snbex:gap-2">
-									<span className="snbex:text-white/70">Force Always Expanded:</span>
-									<Badge className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.forceAlwaysExpanded ? 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}>
+									<span className="snbex:text-white/70">
+										Force Always Expanded:
+									</span>
+									<Badge
+										className={`snbex:px-1.5 snbex:py-0.5 snbex:rounded snbex:text-xs ${stateConfig.forceAlwaysExpanded ? 'snbex:bg-red-500/20 snbex:text-red-200 snbex:border-red-400/30' : 'snbex:bg-gray-500/20 snbex:text-gray-200 snbex:border-gray-400/30'}`}
+									>
 										{stateConfig.forceAlwaysExpanded ? 'Yes' : 'No'}
 									</Badge>
 								</div>
@@ -84,8 +98,12 @@ export function DevDebugComponent({
 						{/* Provider */}
 						{widgetState.provider && (
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">Provider:</span>
-								<Badge className={`snbex:px-2 snbex:py-1 snbex:rounded snbex:border ${getProviderColor(widgetState.provider)}`}>
+								<span className="snbex:font-medium snbex:text-white">
+									Provider:
+								</span>
+								<Badge
+									className={`snbex:px-2 snbex:py-1 snbex:rounded snbex:border ${getProviderColor(widgetState.provider)}`}
+								>
 									{widgetState.provider}
 								</Badge>
 							</div>
@@ -94,7 +112,9 @@ export function DevDebugComponent({
 						{/* Domain */}
 						{widgetState.domain && (
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">Domain:</span>
+								<span className="snbex:font-medium snbex:text-white">
+									Domain:
+								</span>
 								<span className="snbex:font-mono snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
 									{widgetState.domain}
 								</span>
@@ -104,7 +124,9 @@ export function DevDebugComponent({
 						{/* Detected Language */}
 						{widgetState.detectedLanguage && (
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">Detected Lang:</span>
+								<span className="snbex:font-medium snbex:text-white">
+									Detected Lang:
+								</span>
 								<Badge className="snbex:bg-purple-500/20 snbex:text-purple-200 snbex:border-purple-400/30 snbex:px-2 snbex:py-1 snbex:rounded">
 									{widgetState.detectedLanguage}
 								</Badge>
@@ -122,7 +144,9 @@ export function DevDebugComponent({
 						{/* Session Duration */}
 						{widgetState.startTime && (
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">Session:</span>
+								<span className="snbex:font-medium snbex:text-white">
+									Session:
+								</span>
 								<span className="snbex:font-mono snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
 									{sessionDuration}s
 								</span>
@@ -132,18 +156,21 @@ export function DevDebugComponent({
 						{/* Error */}
 						{widgetState.error && (
 							<div className="snbex:flex snbex:items-center snbex:gap-2">
-								<span className="snbex:font-medium snbex:text-white">Error:</span>
+								<span className="snbex:font-medium snbex:text-white">
+									Error:
+								</span>
 								<span className="snbex:font-mono snbex:text-red-200 snbex:bg-red-500/20 snbex:px-2 snbex:py-1 snbex:rounded snbex:break-all">
 									{widgetState.error}
 								</span>
 							</div>
 						)}
 
-
 						{/* Metadata */}
 						{widgetState.metadata && (
 							<div className="snbex:space-y-1">
-								<span className="snbex:font-medium snbex:text-white">Metadata:</span>
+								<span className="snbex:font-medium snbex:text-white">
+									Metadata:
+								</span>
 								<div className="snbex:ml-2 snbex:space-y-1">
 									{widgetState.metadata.title && (
 										<div className="snbex:flex snbex:items-center snbex:gap-2">
@@ -157,38 +184,43 @@ export function DevDebugComponent({
 										<div className="snbex:flex snbex:items-center snbex:gap-2">
 											<span className="snbex:text-white/70">Duration:</span>
 											<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
-												{Math.floor(widgetState.metadata.duration / 60)}m {widgetState.metadata.duration % 60}s
+												{Math.floor(widgetState.metadata.duration / 60)}m{' '}
+												{widgetState.metadata.duration % 60}s
 											</span>
 										</div>
 									)}
-									{typeof widgetState.metadata.language === 'string' && widgetState.metadata.language && (
-										<div className="snbex:flex snbex:items-center snbex:gap-2">
-											<span className="snbex:text-white/70">Content Lang:</span>
-											<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
-												{widgetState.metadata.language}
-											</span>
-										</div>
-									)}
-									{typeof widgetState.metadata.url === 'string' && widgetState.metadata.url && (
-										<div className="snbex:flex snbex:items-center snbex:gap-2">
-											<span className="snbex:text-white/70">URL:</span>
-											<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded snbex:truncate">
-												{widgetState.metadata.url}
-											</span>
-										</div>
-									)}
-									{typeof widgetState.metadata.videoId === 'string' && widgetState.metadata.videoId && (
-										<div className="snbex:flex snbex:items-center snbex:gap-2">
-											<span className="snbex:text-white/70">Video ID:</span>
-											<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
-												{widgetState.metadata.videoId}
-											</span>
-										</div>
-									)}
+									{typeof widgetState.metadata.language === 'string' &&
+										widgetState.metadata.language && (
+											<div className="snbex:flex snbex:items-center snbex:gap-2">
+												<span className="snbex:text-white/70">
+													Content Lang:
+												</span>
+												<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
+													{widgetState.metadata.language}
+												</span>
+											</div>
+										)}
+									{typeof widgetState.metadata.url === 'string' &&
+										widgetState.metadata.url && (
+											<div className="snbex:flex snbex:items-center snbex:gap-2">
+												<span className="snbex:text-white/70">URL:</span>
+												<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded snbex:truncate">
+													{widgetState.metadata.url}
+												</span>
+											</div>
+										)}
+									{typeof widgetState.metadata.videoId === 'string' &&
+										widgetState.metadata.videoId && (
+											<div className="snbex:flex snbex:items-center snbex:gap-2">
+												<span className="snbex:text-white/70">Video ID:</span>
+												<span className="snbex:font-mono snbex:text-xs snbex:text-white/80 snbex:bg-white/10 snbex:px-2 snbex:py-1 snbex:rounded">
+													{widgetState.metadata.videoId}
+												</span>
+											</div>
+										)}
 								</div>
 							</div>
 						)}
-
 					</div>
 				</CardContent>
 			</Card>

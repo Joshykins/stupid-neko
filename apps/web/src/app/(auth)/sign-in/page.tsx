@@ -3,11 +3,7 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useForm } from '@tanstack/react-form';
 import { useQuery } from 'convex/react';
-import {
-	ArrowBigLeftDash,
-	Loader2,
-	Sparkles,
-} from 'lucide-react';
+import { ArrowBigLeftDash, Loader2, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -85,7 +81,7 @@ export default function SignInPage() {
 		if (validation !== undefined) setIsValidating(false);
 	}, [validation, debouncedCode]);
 
-	const _form = useForm<{ email: string; password: string; }>({
+	const _form = useForm<{ email: string; password: string }>({
 		defaultValues: {
 			email: '',
 			password: '',
@@ -249,7 +245,9 @@ export default function SignInPage() {
 										}
 										await signIn('discord', { redirectTo: '/get-started' });
 									} catch (err: unknown) {
-										const error = err as { errors?: Array<{ message?: string; }>; };
+										const error = err as {
+											errors?: Array<{ message?: string }>;
+										};
 										setErrorMessage(
 											error?.errors?.[0]?.message || 'OAuth failed'
 										);
@@ -302,7 +300,9 @@ export default function SignInPage() {
 										}
 										await signIn('google', { redirectTo: '/get-started' });
 									} catch (err: unknown) {
-										const error = err as { errors?: Array<{ message?: string; }>; };
+										const error = err as {
+											errors?: Array<{ message?: string }>;
+										};
 										setErrorMessage(
 											error?.errors?.[0]?.message || 'OAuth failed'
 										);

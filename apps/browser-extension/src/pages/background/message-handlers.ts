@@ -20,14 +20,15 @@ import {
 	handleContentActivityEvent,
 } from './content-activity-router';
 import type { TabPlaybackState } from './content-activity-router';
-import type { PlaybackEvent, WidgetStateUpdate } from '../../messaging/messages';
+import type {
+	PlaybackEvent,
+	WidgetStateUpdate,
+} from '../../messaging/messages';
 import { tryCatch } from '../../../../../lib/tryCatch';
 import { updateWidgetState } from './widget';
 import { getDomainContentKey } from './domainPolicy';
 import { createLogger } from '../../lib/logger';
 const log = createLogger('service-worker', 'handlers:bg');
-
-
 
 export function registerMessageHandlers(): void {
 	// Auth handlers
@@ -46,9 +47,13 @@ export function registerMessageHandlers(): void {
 		}
 
 		const { data: progress, error } = await tryCatch(
-			convex.query(api.browserExtension.browserExtensionCoreFunctions.getUserProgressFromIntegration, {
-				integrationId,
-			})
+			convex.query(
+				api.browserExtension.browserExtensionCoreFunctions
+					.getUserProgressFromIntegration,
+				{
+					integrationId,
+				}
+			)
 		);
 
 		if (error) {
@@ -105,7 +110,10 @@ export function registerMessageHandlers(): void {
 		switch (normalizedAction) {
 			case 'open-always-track-question': {
 				const { updateWidgetState } = await import('./widget');
-				updateWidgetState({ state: 'website-provider-always-track-question' }, tabId);
+				updateWidgetState(
+					{ state: 'website-provider-always-track-question' },
+					tabId
+				);
 				break;
 			}
 
@@ -128,31 +136,51 @@ export function registerMessageHandlers(): void {
 						if (state.pausedByDomain?.[domain]) {
 							delete state.pausedByDomain[domain];
 							tabStates[tabId] = state;
-							log.info('question-track-once: cleared pausedByDomain flag', { tabId, domain });
+							log.info('question-track-once: cleared pausedByDomain flag', {
+								tabId,
+								domain,
+							});
 						}
 
-						const { updateConsentForDomain } = await import('./content-activity-router');
+						const { updateConsentForDomain } = await import(
+							'./content-activity-router'
+						);
 						updateConsentForDomain(tabId, domain, true, true);
 
-						const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+						const { updateWidgetState, getCurrentWidgetState } = await import(
+							'./widget'
+						);
 						const prev = getCurrentWidgetState(tabId);
-						const preservedStart = (prev?.domain === domain && prev?.startTime) ? prev.startTime : Date.now();
+						const preservedStart =
+							prev?.domain === domain && prev?.startTime
+								? prev.startTime
+								: Date.now();
 
-						updateWidgetState({
-							state: 'website-provider-tracking',
-							provider: 'website-provider',
+						updateWidgetState(
+							{
+								state: 'website-provider-tracking',
+								provider: 'website-provider',
+								domain,
+								startTime: preservedStart,
+								metadata: { title: tab.title, url },
+							},
+							tabId
+						);
+						log.info('question-track-once: set tracking', {
+							tabId,
 							domain,
-							startTime: preservedStart,
-							metadata: { title: tab.title, url },
-						}, tabId);
-						log.info('question-track-once: set tracking', { tabId, domain, preservedStart });
+							preservedStart,
+						});
 
 						const authState = await getAuthState();
 						await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
 							providerId: 'website-provider',
 							targetLanguage: authState.me?.languageCode,
 						});
-						log.info('question-track-once: activated provider', { tabId, domain });
+						log.info('question-track-once: activated provider', {
+							tabId,
+							domain,
+						});
 					}
 				} catch (e) {
 					log.warn('track-once flow failed:', e);
@@ -172,7 +200,8 @@ export function registerMessageHandlers(): void {
 						if (convex && integrationId) {
 							const { error } = await tryCatch(
 								convex.mutation(
-									api.browserExtension.websiteProviderFunctions.markWebsiteAsAlwaysTrack,
+									api.browserExtension.websiteProviderFunctions
+										.markWebsiteAsAlwaysTrack,
 									{
 										integrationId,
 										contentKey,
@@ -195,7 +224,10 @@ export function registerMessageHandlers(): void {
 						// Clear pausedByDomain flag since user explicitly wants to always track
 						if (state.pausedByDomain?.[domain]) {
 							delete state.pausedByDomain[domain];
-							log.info('question-always-track: cleared pausedByDomain flag', { tabId, domain });
+							log.info('question-always-track: cleared pausedByDomain flag', {
+								tabId,
+								domain,
+							});
 						}
 
 						tabStates[tabId] = state;
@@ -203,15 +235,25 @@ export function registerMessageHandlers(): void {
 						// Update widget immediately
 						const { getCurrentWidgetState } = await import('./widget');
 						const current = getCurrentWidgetState(tabId);
-						const preservedStart = (current?.domain === domain && current?.startTime) ? current.startTime : Date.now();
-						updateWidgetState({
-							state: 'website-provider-tracking',
-							startTime: preservedStart,
-							provider: 'website-provider',
+						const preservedStart =
+							current?.domain === domain && current?.startTime
+								? current.startTime
+								: Date.now();
+						updateWidgetState(
+							{
+								state: 'website-provider-tracking',
+								startTime: preservedStart,
+								provider: 'website-provider',
+								domain,
+								metadata: { title: tab.title, url },
+							},
+							tabId
+						);
+						log.info('question-always-track: set tracking', {
+							tabId,
 							domain,
-							metadata: { title: tab.title, url },
-						}, tabId);
-						log.info('question-always-track: set tracking', { tabId, domain, preservedStart });
+							preservedStart,
+						});
 
 						// Activate provider in content script
 						const authState = await getAuthState();
@@ -227,17 +269,29 @@ export function registerMessageHandlers(): void {
 			}
 
 			case 'track-anyway': {
-				const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+				const { updateWidgetState, getCurrentWidgetState } = await import(
+					'./widget'
+				);
 				const current = getCurrentWidgetState(tabId);
 				if (current.provider === 'youtube') {
 					// Clear any per-domain pause flag and reactivate the YouTube provider so events resume
 					try {
 						const state = (tabStates[tabId] || {}) as Record<string, unknown>;
 						const urlStr = state?.lastEvent?.url as string | undefined;
-						const derivedDomain = (() => { try { return urlStr ? new URL(urlStr).hostname : undefined; } catch { return undefined; } })();
-						const domain = derivedDomain || (current?.domain as string | undefined);
+						const derivedDomain = (() => {
+							try {
+								return urlStr ? new URL(urlStr).hostname : undefined;
+							} catch {
+								return undefined;
+							}
+						})();
+						const domain =
+							derivedDomain || (current?.domain as string | undefined);
 						if (domain) {
-							const pbd = (state['pausedByDomain'] as Record<string, boolean> | undefined) || {};
+							const pbd =
+								(state['pausedByDomain'] as
+									| Record<string, boolean>
+									| undefined) || {};
 							if (domain in pbd) {
 								delete pbd[domain as string];
 							}
@@ -248,7 +302,10 @@ export function registerMessageHandlers(): void {
 						/* noop */
 						void 0;
 					}
-					updateWidgetState({ state: 'youtube-tracking-verified', startTime: Date.now() }, tabId);
+					updateWidgetState(
+						{ state: 'youtube-tracking-verified', startTime: Date.now() },
+						tabId
+					);
 					try {
 						const authState = await getAuthState();
 						await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
@@ -260,7 +317,10 @@ export function registerMessageHandlers(): void {
 						void 0;
 					}
 				} else {
-					updateWidgetState({ state: 'website-provider-always-track-question' }, tabId);
+					updateWidgetState(
+						{ state: 'website-provider-always-track-question' },
+						tabId
+					);
 				}
 				break;
 			}
@@ -268,14 +328,7 @@ export function registerMessageHandlers(): void {
 				await handleConsentResponse(payload, tabId);
 				break;
 
-
-
 			case 'block-content': {
-
-
-
-
-
 				const state = tabStates[tabId];
 				const last = state?.lastEvent;
 				if (!last) break;
@@ -285,7 +338,8 @@ export function registerMessageHandlers(): void {
 				try {
 					const u = new URL(last.url);
 					const host = u.hostname.toLowerCase();
-					const isYouTube = /(^|\.)youtube\.com$/.test(host) || /(^|\.)youtu\.be$/.test(host);
+					const isYouTube =
+						/(^|\.)youtube\.com$/.test(host) || /(^|\.)youtu\.be$/.test(host);
 					if (isYouTube) {
 						providerId = 'youtube';
 						const v = u.searchParams.get('v');
@@ -307,8 +361,14 @@ export function registerMessageHandlers(): void {
 				if (providerId === 'youtube' && contentKey) {
 					const { error } = await tryCatch(
 						convex.mutation(
-							api.browserExtension.youtubeProviderFunctions.markYoutubeVideoAsBlocked,
-							{ integrationId, contentKey, url: last.url, label: state?.lastEvent?.title }
+							api.browserExtension.youtubeProviderFunctions
+								.markYoutubeVideoAsBlocked,
+							{
+								integrationId,
+								contentKey,
+								url: last.url,
+								label: state?.lastEvent?.title,
+							}
 						)
 					);
 					if (error) {
@@ -317,28 +377,36 @@ export function registerMessageHandlers(): void {
 						// Move widget to content-blocked state on success
 						const { updateWidgetState } = await import('./widget');
 						let domain = '';
-						try { domain = new URL(last.url).hostname; } catch {
+						try {
+							domain = new URL(last.url).hostname;
+						} catch {
 							/* noop */
 						}
-						updateWidgetState({
-							state: 'content-blocked',
-							provider: 'youtube',
-							domain,
-							metadata: { title: state?.lastEvent?.title, url: last.url },
-						}, tabId);
+						updateWidgetState(
+							{
+								state: 'content-blocked',
+								provider: 'youtube',
+								domain,
+								metadata: { title: state?.lastEvent?.title, url: last.url },
+							},
+							tabId
+						);
 					}
 				} else {
-					log.warn('block-content: unsupported provider or missing contentKey', { tabId, url: last.url, providerId, contentKey });
+					log.warn(
+						'block-content: unsupported provider or missing contentKey',
+						{ tabId, url: last.url, providerId, contentKey }
+					);
 				}
-				try { await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {}); } catch {
+				try {
+					await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {});
+				} catch {
 					/* noop */
 					void 0;
 				}
 
 				break;
 			}
-
-
 
 			case 'stop-recording': {
 				// Stop current tracking session and mark paused for this domain in this tab
@@ -348,8 +416,15 @@ export function registerMessageHandlers(): void {
 					const { getCurrentWidgetState } = await import('./widget');
 					const current = getCurrentWidgetState(tabId);
 					const urlStr = state?.lastEvent?.url as string | undefined;
-					const derivedDomain = (() => { try { return urlStr ? new URL(urlStr).hostname : undefined; } catch { return undefined; } })();
-					const domain = derivedDomain || (current?.domain as string | undefined);
+					const derivedDomain = (() => {
+						try {
+							return urlStr ? new URL(urlStr).hostname : undefined;
+						} catch {
+							return undefined;
+						}
+					})();
+					const domain =
+						derivedDomain || (current?.domain as string | undefined);
 					if (domain) {
 						state.pausedByDomain = state.pausedByDomain || {};
 						state.pausedByDomain[domain] = true;
@@ -360,23 +435,31 @@ export function registerMessageHandlers(): void {
 					void 0;
 				}
 				// Deactivate provider in content script to stop emitting further events
-				try { await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {}); } catch {
+				try {
+					await sendToTab(tabId, 'DEACTIVATE_PROVIDER', {});
+				} catch {
 					/* noop */
 					void 0;
 				}
 				// Update widget state to provider-specific stopped card and preserve last known title/url
-				const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+				const { updateWidgetState, getCurrentWidgetState } = await import(
+					'./widget'
+				);
 				const current = getCurrentWidgetState(tabId);
-				const stateKey: WidgetStateUpdate['state'] = current.provider === 'youtube'
-					? 'youtube-provider-tracking-stopped'
-					: 'website-provider-tracking-stopped';
-				updateWidgetState({
-					state: stateKey,
-					metadata: {
-						title: state?.lastEvent?.title,
-						url: state?.lastEvent?.url,
+				const stateKey: WidgetStateUpdate['state'] =
+					current.provider === 'youtube'
+						? 'youtube-provider-tracking-stopped'
+						: 'website-provider-tracking-stopped';
+				updateWidgetState(
+					{
+						state: stateKey,
+						metadata: {
+							title: state?.lastEvent?.title,
+							url: state?.lastEvent?.url,
+						},
 					},
-				}, tabId);
+					tabId
+				);
 				// Send end event if there's an active recording
 				if (state?.isPlaying && state?.lastEvent) {
 					const endEvt: PlaybackEvent = {
@@ -400,7 +483,6 @@ export function registerMessageHandlers(): void {
 
 		return { success: true };
 	});
-
 
 	// Playback handlers
 	on('PLAYBACK_EVENT', async ({ payload }, sender) => {

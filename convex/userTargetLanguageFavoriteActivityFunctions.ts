@@ -103,8 +103,8 @@ export const listFavorites = query({
 			externalUrl?: string | undefined;
 			defaultDurationInMs?: number | undefined;
 			createdFromLanguageActivityId?:
-			| Id<'userTargetLanguageActivities'>
-			| undefined;
+				| Id<'userTargetLanguageActivities'>
+				| undefined;
 			usageCount?: number | undefined;
 			lastUsedAt?: number | undefined;
 		}>;
@@ -181,8 +181,8 @@ export const listFavoritesPaginated = query({
 				externalUrl?: string | undefined;
 				defaultDurationInMs?: number | undefined;
 				createdFromLanguageActivityId?:
-				| Id<'userTargetLanguageActivities'>
-				| undefined;
+					| Id<'userTargetLanguageActivities'>
+					| undefined;
 				usageCount?: number | undefined;
 				lastUsedAt?: number | undefined;
 			}>,
@@ -234,7 +234,10 @@ export const listManualActivitiesWithFavoriteMatch = query({
 			durationInSeconds?: number;
 			occurredAt?: number;
 			userTargetLanguageId: Id<'userTargetLanguages'>;
-			source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
+			source:
+				| 'manual'
+				| 'browser-extension-youtube-provider'
+				| 'browser-extension-website-provider';
 			matchedFavoriteId?: Id<'userTargetLanguageFavoriteActivities'>;
 		};
 		const page: Array<ManualActivityRow> = [];
@@ -259,7 +262,7 @@ export const listManualActivitiesWithFavoriteMatch = query({
 		while (page.length < pageLimit) {
 			const q = ctx.db
 				.query('userTargetLanguageActivities')
-				.withIndex('by_user', q => 
+				.withIndex('by_user', q =>
 					typeof cursor === 'number'
 						? q.eq('userId', userId).lt('_creationTime', cursor)
 						: q.eq('userId', userId)
@@ -270,7 +273,7 @@ export const listManualActivitiesWithFavoriteMatch = query({
 				break;
 			}
 			for (const it of batch) {
-				const occurredAt =  it._creationTime;
+				const occurredAt = it._creationTime;
 				cursor = occurredAt;
 				if (it.source !== 'manual') continue;
 

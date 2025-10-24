@@ -5,7 +5,6 @@ export default async function ActivityTimelinePage() {
 	return (
 		<main className="py-6">
 			<DashboardTopBar />
-
 		</main>
 	);
 }

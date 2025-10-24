@@ -50,15 +50,18 @@ export function WeeklyBarsCard() {
 		api.userTargetLanguageActivityFunctions.getWeeklySourceDistribution,
 		{}
 	);
-	const demoData = React.useMemo(() => [
-		{ day: 'Mon', youtube: 60, spotify: 35, website: 20, manual: 10 },
-		{ day: 'Tue', youtube: 40, spotify: 28, website: 26, manual: 12 },
-		{ day: 'Wed', youtube: 30, spotify: 22, website: 18, manual: 8 },
-		{ day: 'Thu', youtube: 55, spotify: 26, website: 24, manual: 10 },
-		{ day: 'Fri', youtube: 42, spotify: 25, website: 20, manual: 9 },
-		{ day: 'Sat', youtube: 24, spotify: 14, website: 16, manual: 6 },
-		{ day: 'Sun', youtube: 36, spotify: 20, website: 18, manual: 7 },
-	], []);
+	const demoData = React.useMemo(
+		() => [
+			{ day: 'Mon', youtube: 60, spotify: 35, website: 20, manual: 10 },
+			{ day: 'Tue', youtube: 40, spotify: 28, website: 26, manual: 12 },
+			{ day: 'Wed', youtube: 30, spotify: 22, website: 18, manual: 8 },
+			{ day: 'Thu', youtube: 55, spotify: 26, website: 24, manual: 10 },
+			{ day: 'Fri', youtube: 42, spotify: 25, website: 20, manual: 9 },
+			{ day: 'Sat', youtube: 24, spotify: 14, website: 16, manual: 6 },
+			{ day: 'Sun', youtube: 36, spotify: 20, website: 18, manual: 7 },
+		],
+		[]
+	);
 	const data = React.useMemo(() => {
 		if (weekly && weekly.length === 7) return weekly;
 		return demoData;
@@ -68,13 +71,13 @@ export function WeeklyBarsCard() {
 	const { prepared, maxTotal } = React.useMemo(() => {
 		const withTotals = data.map(d => {
 			const total =
-				(Number((d).youtube) || 0) +
-				(Number((d).spotify) || 0) +
-				(Number((d).website) || 0) +
-				(Number((d).manual) || 0);
+				(Number(d.youtube) || 0) +
+				(Number(d.spotify) || 0) +
+				(Number(d.website) || 0) +
+				(Number(d.manual) || 0);
 			return { ...d, __total: total };
 		});
-		const max = Math.max(0, ...withTotals.map((d) => d.__total));
+		const max = Math.max(0, ...withTotals.map(d => d.__total));
 		const placeholderHeight = max > 0 ? max : 60; // default height if all zero
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const out = withTotals.map((d: any) => ({

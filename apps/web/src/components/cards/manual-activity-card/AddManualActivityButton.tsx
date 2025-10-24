@@ -18,10 +18,7 @@ export function AddManualActivityButton() {
 				<PlusCircle className="!size-6 !stroke-2.5 ml-2 flex-shrink-0" />
 			</Button>
 
-			<AddActivityDialog
-				open={isDialogOpen}
-				onOpenChange={setIsDialogOpen}
-			/>
+			<AddActivityDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
 		</>
 	);
 }

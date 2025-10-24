@@ -127,13 +127,15 @@ export const FavoritesPotentialManualRecordsList = ({
 												if (isCurrentlyFavorite) {
 													// Remove from favorites
 													await deleteFavorite({
-														favoriteId: r.matchedFavoriteId as Id<'userTargetLanguageFavoriteActivities'>,
+														favoriteId:
+															r.matchedFavoriteId as Id<'userTargetLanguageFavoriteActivities'>,
 													});
 													toast.success('Removed from favorites');
 												} else {
 													// Add to favorites
 													await setFavorite({
-														activityId: r._id as Id<'userTargetLanguageActivities'>,
+														activityId:
+															r._id as Id<'userTargetLanguageActivities'>,
 														isFavorite: true,
 													});
 													toast.success('Added to favorites!');
@@ -151,10 +153,11 @@ export const FavoritesPotentialManualRecordsList = ({
 										}
 									>
 										<Star
-											className={`!size-5 transition-colors ${r.matchedFavoriteId
-												? 'fill-yellow-300 stroke-border'
-												: 'stroke-background/60'
-												}`}
+											className={`!size-5 transition-colors ${
+												r.matchedFavoriteId
+													? 'fill-yellow-300 stroke-border'
+													: 'stroke-background/60'
+											}`}
 										/>
 									</Button>
 								</li>
@@ -164,8 +167,7 @@ export const FavoritesPotentialManualRecordsList = ({
 				</div>
 			</ScrollArea>
 			{recentManuals &&
-				(recentManuals.continueCursor ||
-					historyCursorStack.length > 0) && (
+				(recentManuals.continueCursor || historyCursorStack.length > 0) && (
 					<div className="flex items-center justify-between pt-4">
 						<Button
 							variant="neutral"
@@ -188,9 +190,7 @@ export const FavoritesPotentialManualRecordsList = ({
 								setHistoryCursorStack(stack => [...stack, cursor]);
 								setCursor(recentManuals.continueCursor);
 							}}
-							disabled={
-								Boolean(recentManuals) && Boolean(recentManuals.isDone)
-							}
+							disabled={Boolean(recentManuals) && Boolean(recentManuals.isDone)}
 						>
 							Load more
 						</Button>

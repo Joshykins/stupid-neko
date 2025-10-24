@@ -3,7 +3,6 @@ import { resolve } from 'path';
 import type { PluginOption } from 'vite';
 import type { OutputOptions, InputOptions } from 'rollup';
 
-
 // plugin to remove dev icons from prod build
 export function stripDevIcons(isDev: boolean) {
 	if (isDev) return null;

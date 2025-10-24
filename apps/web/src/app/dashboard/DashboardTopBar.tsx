@@ -25,7 +25,7 @@ export const DashboardTopBar = () => {
 				{/* buttons for different views, history(30d,7d,all), timeline, and flashcards */}
 
 				{/* Timeline */}
-				<Button variant={"neutral"} className="overflow-hidden">
+				<Button variant={'neutral'} className="overflow-hidden">
 					<Clock />
 					Timeline
 				</Button>

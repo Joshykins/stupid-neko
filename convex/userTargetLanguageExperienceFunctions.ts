@@ -48,24 +48,26 @@ export const getExperienceForActivity = async ({
 	// Sum total minutes already recorded for this user today
 	const activitiesOnThisDay = await ctx.db
 		.query('userTargetLanguageActivities')
-		.withIndex('by_user', (q) => q.eq('userId', args.userId))
-		.filter((q) => q.and(
-			q.gte(q.field('_creationTime'), dayStart),
-			q.lte(q.field('_creationTime'), dayEnd)
-		))
+		.withIndex('by_user', q => q.eq('userId', args.userId))
+		.filter(q =>
+			q.and(
+				q.gte(q.field('_creationTime'), dayStart),
+				q.lte(q.field('_creationTime'), dayEnd)
+			)
+		)
 		.collect();
 	const totalMinutesToday = activitiesOnThisDay
-		.filter((userTargetLanguageActivity: any) => !((userTargetLanguageActivity as any).isDeleted))
-		.reduce(
-			(sum: number, userTargetLanguageActivity: any) => {
-				const ms = Math.max(
-					0,
-					Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
-				);
-				return sum + Math.floor(ms / 60000);
-			},
-			0
-		);
+		.filter(
+			(userTargetLanguageActivity: any) =>
+				!(userTargetLanguageActivity as any).isDeleted
+		)
+		.reduce((sum: number, userTargetLanguageActivity: any) => {
+			const ms = Math.max(
+				0,
+				Math.floor(userTargetLanguageActivity?.durationInMs ?? 0)
+			);
+			return sum + Math.floor(ms / 60000);
+		}, 0);
 
 	// Subtract this entry's minutes if it was already inserted before this query
 	const priorMinutes = Math.max(0, totalMinutesToday - minutes);
@@ -124,7 +126,7 @@ export const addExperience = async ({
 	// Base delta and multipliers
 	const baseDelta = Math.floor(args.deltaExperience ?? 0);
 	let finalDelta = baseDelta;
-	const multipliers: Array<{ type: 'streak'; value: number; }> = [];
+	const multipliers: Array<{ type: 'streak'; value: number }> = [];
 
 	if (args.isApplyingStreakBonus) {
 		const value: number = await getStreakBonusMultiplier(ctx, userId);
@@ -140,9 +142,12 @@ export const addExperience = async ({
 	// Update totalMsLearning directly if provided
 	if (args.durationInMs && args.durationInMs > 0) {
 		const currentTotalMs = Math.floor(
-			((userTargetLanguage as any).totalMsLearning ?? 0)
+			(userTargetLanguage as any).totalMsLearning ?? 0
 		);
-		const newTotalMs = Math.max(0, currentTotalMs + Math.floor(args.durationInMs));
+		const newTotalMs = Math.max(
+			0,
+			currentTotalMs + Math.floor(args.durationInMs)
+		);
 		await ctx.db.patch(userTargetLanguage._id, {
 			totalMsLearning: newTotalMs,
 		});

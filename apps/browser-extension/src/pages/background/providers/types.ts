@@ -141,19 +141,19 @@ export interface ProviderEventHandlers {
 // Widget state management
 export interface WidgetState {
 	state:
-	| 'website-provider-idle'
-	| 'website-provider-idle-detected'
-	| 'website-provider-always-track-question'
-	| 'website-provider-tracking'
-	| 'website-provider-tracking-stopped'
-	| 'website-provider-not-tracking'
-	| 'youtube-not-tracking'
-	| 'youtube-tracking-unverified'
-	| 'youtube-tracking-verified'
-	| 'youtube-provider-tracking-stopped'
-	| 'content-blocked'
-	| 'determining-provider'
-	| 'error';
+		| 'website-provider-idle'
+		| 'website-provider-idle-detected'
+		| 'website-provider-always-track-question'
+		| 'website-provider-tracking'
+		| 'website-provider-tracking-stopped'
+		| 'website-provider-not-tracking'
+		| 'youtube-not-tracking'
+		| 'youtube-tracking-unverified'
+		| 'youtube-tracking-verified'
+		| 'youtube-provider-tracking-stopped'
+		| 'content-blocked'
+		| 'determining-provider'
+		| 'error';
 	provider?: ProviderName;
 	domain?: string;
 	metadata?: ContentMetadata;

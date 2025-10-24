@@ -19,11 +19,11 @@ export default mergeConfig(
 					web_accessible_resources: [
 						{
 							resources: [
-								'icon-128.png', 
-								'icon-32.png', 
-								'dev-icon-128.png', 
-								'dev-icon-32.png', 
-								'fonts/*'
+								'icon-128.png',
+								'icon-32.png',
+								'dev-icon-128.png',
+								'dev-icon-32.png',
+								'fonts/*',
 							],
 							matches: ['<all_urls>'],
 						},

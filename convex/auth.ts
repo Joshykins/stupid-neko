@@ -75,7 +75,6 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 				}
 			}
 
-
 			if (!existingUserId) {
 				const profile = args.profile;
 				existingUserId = await ctx.db.insert('users', {

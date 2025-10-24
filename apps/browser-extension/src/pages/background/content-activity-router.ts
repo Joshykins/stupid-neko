@@ -32,7 +32,7 @@ export type ContentActivityResult = {
 	reason?: string;
 	contentKey?: string;
 	contentLabel?: unknown;
-	currentTargetLanguage?: { languageCode?: string; } | null;
+	currentTargetLanguage?: { languageCode?: string } | null;
 };
 
 export type ContentLabel = {
@@ -49,9 +49,7 @@ type TrackingState =
 	| 'youtube-tracking-verified';
 
 function isTrackingState(
-	state:
-		| import('../../messaging/messages').WidgetStateUpdate['state']
-		| string
+	state: import('../../messaging/messages').WidgetStateUpdate['state'] | string
 ): state is TrackingState {
 	return (
 		state === 'website-provider-tracking' ||
@@ -67,7 +65,10 @@ function deriveContentKey(evt: PlaybackEvent): string | undefined {
 		try {
 			const u = new URL(evt.url);
 			// Attempt lightweight YouTube ID extraction without importing registry
-			if (/(^|\.)youtube\.com$/.test(u.hostname) || /(^|\.)youtu\.be$/.test(u.hostname)) {
+			if (
+				/(^|\.)youtube\.com$/.test(u.hostname) ||
+				/(^|\.)youtu\.be$/.test(u.hostname)
+			) {
 				const v = u.searchParams.get('v');
 				if (v) return `youtube:${v}`;
 				if (u.hostname.includes('youtu.be')) {
@@ -124,20 +125,20 @@ export async function postContentActivityFromPlayback(
 		return { ok: true, saved: false };
 	}
 
-	const fn = evt.source === 'youtube'
-		? api.browserExtension.youtubeProviderFunctions.recordYoutubeContentActivity
-		: api.browserExtension.websiteProviderFunctions.recordWebsiteContentActivity;
+	const fn =
+		evt.source === 'youtube'
+			? api.browserExtension.youtubeProviderFunctions
+					.recordYoutubeContentActivity
+			: api.browserExtension.websiteProviderFunctions
+					.recordWebsiteContentActivity;
 	const { data: result, error } = await tryCatch(
-		convex.mutation(
-			fn,
-			{
-				integrationId,
-				activityType,
-				contentKey,
-				url: evt.url,
-				occurredAt: evt.ts,
-			}
-		)
+		convex.mutation(fn, {
+			integrationId,
+			activityType,
+			contentKey,
+			url: evt.url,
+			occurredAt: evt.ts,
+		})
 	);
 
 	if (error) {
@@ -156,23 +157,25 @@ export async function postContentActivityFromPlayback(
 			// Show content blocked state and stop tracking
 			const { updateWidgetState } = await import('./widget');
 			const domain = new URL(evt.url).hostname;
-			updateWidgetState({
-				state: 'content-blocked',
-				provider: (() => {
-					try {
-
-						const { getProviderName } = require('./determineProvider');
-						return getProviderName(evt.url);
-					} catch {
-						return 'website-provider';
-					}
-				})(),
-				domain,
-				metadata: {
-					title: evt.title,
-					url: evt.url,
+			updateWidgetState(
+				{
+					state: 'content-blocked',
+					provider: (() => {
+						try {
+							const { getProviderName } = require('./determineProvider');
+							return getProviderName(evt.url);
+						} catch {
+							return 'website-provider';
+						}
+					})(),
+					domain,
+					metadata: {
+						title: evt.title,
+						url: evt.url,
+					},
 				},
-			}, tabId);
+				tabId
+			);
 		} else {
 			await updateYouTubeStateFromResult(tabId, result, evt.url);
 		}
@@ -201,7 +204,6 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	const contentChanged = nextKey && nextKey !== prev.lastContentKey;
 	let providerName: ProviderName = 'website-provider';
 	try {
-
 		const { getProviderName } = require('./determineProvider');
 		providerName = getProviderName(payload.url);
 	} catch {
@@ -216,9 +218,13 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 	// Handle domain changes for website provider
 	if (domainChanged && providerName === 'website-provider' && prev.isPlaying) {
 		// Clear ephemeral consent for the previous domain when leaving it ("Just this time")
-		if (prev.currentDomain && prev.ephemeralConsentByDomain?.[prev.currentDomain]) {
+		if (
+			prev.currentDomain &&
+			prev.ephemeralConsentByDomain?.[prev.currentDomain]
+		) {
 			if (prev.consentByDomain) delete prev.consentByDomain[prev.currentDomain];
-			if (prev.ephemeralConsentByDomain) delete prev.ephemeralConsentByDomain[prev.currentDomain];
+			if (prev.ephemeralConsentByDomain)
+				delete prev.ephemeralConsentByDomain[prev.currentDomain];
 		}
 
 		// Stop current session and emit end event
@@ -236,7 +242,12 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 			try {
 				// Check if the tab supports content scripts before trying to send messages
 				const tab = await chrome.tabs.get(tabId);
-				if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+				if (
+					!tab.url ||
+					tab.url.startsWith('chrome://') ||
+					tab.url.startsWith('chrome-extension://') ||
+					tab.url.startsWith('moz-extension://')
+				) {
 					log.debug(`Skipping provider restart for system page: ${tab.url}`);
 					return;
 				}
@@ -253,25 +264,38 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				// Activate with retry since content script may not be ready yet
 				for (let attempt = 1; attempt <= 5; attempt++) {
 					try {
-						await sendToTab(tabId, 'ACTIVATE_PROVIDER', { providerId: providerName, targetLanguage });
-						log.debug(`re-activated provider: ${providerName} (attempt ${attempt})`);
+						await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
+							providerId: providerName,
+							targetLanguage,
+						});
+						log.debug(
+							`re-activated provider: ${providerName} (attempt ${attempt})`
+						);
 						break;
 					} catch (e: unknown) {
 						const msg = e instanceof Error ? e.message : String(e);
-						const isConnErr = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
+						const isConnErr =
+							msg.includes('Receiving end does not exist') ||
+							msg.includes('Could not establish connection');
 						if (!isConnErr) break;
 						if (attempt === 5) {
-							log.debug(`Content script not ready for tab ${tabId} after ${attempt} attempts: ${msg}`);
+							log.debug(
+								`Content script not ready for tab ${tabId} after ${attempt} attempts: ${msg}`
+							);
 							break;
 						}
 						const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-						log.debug(`Content script not ready, retrying ACTIVATE_PROVIDER in ${delay}ms (attempt ${attempt}/5)`);
+						log.debug(
+							`Content script not ready, retrying ACTIVATE_PROVIDER in ${delay}ms (attempt ${attempt}/5)`
+						);
 						await new Promise(r => setTimeout(r, delay));
 					}
 				}
 			} catch (error) {
 				// This is expected for some tabs, don't treat as error
-				log.debug(`Content script not ready for tab ${tabId}: ${String(error)}`);
+				log.debug(
+					`Content script not ready for tab ${tabId}: ${String(error)}`
+				);
 			}
 		}, 100);
 	}
@@ -297,7 +321,8 @@ export function updateTabState(tabId: number, payload: PlaybackEvent): void {
 				lastEvent: payload,
 				isPlaying: true,
 				// For website provider, always allow posting regardless of matchesTarget
-				allowPost: providerName === 'website-provider' ? true : !!payload.matchesTarget,
+				allowPost:
+					providerName === 'website-provider' ? true : !!payload.matchesTarget,
 				lastContentKey: nextKey || prev.lastContentKey,
 				currentProvider: providerName,
 				currentDomain,
@@ -377,14 +402,20 @@ export async function handleContentActivityPosting(
 
 	// For website provider, check consent first (include domain policy consent)
 	if (isDefaultProvider) {
-		const domain = (() => { try { return new URL(payload.url).hostname; } catch { return undefined; } })();
+		const domain = (() => {
+			try {
+				return new URL(payload.url).hostname;
+			} catch {
+				return undefined;
+			}
+		})();
 		// Respect per-tab pause override for this domain
 		if (domain && state?.pausedByDomain?.[domain]) {
 			log.debug('website provider paused by user - skipping post');
 			return;
 		}
 		const effectiveConsent =
-			(state?.hasConsent === true) ||
+			state?.hasConsent === true ||
 			(!!domain && state?.consentByDomain?.[domain] === true);
 		if (!effectiveConsent) {
 			log.debug('website provider without consent - skipping post');
@@ -422,8 +453,15 @@ export async function updateYouTubeStateFromResult(
 	url: string
 ): Promise<void> {
 	// Lightweight provider check (avoid requiring determineProvider in SW)
-	const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ''; } })();
-	const isYouTube = /(^|\.)youtube\.com$/.test(host) || /(^|\.)youtu\.be$/.test(host);
+	const host = (() => {
+		try {
+			return new URL(url).hostname.toLowerCase();
+		} catch {
+			return '';
+		}
+	})();
+	const isYouTube =
+		/(^|\.)youtube\.com$/.test(host) || /(^|\.)youtu\.be$/.test(host);
 	if (!isYouTube) return;
 
 	// Import updateWidgetState function
@@ -443,7 +481,10 @@ export async function updateYouTubeStateFromResult(
 	const domain = host || new URL(url).hostname;
 
 	// Determine YouTube state based on result
-	let newState: 'youtube-not-tracking' | 'youtube-tracking-unverified' | 'youtube-tracking-verified';
+	let newState:
+		| 'youtube-not-tracking'
+		| 'youtube-tracking-unverified'
+		| 'youtube-tracking-verified';
 	let contentLanguage: string | undefined;
 	let targetLanguage: string | undefined;
 
@@ -451,14 +492,35 @@ export async function updateYouTubeStateFromResult(
 	if (result.contentLabel && result.currentTargetLanguage) {
 		const labelObj = result.contentLabel as Record<string, unknown>;
 		targetLanguage = result.currentTargetLanguage.languageCode;
-		const cl1 = typeof labelObj['contentLanguageCode'] === 'string' ? (labelObj['contentLanguageCode'] as string) : undefined;
-		const cl2 = typeof labelObj['languageCode'] === 'string' ? (labelObj['languageCode'] as string) : undefined;
-		const cl3 = typeof labelObj['detectedLanguage'] === 'string' ? (labelObj['detectedLanguage'] as string) : undefined;
+		const cl1 =
+			typeof labelObj['contentLanguageCode'] === 'string'
+				? (labelObj['contentLanguageCode'] as string)
+				: undefined;
+		const cl2 =
+			typeof labelObj['languageCode'] === 'string'
+				? (labelObj['languageCode'] as string)
+				: undefined;
+		const cl3 =
+			typeof labelObj['detectedLanguage'] === 'string'
+				? (labelObj['detectedLanguage'] as string)
+				: undefined;
 		contentLanguage = cl1 ?? cl2 ?? cl3;
-		log.debug('YouTube language check:', { contentLanguage, targetLanguage, contentLabel: labelObj });
-		if (contentLanguage && targetLanguage && contentLanguage === targetLanguage) {
+		log.debug('YouTube language check:', {
+			contentLanguage,
+			targetLanguage,
+			contentLabel: labelObj,
+		});
+		if (
+			contentLanguage &&
+			targetLanguage &&
+			contentLanguage === targetLanguage
+		) {
 			newState = 'youtube-tracking-verified';
-		} else if (contentLanguage && targetLanguage && contentLanguage !== targetLanguage) {
+		} else if (
+			contentLanguage &&
+			targetLanguage &&
+			contentLanguage !== targetLanguage
+		) {
 			newState = 'youtube-not-tracking';
 		} else {
 			// Label present but insufficient language info; treat as unverified
@@ -472,9 +534,10 @@ export async function updateYouTubeStateFromResult(
 		try {
 			const { getCurrentWidgetState } = await import('./widget');
 			const current = getCurrentWidgetState(tabId);
-			newState = current.state === 'youtube-tracking-verified'
-				? 'youtube-tracking-verified'
-				: 'youtube-tracking-unverified';
+			newState =
+				current.state === 'youtube-tracking-verified'
+					? 'youtube-tracking-verified'
+					: 'youtube-tracking-unverified';
 		} catch {
 			newState = 'youtube-tracking-unverified';
 		}
@@ -489,7 +552,7 @@ export async function updateYouTubeStateFromResult(
 		to: newState,
 		contentLanguage,
 		targetLanguage,
-		isWaitingOnLabeling: result.isWaitingOnLabeling
+		isWaitingOnLabeling: result.isWaitingOnLabeling,
 	});
 
 	updateWidgetState({ state: newState, provider: 'youtube', domain }, tabId);
@@ -523,7 +586,9 @@ export function updateConsentForDomain(
 	hasConsent: boolean,
 	ephemeral = false
 ): void {
-	const state = tabStates[tabId] || { isPlaying: false, consentByDomain: {} } as TabPlaybackState;
+	const state =
+		tabStates[tabId] ||
+		({ isPlaying: false, consentByDomain: {} } as TabPlaybackState);
 	state.consentByDomain = state.consentByDomain || {};
 	state.consentByDomain[domain] = hasConsent;
 
@@ -541,7 +606,12 @@ export function updateConsentForDomain(
 	}
 
 	tabStates[tabId] = state;
-	log.debug('updated consent for domain', { tabId, domain, hasConsent, ephemeral });
+	log.debug('updated consent for domain', {
+		tabId,
+		domain,
+		hasConsent,
+		ephemeral,
+	});
 }
 
 export function handleTabRemoved(tabId: number): void {
@@ -627,7 +697,9 @@ export async function handleUrlChange(
 ): Promise<void> {
 	try {
 		const domain = new URL(url).hostname;
-		const { updateWidgetState, getCurrentWidgetState } = await import('./widget');
+		const { updateWidgetState, getCurrentWidgetState } = await import(
+			'./widget'
+		);
 
 		// Preserve per-tab pause for same-domain navigations; only clear when switching domains
 		try {
@@ -636,7 +708,11 @@ export async function handleUrlChange(
 				state.pausedByDomain = state.pausedByDomain || {};
 				const prevDomain = state.currentDomain;
 				// If switching domains, clear stale pause for the previous domain
-				if (prevDomain && prevDomain !== domain && state.pausedByDomain[prevDomain]) {
+				if (
+					prevDomain &&
+					prevDomain !== domain &&
+					state.pausedByDomain[prevDomain]
+				) {
 					delete state.pausedByDomain[prevDomain];
 				}
 				tabStates[tabId] = state;
@@ -647,20 +723,31 @@ export async function handleUrlChange(
 
 		// Capture previous widget state BEFORE we change domain to avoid cross-domain timer carryover
 		const prevWidget = getCurrentWidgetState(tabId);
-		log.info('handleUrlChange: enter', { tabId, url, newDomain: domain, prevWidgetDomain: prevWidget?.domain, prevStartTime: prevWidget?.startTime });
+		log.info('handleUrlChange: enter', {
+			tabId,
+			url,
+			newDomain: domain,
+			prevWidgetDomain: prevWidget?.domain,
+			prevStartTime: prevWidget?.startTime,
+		});
 		// Enter determining state and explicitly clear any previous startTime to avoid cross-domain carryover,
 		// but preserve a stopped state for same-domain navigations
 		const isStoppedSameDomain =
-			prevWidget?.state === 'website-provider-tracking-stopped' && prevWidget?.domain === domain;
+			prevWidget?.state === 'website-provider-tracking-stopped' &&
+			prevWidget?.domain === domain;
 		if (!isStoppedSameDomain) {
-			updateWidgetState({ state: 'determining-provider', domain, startTime: undefined }, tabId);
+			updateWidgetState(
+				{ state: 'determining-provider', domain, startTime: undefined },
+				tabId
+			);
 		}
 
 		// Lightweight provider detection without importing registry
 		const providerId: ProviderName = (() => {
 			try {
 				const h = new URL(url).hostname.toLowerCase();
-				if (/(^|\.)youtube\.com$/.test(h) || /(^|\.)youtu\.be$/.test(h)) return 'youtube';
+				if (/(^|\.)youtube\.com$/.test(h) || /(^|\.)youtu\.be$/.test(h))
+					return 'youtube';
 			} catch {
 				/* noop */
 			}
@@ -671,13 +758,21 @@ export async function handleUrlChange(
 		try {
 			const state = tabStates[tabId];
 			const prevDomain = state?.currentDomain;
-			if (prevDomain && prevDomain !== domain && state?.ephemeralConsentByDomain?.[prevDomain]) {
+			if (
+				prevDomain &&
+				prevDomain !== domain &&
+				state?.ephemeralConsentByDomain?.[prevDomain]
+			) {
 				if (state.consentByDomain) delete state.consentByDomain[prevDomain];
-				if (state.ephemeralConsentByDomain) delete state.ephemeralConsentByDomain[prevDomain];
+				if (state.ephemeralConsentByDomain)
+					delete state.ephemeralConsentByDomain[prevDomain];
 				// Only adjust hasConsent if we were on that prevDomain
 				if (state.currentDomain === prevDomain) state.hasConsent = false;
 				tabStates[tabId] = state;
-				log.debug('cleared ephemeral consent for previous domain', { tabId, prevDomain });
+				log.debug('cleared ephemeral consent for previous domain', {
+					tabId,
+					prevDomain,
+				});
 			}
 			// As a fallback, clear any other ephemeral consents not matching the new domain
 			try {
@@ -687,7 +782,10 @@ export async function handleUrlChange(
 						if (d !== domain) {
 							if (state.consentByDomain) delete state.consentByDomain[d];
 							delete state.ephemeralConsentByDomain[d];
-							log.debug('cleared stale ephemeral consent for domain', { tabId, domain: d });
+							log.debug('cleared stale ephemeral consent for domain', {
+								tabId,
+								domain: d,
+							});
 						}
 					}
 					tabStates[tabId] = state;
@@ -695,7 +793,6 @@ export async function handleUrlChange(
 			} catch {
 				/* noop */
 			}
-
 		} catch {
 			/* noop */
 		}
@@ -710,21 +807,46 @@ export async function handleUrlChange(
 		if (providerId === 'website-provider') {
 			try {
 				const state = tabStates[tabId];
-				const hadPersistentConsent = !!state?.consentByDomain?.[domain] && !state?.ephemeralConsentByDomain?.[domain];
-				const canContinueEphemeral = !!state?.ephemeralConsentByDomain?.[domain] && state?.currentDomain === domain;
-				log.info('handleUrlChange: consent evaluation', { tabId, domain, hadPersistentConsent, canContinueEphemeral });
+				const hadPersistentConsent =
+					!!state?.consentByDomain?.[domain] &&
+					!state?.ephemeralConsentByDomain?.[domain];
+				const canContinueEphemeral =
+					!!state?.ephemeralConsentByDomain?.[domain] &&
+					state?.currentDomain === domain;
+				log.info('handleUrlChange: consent evaluation', {
+					tabId,
+					domain,
+					hadPersistentConsent,
+					canContinueEphemeral,
+				});
 				if (hadPersistentConsent || canContinueEphemeral) {
 					if (state?.pausedByDomain?.[domain]) {
-						log.info('handleUrlChange: paused by user - not auto-starting due to consent', { tabId, domain });
+						log.info(
+							'handleUrlChange: paused by user - not auto-starting due to consent',
+							{ tabId, domain }
+						);
 					} else {
-						const preservedStart = (prevWidget?.domain === domain && prevWidget?.startTime) ? prevWidget.startTime : Date.now();
-						updateWidgetState({
-							state: 'website-provider-tracking',
-							provider: 'website-provider',
+						const preservedStart =
+							prevWidget?.domain === domain && prevWidget?.startTime
+								? prevWidget.startTime
+								: Date.now();
+						updateWidgetState(
+							{
+								state: 'website-provider-tracking',
+								provider: 'website-provider',
+								domain,
+								startTime: preservedStart,
+							},
+							tabId
+						);
+						log.info('handleUrlChange: tracking due to consent', {
+							tabId,
 							domain,
-							startTime: preservedStart,
-						}, tabId);
-						log.info('handleUrlChange: tracking due to consent', { tabId, domain, preservedStart, reason: hadPersistentConsent ? 'persistent' : 'ephemeral-same-domain' });
+							preservedStart,
+							reason: hadPersistentConsent
+								? 'persistent'
+								: 'ephemeral-same-domain',
+						});
 						alreadyTracking = true;
 					}
 				}
@@ -737,7 +859,11 @@ export async function handleUrlChange(
 			try {
 				const { checkDomainPolicyAllowed } = await import('./domainPolicy');
 				const res = await checkDomainPolicyAllowed(domain);
-				log.info('handleUrlChange: policy check', { tabId, domain, allowed: !!res?.allowed });
+				log.info('handleUrlChange: policy check', {
+					tabId,
+					domain,
+					allowed: !!res?.allowed,
+				});
 				if (res?.allowed) {
 					const state = tabStates[tabId] || { consentByDomain: {} };
 					state.consentByDomain = state.consentByDomain || {};
@@ -745,17 +871,30 @@ export async function handleUrlChange(
 					if (state.currentDomain === domain) state.hasConsent = true;
 					tabStates[tabId] = state;
 					if (state?.pausedByDomain?.[domain]) {
-						log.info('handleUrlChange: paused by user - not auto-starting due to allow policy', { tabId, domain });
+						log.info(
+							'handleUrlChange: paused by user - not auto-starting due to allow policy',
+							{ tabId, domain }
+						);
 					} else {
-						const preservedStart = (prevWidget?.domain === domain && prevWidget?.startTime) ? prevWidget.startTime : Date.now();
-						updateWidgetState({
-							state: 'website-provider-tracking',
-							provider: 'website-provider',
+						const preservedStart =
+							prevWidget?.domain === domain && prevWidget?.startTime
+								? prevWidget.startTime
+								: Date.now();
+						updateWidgetState(
+							{
+								state: 'website-provider-tracking',
+								provider: 'website-provider',
+								domain,
+								startTime: preservedStart,
+								autoStartedByPolicy: true,
+							},
+							tabId
+						);
+						log.info('handleUrlChange: tracking due to allow policy', {
+							tabId,
 							domain,
-							startTime: preservedStart,
-							autoStartedByPolicy: true,
-						}, tabId);
-						log.info('handleUrlChange: tracking due to allow policy', { tabId, domain, preservedStart });
+							preservedStart,
+						});
 						alreadyTracking = true;
 					}
 				}
@@ -766,31 +905,49 @@ export async function handleUrlChange(
 
 		// If not already tracking due to consent/policy, set idle unless preserving stopped state
 		if (!alreadyTracking) {
-			const idleState = providerId === 'youtube' ? 'youtube-tracking-unverified' : 'website-provider-idle';
+			const idleState =
+				providerId === 'youtube'
+					? 'youtube-tracking-unverified'
+					: 'website-provider-idle';
 			log.info('handleUrlChange: entering idle', { tabId, domain, providerId });
 			if (!isStoppedSameDomain) {
-				updateWidgetState({ state: idleState, provider: providerId, domain }, tabId);
+				updateWidgetState(
+					{ state: idleState, provider: providerId, domain },
+					tabId
+				);
 			} else {
-				log.info('handleUrlChange: preserving stopped state for domain', { tabId, domain });
+				log.info('handleUrlChange: preserving stopped state for domain', {
+					tabId,
+					domain,
+				});
 			}
 		}
 
 		// Activate provider content script with retry (content script might not be ready yet)
 		for (let attempt = 1; attempt <= 5; attempt++) {
 			try {
-				await sendToTab(tabId, 'ACTIVATE_PROVIDER', { providerId, targetLanguage });
+				await sendToTab(tabId, 'ACTIVATE_PROVIDER', {
+					providerId,
+					targetLanguage,
+				});
 				log.debug(`activated provider: ${providerId} (attempt ${attempt})`);
 				break;
 			} catch (e: unknown) {
 				const msg = e instanceof Error ? e.message : String(e);
-				const isConnErr = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
+				const isConnErr =
+					msg.includes('Receiving end does not exist') ||
+					msg.includes('Could not establish connection');
 				if (!isConnErr) break;
 				if (attempt === 5) {
-					log.debug(`Content script not ready for tab ${tabId} after ${attempt} attempts: ${msg}`);
+					log.debug(
+						`Content script not ready for tab ${tabId} after ${attempt} attempts: ${msg}`
+					);
 					break;
 				}
 				const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-				log.debug(`Content script not ready, retrying ACTIVATE_PROVIDER in ${delay}ms (attempt ${attempt}/5)`);
+				log.debug(
+					`Content script not ready, retrying ACTIVATE_PROVIDER in ${delay}ms (attempt ${attempt}/5)`
+				);
 				await new Promise(r => setTimeout(r, delay));
 			}
 		}
@@ -824,7 +981,9 @@ export async function handleTabActivated(tabId: number): Promise<void> {
 					currentState.state === 'youtube-provider-tracking-stopped' ||
 					currentState.state === 'website-provider-tracking-stopped'
 				) {
-					log.debug(`Tab already in stable state (${currentState.state}) -> skipping provider re-determination`);
+					log.debug(
+						`Tab already in stable state (${currentState.state}) -> skipping provider re-determination`
+					);
 					return;
 				}
 			} catch (e) {
@@ -846,7 +1005,7 @@ export async function handleTabActivated(tabId: number): Promise<void> {
  */
 export async function handleTabUpdated(
 	tabId: number,
-	changeInfo: { url?: string; status?: string; }
+	changeInfo: { url?: string; status?: string }
 ): Promise<void> {
 	log.debug('handleTabUpdated called:', { tabId, changeInfo });
 	if (changeInfo.url) {

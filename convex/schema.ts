@@ -33,7 +33,7 @@ export const ContentSources = [
 	'spotify',
 	'anki',
 	'manual',
-	'website'
+	'website',
 ] as const;
 export type ContentSource = (typeof ContentSources)[number];
 export const contentSourceValidator = v.union(
@@ -83,7 +83,6 @@ export default defineSchema({
 
 		// Pre-release access gate
 		preReleaseGranted: v.optional(v.boolean()),
-
 	})
 		.index('by_email', ['email']) // mirror default indexes
 		.index('by_phone', ['phone'])
@@ -240,7 +239,6 @@ export default defineSchema({
 		.index('by_user_and_state', ['userId', 'state'])
 		.index('by_user_state_and_content_key', ['userId', 'state', 'contentKey']),
 
-
 	// Labeling Engine
 	contentLabels: defineTable({
 		contentKey: v.string(), // "youtube:VIDEO_ID", "spotify:TRACK_ID", "website:URL"
@@ -262,13 +260,13 @@ export default defineSchema({
 		thumbnailUrl: v.optional(v.string()),
 		fullDurationInMs: v.optional(v.number()),
 
-	// Language signals
-	contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
-	languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
-	
-	// Gemini language detection results
-	isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)), // Languages the content is about/teaching
-	geminiLanguageEvidence: v.optional(v.string()), // Store Gemini's reasoning for audit trail
+		// Language signals
+		contentLanguageCode: v.optional(languageCodeValidator), // primary spoken language
+		languageEvidence: v.optional(v.array(v.string())), // e.g. ["yt:defaultAudioLanguage", "transcript:fastText"]
+
+		// Gemini language detection results
+		isAboutTargetLanguages: v.optional(v.array(languageCodeValidator)), // Languages the content is about/teaching
+		geminiLanguageEvidence: v.optional(v.string()), // Store Gemini's reasoning for audit trail
 
 		// Ops
 		attempts: v.optional(v.number()),

@@ -14,7 +14,7 @@ export type ProviderMeta = {
 // Eagerly import metas so we can match synchronously in background
 const metaModules = import.meta.glob('./**/meta.ts', { eager: true }) as Record<
 	string,
-	{ default: ProviderMeta; }
+	{ default: ProviderMeta }
 >;
 
 // Load all providers and sort them so specific providers come before the default

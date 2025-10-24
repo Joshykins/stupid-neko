@@ -52,14 +52,17 @@ This project uses GitHub Actions for automated CI/CD. The workflows handle:
 To enable CI/CD, add these secrets to your GitHub repository settings:
 
 #### Infisical Secrets
+
 - `INFISICAL_TOKEN_DEV`: Infisical service token for development environment
 - `INFISICAL_TOKEN_PROD`: Infisical service token for production environment
 - `INFISICAL_PROJECT_ID`: Infisical project ID (optional, defaults to project in script)
 
 #### Convex Secrets
+
 - `CONVEX_DEPLOY_KEY`: Convex deploy key for authentication
 
 #### Vercel Secrets
+
 - `VERCEL_TOKEN`: Vercel API token for deployments
 - `VERCEL_ORG_ID`: Vercel organization ID
 - `VERCEL_PROJECT_ID`: Vercel project ID
@@ -67,6 +70,7 @@ To enable CI/CD, add these secrets to your GitHub repository settings:
 ### Workflow Details
 
 #### Development Workflow (`dev.yml`)
+
 - Runs on pull requests and pushes to non-main branches
 - Pulls environment variables from Infisical (dev environment)
 - Deploys Convex to development deployment
@@ -75,6 +79,7 @@ To enable CI/CD, add these secrets to your GitHub repository settings:
 - Uploads extension artifacts for manual store upload
 
 #### Production Workflow (`prod.yml`)
+
 - Runs on pushes to main branch
 - Pulls environment variables from Infisical (production environment)
 - Deploys Convex to production deployment
@@ -83,6 +88,7 @@ To enable CI/CD, add these secrets to your GitHub repository settings:
 - Uploads extension artifacts for manual store upload
 
 #### Linting Workflow (`lint.yml`)
+
 - Runs on all pull requests and pushes
 - Performs ESLint checks
 - Validates code formatting with Prettier

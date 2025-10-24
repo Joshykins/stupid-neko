@@ -45,7 +45,6 @@ export default function TimezoneCombobox({
 		searchText: `${tz.tzCode} ${tz.label} ${tz.utc}`.toLowerCase(),
 	}));
 
-
 	const [open, setOpen] = React.useState(false);
 
 	return (

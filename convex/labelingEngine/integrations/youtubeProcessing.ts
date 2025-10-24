@@ -56,9 +56,9 @@ export async function processYouTubeContentLabel(
 			url,
 		});
 
-		const patch: ContentLabelPatch = { 
+		const patch: ContentLabelPatch = {
 			contentMediaType: 'video',
-			contentUrl: url
+			contentUrl: url,
 		};
 
 		// Extract basic info from URL if possible
@@ -81,16 +81,24 @@ export async function processYouTubeContentLabel(
 			const videoId = extractVideoId(url);
 			if (videoId.type === 'video_id') {
 				const { data: response, error } = await tryCatch(
-					fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId.value}&key=${apiKey}`)
+					fetch(
+						`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId.value}&key=${apiKey}`
+					)
 				);
-				
+
 				if (error) {
-					console.debug('[youtubeProcessing.processOne] YouTube API call failed', { error: error.message });
+					console.debug(
+						'[youtubeProcessing.processOne] YouTube API call failed',
+						{ error: error.message }
+					);
 				} else if (response) {
 					const { data, error: jsonError } = await tryCatch(response.json());
-					
+
 					if (jsonError) {
-						console.debug('[youtubeProcessing.processOne] YouTube API JSON parse failed', { error: jsonError.message });
+						console.debug(
+							'[youtubeProcessing.processOne] YouTube API JSON parse failed',
+							{ error: jsonError.message }
+						);
 					} else if (data?.items && data.items.length > 0) {
 						const snippet = data.items[0].snippet;
 						title = snippet?.title;
@@ -111,17 +119,20 @@ export async function processYouTubeContentLabel(
 		if (description) patch.description = description;
 
 		// PRIMARY: Use Gemini for all language detection and content analysis
-		console.debug('[youtubeProcessing.processOne] running Gemini language detection', {
-			url,
-			title,
-			description,
-			hasYouTubeData: Boolean(title && description)
-		});
+		console.debug(
+			'[youtubeProcessing.processOne] running Gemini language detection',
+			{
+				url,
+				title,
+				description,
+				hasYouTubeData: Boolean(title && description),
+			}
+		);
 
 		const geminiResult = await detectLanguageWithGemini({
 			url: url,
 			title: title,
-			description: description
+			description: description,
 		});
 
 		if (geminiResult.success && geminiResult.target_languages.length > 0) {
@@ -131,17 +142,20 @@ export async function processYouTubeContentLabel(
 			patch.geminiLanguageEvidence = geminiResult.reason;
 			patch.languageEvidence = [`gemini:detection:${geminiResult.reason}`];
 
-			console.debug('[youtubeProcessing.processOne] Gemini detection completed', {
-				target_languages: geminiResult.target_languages,
-				dominant_language: geminiResult.dominant_language,
-				reason: geminiResult.reason
-			});
+			console.debug(
+				'[youtubeProcessing.processOne] Gemini detection completed',
+				{
+					target_languages: geminiResult.target_languages,
+					dominant_language: geminiResult.dominant_language,
+					reason: geminiResult.reason,
+				}
+			);
 		} else {
 			// No language detected - mark as unknown
 			patch.languageEvidence = ['gemini:detection:failed'];
 			console.debug('[youtubeProcessing.processOne] Gemini detection failed', {
 				error: geminiResult.error,
-				reason: geminiResult.reason
+				reason: geminiResult.reason,
 			});
 		}
 
@@ -174,8 +188,12 @@ export async function processYouTubeContentLabel(
 }
 
 // Helper function to extract video ID from URL
-function extractVideoId(url: string): { type: 'video_id' | 'unknown'; value: string } {
-	const videoRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+function extractVideoId(url: string): {
+	type: 'video_id' | 'unknown';
+	value: string;
+} {
+	const videoRegex =
+		/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
 	const match = url.match(videoRegex);
 	if (match) {
 		return { type: 'video_id', value: match[1] };

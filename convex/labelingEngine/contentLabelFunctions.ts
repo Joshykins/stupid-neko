@@ -4,7 +4,6 @@ import type { Id } from '../_generated/dataModel';
 import { internalQuery } from '../_generated/server';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 
-
 import dayjs from '../../lib/dayjs';
 
 export const getContentLabelByContentKey = async ({
@@ -17,12 +16,7 @@ export const getContentLabelByContentKey = async ({
 	_id: Id<'contentLabels'>;
 	contentKey: string;
 	stage: 'queued' | 'processing' | 'completed' | 'failed';
-	contentSource:
-		| 'youtube'
-		| 'spotify'
-		| 'anki'
-		| 'manual'
-		| 'website';
+	contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website';
 	contentUrl?: string;
 	contentMediaType?: 'audio' | 'video' | 'text';
 	title?: string;
@@ -121,8 +115,6 @@ export const getOrCreateContentLabel = async ({
 		existed: false,
 	};
 };
-
-
 
 // Base: read minimal label details (usable from actions)
 export const getLabelBasics = internalQuery({

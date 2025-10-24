@@ -3,13 +3,7 @@
 import { useQuery } from 'convex/react';
 import { Rocket } from 'lucide-react';
 import * as React from 'react';
-import {
-	Area,
-	AreaChart,
-	CartesianGrid,
-	XAxis,
-	YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { api } from '../../../../convex/_generated/api';
 import { useCountUp } from '../lib/useCountUp';
 import { Badge } from './ui/badge';
@@ -37,11 +31,11 @@ function createSeededRng(seedInput: number): () => number {
 	};
 }
 
-const demoPoints = (days: number): Array<{ name: string; xp: number; }> => {
+const demoPoints = (days: number): Array<{ name: string; xp: number }> => {
 	const now = Date.now();
 	const DAY = 24 * 60 * 60 * 1000;
 	const rng = createSeededRng(days * 137 + 42);
-	const pts: Array<{ name: string; xp: number; }> = [];
+	const pts: Array<{ name: string; xp: number }> = [];
 	// Weekly rhythm multipliers (Mon..Sun) emphasizing weekend dips and Fri peak
 	const weeklyMultiplier = [1.0, 1.1, 1.05, 1.0, 1.2, 1.15, 0.6];
 	// Slow trend to simulate momentum (up then mild down)
@@ -57,8 +51,8 @@ const demoPoints = (days: number): Array<{ name: string; xp: number; }> => {
 			0,
 			Math.round(
 				(baseMinutes + bonus + restDrop) *
-				weeklyMultiplier[(dayOfWeek + 6) % 7] *
-				trend
+					weeklyMultiplier[(dayOfWeek + 6) % 7] *
+					trend
 			)
 		);
 		const xp = Math.round(minutes * (100 / 60)); // ~100 XP per hour baseline
@@ -73,7 +67,7 @@ export default function UserXPChart({
 	const [range, setRange] = React.useState<Range>('7d');
 	const data = useQuery(
 		api.userXPChartFunctions.getXpTimeseries,
-		isLiveVersion ? ({ range } as { range: Range; }) : 'skip'
+		isLiveVersion ? ({ range } as { range: Range }) : 'skip'
 	);
 	const gradientRawId = React.useId();
 	const _gradientId = React.useMemo(

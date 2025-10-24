@@ -47,14 +47,18 @@ async function getVacationBalance(
 	const [grants, uses] = await Promise.all([
 		ctx.db
 			.query('userStreakVacationLedgers')
-			.withIndex('by_user_and_reason', q => q.eq('userId', userId).eq('reason', 'grant'))
+			.withIndex('by_user_and_reason', q =>
+				q.eq('userId', userId).eq('reason', 'grant')
+			)
 			.collect()
 			.then(ledger => ledger.length),
 		ctx.db
 			.query('userStreakVacationLedgers')
-			.withIndex('by_user_and_reason', q => q.eq('userId', userId).eq('reason', 'use'))
+			.withIndex('by_user_and_reason', q =>
+				q.eq('userId', userId).eq('reason', 'use')
+			)
 			.collect()
-			.then(ledger => ledger.length)
+			.then(ledger => ledger.length),
 	]);
 	const balance = Math.max(0, earned + grants - uses);
 	return Math.min(VACATION_CAP, balance);
@@ -221,10 +225,12 @@ export const updateStreakDays = async ({
 	const activitiesOnThisDay = await ctx.db
 		.query('userTargetLanguageActivities')
 		.withIndex('by_user', q => q.eq('userId', args.userId))
-		.filter(q => q.and(
-			q.gte(q.field('_creationTime'), dayStart),
-			q.lte(q.field('_creationTime'), dayEnd)
-		))
+		.filter(q =>
+			q.and(
+				q.gte(q.field('_creationTime'), dayStart),
+				q.lte(q.field('_creationTime'), dayEnd)
+			)
+		)
 		.collect();
 
 	const trackedMs = activitiesOnThisDay.reduce((sum: number, a: any) => {
@@ -300,7 +306,7 @@ export const updateStreakOnActivity = async ({
 		args: {
 			userId: args.userId,
 			occurredAt: nowUtc,
-		}
+		},
 	});
 
 	// Ensure today's row exists
@@ -361,13 +367,7 @@ export const updateStreakOnActivity = async ({
 		}
 	}
 
-	await creditDayByActivity(
-		ctx,
-		args.userId,
-		todayStart,
-		streakLength,
-		nowUtc
-	);
+	await creditDayByActivity(ctx, args.userId, todayStart, streakLength, nowUtc);
 
 	const currentStreak = streakLength;
 	const longestStreak = Math.max(user.longestStreak ?? 0, currentStreak);
@@ -379,19 +379,14 @@ export const updateStreakOnActivity = async ({
 	return { currentStreak, longestStreak, didIncrementToday: true };
 };
 
-import {
-	calculateStreakBonusMultiplier,
-} from '../lib/streakBonus';
+import { calculateStreakBonusMultiplier } from '../lib/streakBonus';
 
 export const getStreakBonusMultiplier = async (
 	ctx: QueryCtx,
 	userId: Id<'users'>
 ): Promise<number> => {
 	// Prefer latest credited streakDays
-	const latestCredited = await getMostRecentCreditedStreakDay(
-		ctx,
-		userId
-	);
+	const latestCredited = await getMostRecentCreditedStreakDay(ctx, userId);
 	const currentStreak = Math.max(0, latestCredited?.streakLength ?? 0);
 	const multiplier = calculateStreakBonusMultiplier(currentStreak);
 	return multiplier; // e.g., 1.476
@@ -483,8 +478,8 @@ export const getStreakDataForHeatmap = query({
 			const medianMinutes =
 				nonZeroMinutes.length > 0
 					? nonZeroMinutes.sort((a, b) => a - b)[
-					Math.floor(nonZeroMinutes.length / 2)
-					]
+							Math.floor(nonZeroMinutes.length / 2)
+						]
 					: 0;
 
 			// Use median for more robust thresholds, fallback to average

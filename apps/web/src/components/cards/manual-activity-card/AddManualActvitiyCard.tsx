@@ -5,7 +5,6 @@ import { AddFavoriteButton } from './AddFavoriteButton';
 import { AddManualActivityButton } from './AddManualActivityButton';
 
 export const AddManualActvitiyCard = () => {
-
 	return (
 		<Card className="p-4">
 			<h1 className="font-display text-4xl md:text-2xl pb-2 leading-tight md:leading-[1.03] tracking-[-0.02em] text-main-foreground">

@@ -50,15 +50,13 @@ function FavoriteRow({
 	const [minutes, setMinutes] = React.useState<number>(
 		Math.max(
 			0,
-			Math.round((((favorite.defaultDurationInMs ?? 10 * 60 * 1000) as number)) / 60000)
+			Math.round(
+				((favorite.defaultDurationInMs ?? 10 * 60 * 1000) as number) / 60000
+			)
 		)
 	);
-	const [desc, setDesc] = React.useState<string>(
-		favorite.description ?? ''
-	);
-	const [url, setUrl] = React.useState<string>(
-		favorite.externalUrl ?? ''
-	);
+	const [desc, setDesc] = React.useState<string>(favorite.description ?? '');
+	const [url, setUrl] = React.useState<string>(favorite.externalUrl ?? '');
 	const [useCustomMinutes, setUseCustomMinutes] =
 		React.useState<boolean>(false);
 	const [customHours, setCustomHours] = React.useState<number>(
@@ -346,11 +344,11 @@ export const FavoritesList = ({ onAutoFill }: FavoritesListProps = {}) => {
 					)}
 					{favorites && favorites.page?.length > 0 && (
 						<ul className="space-y-2">
-							{favorites.page.map((f) => (
+							{favorites.page.map(f => (
 								<FavoriteRow
 									key={f._id}
 									favorite={f}
-									onAutoFill={onAutoFill || (() => { })}
+									onAutoFill={onAutoFill || (() => {})}
 									onUpdate={updateFavorite}
 									onDelete={deleteFavorite}
 								/>

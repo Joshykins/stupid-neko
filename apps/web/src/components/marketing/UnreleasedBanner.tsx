@@ -26,7 +26,7 @@ const Star = ({
 		height: `${size}px`,
 		opacity: 0.9,
 		['--twinkle-duration']: `${twinkleDuration}ms`,
-	} as CSSProperties & { ['--twinkle-duration']?: string; };
+	} as CSSProperties & { ['--twinkle-duration']?: string };
 
 	return (
 		<svg
@@ -45,16 +45,16 @@ const Star = ({
 	);
 };
 
-export const UnreleasedBanner = ({ className }: { className?: string; }) => {
+export const UnreleasedBanner = ({ className }: { className?: string }) => {
 	const MIN_DISTANCE = 0.12; // in normalized [0,1] units (~12% of banner width/height)
 	const MAX_ATTEMPTS_PER_STAR = 50;
 
 	const [stars, setStars] = useState<
-		Array<{ x: number; y: number; size: number; twinkleMs: number; }>
+		Array<{ x: number; y: number; size: number; twinkleMs: number }>
 	>([]);
 
 	useEffect(() => {
-		const placed: Array<{ x: number; y: number; }> = [];
+		const placed: Array<{ x: number; y: number }> = [];
 		const generated: Array<{
 			x: number;
 			y: number;
@@ -64,7 +64,7 @@ export const UnreleasedBanner = ({ className }: { className?: string; }) => {
 
 		for (let i = 0; i < STAR_COUNT; i++) {
 			let attempts = 0;
-			let placedPoint: { x: number; y: number; } | null = null;
+			let placedPoint: { x: number; y: number } | null = null;
 			while (attempts < MAX_ATTEMPTS_PER_STAR && !placedPoint) {
 				attempts++;
 				const x = Math.random();
@@ -97,7 +97,7 @@ export const UnreleasedBanner = ({ className }: { className?: string; }) => {
 				STAR_SIZE_RANGE[0];
 			const twinkleMs =
 				Math.random() *
-				(STAR_TWINKLE_DURATION_RANGE[1] - STAR_TWINKLE_DURATION_RANGE[0]) +
+					(STAR_TWINKLE_DURATION_RANGE[1] - STAR_TWINKLE_DURATION_RANGE[0]) +
 				STAR_TWINKLE_DURATION_RANGE[0];
 			generated.push({ x: placedPoint.x, y: placedPoint.y, size, twinkleMs });
 		}

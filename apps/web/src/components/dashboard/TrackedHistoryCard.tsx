@@ -145,11 +145,11 @@ const TrackedHistoryItem = ({
 							: 'manual';
 
 	// Derive presentation fields
-	const legacyDurationSeconds = (item as { durationInSeconds?: number; })
+	const legacyDurationSeconds = (item as { durationInSeconds?: number })
 		.durationInSeconds;
 	const durationMs =
-		(item as { durationMs?: number; }).durationMs ??
-		(item as { durationInMs?: number; }).durationInMs ??
+		(item as { durationMs?: number }).durationMs ??
+		(item as { durationInMs?: number }).durationInMs ??
 		(typeof legacyDurationSeconds === 'number'
 			? legacyDurationSeconds * 1000
 			: undefined) ??
@@ -163,7 +163,7 @@ const TrackedHistoryItem = ({
 
 	const SOURCE_STYLES: Record<
 		string,
-		{ dot: string; border: string; badge: string; }
+		{ dot: string; border: string; badge: string }
 	> = React.useMemo(
 		() => ({
 			youtube: {
@@ -228,7 +228,9 @@ const TrackedHistoryItem = ({
 		}
 	}
 
-	const deleteActivity = useMutation(api.userTargetLanguageActivityFunctions.deleteLanguageActivity);
+	const deleteActivity = useMutation(
+		api.userTargetLanguageActivityFunctions.deleteLanguageActivity
+	);
 	const [deleting, setDeleting] = React.useState(false);
 	const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
 
@@ -251,8 +253,13 @@ const TrackedHistoryItem = ({
 			<Tooltip delayDuration={500}>
 				<TooltipTrigger asChild>
 					<div
-						className={cn(`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10	`, isInProgress ? 'bg-secondary-background border-border shadow-shadow' : '')}
-					// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
+						className={cn(
+							`group flex items-center  justify-between gap-3 p-2 rounded-base transition-all border-2 hover:border-2 border-border/10	`,
+							isInProgress
+								? 'bg-secondary-background border-border shadow-shadow'
+								: ''
+						)}
+						// aria-label={`${title} ${item.source ? `from ${item.source}` : ""}`}
 					>
 						<div className="flex items-center gap-3 flex-1">
 							{key === 'manual' ? (
@@ -309,27 +316,34 @@ const TrackedHistoryItem = ({
 											In Progress
 										</span>
 									)}
-									{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-										<Rocket className="!size-3" /> {xp.toLocaleString()} XP
-									</span>} <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
+									{!isInProgress && (
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+											<Rocket className="!size-3" /> {xp.toLocaleString()} XP
+										</span>
+									)}{' '}
+									<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 										{formatHoursMinutesLabel(durationSeconds)}
 									</span>
-									{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
-										{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
-									</span>}
+									{!isInProgress && (
+										<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-background text-main-foreground border border-border">
+											{dateFooterLabel(occurredAt, timeZone, effectiveNow)}
+										</span>
+									)}
 								</span>
 							</div>
 						</div>
 						<div className="flex items-center gap-2 flex-shrink-0 text-sm whitespace-nowrap font-bold font-display text-main-foreground">
-							{!isInProgress && <Button
-								size="icon"
-								variant={"neutral"}
-								aria-label="Delete activity"
-								onClick={onDelete}
-								disabled={deleting}
-							>
-								<Trash2 className="!size-4" />
-							</Button>}
+							{!isInProgress && (
+								<Button
+									size="icon"
+									variant={'neutral'}
+									aria-label="Delete activity"
+									onClick={onDelete}
+									disabled={deleting}
+								>
+									<Trash2 className="!size-4" />
+								</Button>
+							)}
 						</div>
 					</div>
 				</TooltipTrigger>
@@ -359,7 +373,9 @@ const TrackedHistoryItem = ({
 								<span
 									className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${styles.badge}`}
 								>
-									<span className="opacity-90">{key === 'website' ? 'website' : key}</span>
+									<span className="opacity-90">
+										{key === 'website' ? 'website' : key}
+									</span>
 								</span>
 							)}
 
@@ -371,9 +387,11 @@ const TrackedHistoryItem = ({
 							<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border">
 								{formatHoursMinutesLabel(durationSeconds)}
 							</span>
-							{!isInProgress && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
-								<Rocket className="!size-3" /> {xp.toLocaleString()} XP
-							</span>}
+							{!isInProgress && (
+								<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-black border border-border bg-experience">
+									<Rocket className="!size-3" /> {xp.toLocaleString()} XP
+								</span>
+							)}
 						</div>
 						{item.label?.authorName && (
 							<div className="text-xs opacity-80">
@@ -404,7 +422,8 @@ const TrackedHistoryItem = ({
 					<DialogHeader>
 						<DialogTitle>Delete Activity</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete this activity? This will undo the XP gained from it and cannot be undone.
+							Are you sure you want to delete this activity? This will undo the
+							XP gained from it and cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

@@ -27,8 +27,8 @@ function PopoverContent({
 		<PopoverPrimitive.Portal
 			container={
 				(window as unknown as Record<string, unknown>).__stupidNekoPortalEl as
-				| HTMLElement
-				| undefined
+					| HTMLElement
+					| undefined
 			}
 		>
 			<PopoverPrimitive.Content

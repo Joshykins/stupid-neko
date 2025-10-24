@@ -79,7 +79,11 @@
 		#ffffff
 	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
-	--source-website-soft: color-mix(in oklch, var(--source-website) 80%, #ffffff);
+	--source-website-soft: color-mix(
+		in oklch,
+		var(--source-website) 80%,
+		#ffffff
+	);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
 	/* flashcards breakdown (dedicated palette distinct from chart colors) */
@@ -164,7 +168,11 @@
 		#ffffff
 	);
 	--source-anki-soft: color-mix(in oklch, var(--source-anki) 80%, #ffffff);
-	--source-website-soft: color-mix(in oklch, var(--source-website) 80%, #ffffff);
+	--source-website-soft: color-mix(
+		in oklch,
+		var(--source-website) 80%,
+		#ffffff
+	);
 	--source-misc-soft: color-mix(in oklch, var(--source-misc) 80%, #ffffff);
 
 	/* flashcards breakdown (dark variants) */

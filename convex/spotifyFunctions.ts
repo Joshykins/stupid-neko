@@ -1,9 +1,6 @@
 import { getAuthUserId } from '@convex-dev/auth/server';
 import { v } from 'convex/values';
-import {
-	mutation,
-	query,
-} from './_generated/server';
+import { mutation, query } from './_generated/server';
 
 // Utilities
 function encodeQuery(
@@ -76,9 +73,6 @@ export const startAuth = mutation({
 		return { url, state } as const;
 	},
 });
-
-
-
 
 // finishAuth moved to convex/spotifyActions.ts (Node runtime)
 

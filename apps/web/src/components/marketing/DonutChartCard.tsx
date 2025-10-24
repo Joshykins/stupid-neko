@@ -16,27 +16,35 @@ export function DonutChartCard() {
 		},
 	} as const;
 
-	const data = React.useMemo(() => [
-		{ key: 'new', name: 'New', value: 48, fill: 'var(--color-flashcards-new)' },
-		{
-			key: 'learning',
-			name: 'Learning',
-			value: 22,
-			fill: 'var(--color-flashcards-learning)',
-		},
-		{
-			key: 'review',
-			name: 'Review',
-			value: 132,
-			fill: 'var(--color-flashcards-review)',
-		},
-		{
-			key: 'suspended',
-			name: 'Suspended',
-			value: 6,
-			fill: 'var(--color-flashcards-suspended)',
-		},
-	], []);
+	const data = React.useMemo(
+		() => [
+			{
+				key: 'new',
+				name: 'New',
+				value: 48,
+				fill: 'var(--color-flashcards-new)',
+			},
+			{
+				key: 'learning',
+				name: 'Learning',
+				value: 22,
+				fill: 'var(--color-flashcards-learning)',
+			},
+			{
+				key: 'review',
+				name: 'Review',
+				value: 132,
+				fill: 'var(--color-flashcards-review)',
+			},
+			{
+				key: 'suspended',
+				name: 'Suspended',
+				value: 6,
+				fill: 'var(--color-flashcards-suspended)',
+			},
+		],
+		[]
+	);
 	const total = React.useMemo(
 		() => data.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
 		[data]
@@ -78,7 +86,8 @@ export function DonutChartCard() {
 										const item = payload[0];
 										const key = item?.payload?.key as keyof typeof chartConfig;
 										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										const label = (chartConfig as any)[key]?.label || item?.name;
+										const label =
+											(chartConfig as any)[key]?.label || item?.name;
 										const value = (item?.payload?.value ?? item?.value) as
 											| number
 											| undefined;

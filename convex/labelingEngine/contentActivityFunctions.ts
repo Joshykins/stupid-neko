@@ -7,7 +7,12 @@ import { getOrCreateContentLabel } from './contentLabelFunctions';
 import { createOrUpdateLanguageActivityFromContent } from '../userTargetLanguageActivityFunctions';
 
 // Helper function to convert content source to activity source
-function getSourceFromContentSource(contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website'): 'browser-extension-youtube-provider' | 'browser-extension-website-provider' | 'spotify' {
+function getSourceFromContentSource(
+	contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website'
+):
+	| 'browser-extension-youtube-provider'
+	| 'browser-extension-website-provider'
+	| 'spotify' {
 	switch (contentSource) {
 		case 'youtube':
 			return 'browser-extension-youtube-provider';
@@ -107,7 +112,7 @@ export const recordContentActivity = async ({
 					| 'manual'
 					| 'website',
 				contentUrl: args.url,
-			}
+			},
 		});
 
 		// Create activity with user's target language (will be updated when labeling completes)
@@ -120,7 +125,7 @@ export const recordContentActivity = async ({
 				userTargetLanguageId: currentTargetLanguageId,
 				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
 				source: getSourceFromContentSource(args.source),
-			}
+			},
 		});
 
 		return {
@@ -144,7 +149,7 @@ export const recordContentActivity = async ({
 				userTargetLanguageId: currentTargetLanguageId,
 				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
 				source: getSourceFromContentSource(args.source),
-			}
+			},
 		});
 
 		return {
@@ -173,7 +178,7 @@ export const recordContentActivity = async ({
 			userTargetLanguageId: currentTargetLanguageId,
 			userTargetLanguageCode: currentTargetLanguage.languageCode as any,
 			source: getSourceFromContentSource(args.source),
-		}
+		},
 	});
 
 	// Check if activity was skipped due to language mismatch

@@ -46,7 +46,7 @@ export async function processSpotifyContentLabel(
 		if (!contentKey || !contentKey.startsWith('spotify:')) {
 			return {
 				success: false,
-				error: 'Invalid contentKey format for Spotify processing'
+				error: 'Invalid contentKey format for Spotify processing',
 			};
 		}
 
@@ -61,13 +61,13 @@ export async function processSpotifyContentLabel(
 		if (!trackId) {
 			return {
 				success: false,
-				error: 'No track ID found in contentKey'
+				error: 'No track ID found in contentKey',
 			};
 		}
 
-		const patch: ContentLabelPatch = { 
+		const patch: ContentLabelPatch = {
 			contentMediaType: 'audio',
-			contentUrl: `https://open.spotify.com/track/${trackId}`
+			contentUrl: `https://open.spotify.com/track/${trackId}`,
 		};
 
 		// Get track details from Spotify API
@@ -97,15 +97,15 @@ export async function processSpotifyContentLabel(
 		const geminiInput = {
 			title: title,
 			description: `Spotify track: ${trackId}`,
-			url: patch.contentUrl
+			url: patch.contentUrl,
 		};
 
 		console.debug('[spotifyProcessing.processOne] calling Gemini', {
-			geminiInput
+			geminiInput,
 		});
 
 		const geminiResult = await detectLanguageWithGemini(geminiInput);
-		
+
 		if (geminiResult.success) {
 			patch.contentLanguageCode = geminiResult.dominant_language || undefined;
 			patch.isAboutTargetLanguages = geminiResult.target_languages;
@@ -113,7 +113,7 @@ export async function processSpotifyContentLabel(
 			patch.languageEvidence = ['spotify:gemini'];
 		} else {
 			console.debug('[spotifyProcessing.processOne] Gemini detection failed', {
-				error: geminiResult.error
+				error: geminiResult.error,
 			});
 			// Continue without language detection - the activity will be created with user's target language
 		}
@@ -129,20 +129,19 @@ export async function processSpotifyContentLabel(
 				title: patch.title,
 				authorName: patch.authorName,
 				contentLanguageCode: patch.contentLanguageCode,
-				contentMediaType: patch.contentMediaType
-			}
+				contentMediaType: patch.contentMediaType,
+			},
 		});
 
 		return {
 			success: true,
-			patch
+			patch,
 		};
-
 	} catch (error) {
 		console.error('[spotifyProcessing.processOne] error', error);
 		return {
 			success: false,
-			error: error instanceof Error ? error.message : 'Unknown error'
+			error: error instanceof Error ? error.message : 'Unknown error',
 		};
 	}
 }
