@@ -167,6 +167,8 @@ export default function LevelExperienceInfo({
 									<ChartTooltipContent
 										{...props}
 										labelFormatter={() => ''}
+										// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+										// @ts-expect-error - formatter is not typed
 										formatter={(
 											_value: number,
 											_name: string,

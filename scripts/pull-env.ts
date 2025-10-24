@@ -59,7 +59,6 @@ function getInfisicalToken(stage: Stage): string | null {
 	);
 	const fallback = readEnv('INFISICAL_TOKEN');
 
-
 	return perStage || fallback;
 }
 
@@ -406,7 +405,6 @@ async function main(): Promise<void> {
 	if (!!process.env.PULL_ENV_DEBUG && process.env.PULL_ENV_DEBUG !== '0') {
 		log('pull-env', 'Debug mode enabled', 'yellow');
 	}
-
 
 	log(
 		'pull-env',
