@@ -85,9 +85,9 @@ export function DonutChartCard() {
 										if (!active || !payload?.length) return null;
 										const item = payload[0];
 										const key = item?.payload?.key as keyof typeof chartConfig;
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 										const label =
-											(chartConfig as any)[key]?.label || item?.name;
+											(chartConfig as Record<string, { label: string; }>)[key]?.label || item?.name;
 										const value = (item?.payload?.value ?? item?.value) as
 											| number
 											| undefined;
