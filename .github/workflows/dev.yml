@@ -100,9 +100,8 @@ jobs:
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            const lockfile = JSON.parse(fs.readFileSync('../pnpm-lock.yaml', 'utf8'));
             
-            // Replace catalog: entries with actual versions from lockfile
+            // Replace catalog: entries with actual versions
             const resolvedDeps = {};
             for (const [name, version] of Object.entries(pkg.dependencies)) {
               if (version.startsWith('catalog:')) {
