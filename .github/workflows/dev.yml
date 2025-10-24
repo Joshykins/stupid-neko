@@ -94,8 +94,10 @@ jobs:
 
       - name: Deploy to Vercel (preview)
         run: |
-          # Copy pnpm-lock.yaml to apps/web for Vercel
+          # Copy workspace files to apps/web for Vercel monorepo support
           cp pnpm-lock.yaml apps/web/
+          cp pnpm-workspace.yaml apps/web/
+          cp package.json apps/web/workspace-package.json
           cd apps/web
           npx vercel@latest deploy --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }}
         env:
