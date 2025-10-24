@@ -81,34 +81,8 @@ jobs:
 
       - name: Deploy to Vercel (production)
         run: |
-          # Create a standalone package.json for Vercel with resolved dependencies
-          cd apps/web
-          # Create a temporary package.json with resolved versions instead of catalog:
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            
-            // Replace catalog: entries with actual versions
-            const resolvedDeps = {};
-            for (const [name, version] of Object.entries(pkg.dependencies)) {
-              if (version.startsWith('catalog:')) {
-                // Use a reasonable default version for catalog entries
-                if (name === 'react' || name === 'react-dom') {
-                  resolvedDeps[name] = '^18.0.0';
-                } else if (name === 'typescript') {
-                  resolvedDeps[name] = '^5.0.0';
-                } else {
-                  resolvedDeps[name] = 'latest';
-                }
-              } else {
-                resolvedDeps[name] = version;
-              }
-            }
-            
-            pkg.dependencies = resolvedDeps;
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
-          npx vercel@latest deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }}
+          pnpm turbo build --filter=web
+          pnpm turbo vercel deploy --filter=web --prod
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
