@@ -90,6 +90,30 @@ export default [
       },
     },
   },
+  // Mobile app files (React Native/Expo)
+  {
+    files: [
+      'apps/mobile/**/*.{js,ts,tsx}',
+      'apps/mobile/*.config.*',
+    ],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
+    },
+  },
+  // Allow require() usage in metro.config.js
+  {
+    files: ['apps/mobile/metro.config.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
   // Global ignores (workspace level)
   {
     ignores: [

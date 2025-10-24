@@ -4,10 +4,8 @@ const { getDefaultConfig } = require("expo/metro-config");
 // Force Metro 0.81+ plugin availability for SDK 53
 try {
 	require.resolve("metro/src/ModuleGraph/worker/importLocationsPlugin");
-} catch (e) {
-	console.warn(
-		"Metro plugin importLocationsPlugin not found. Ensure metro@0.81+ is installed via expo install --fix.",
-	);
+} catch {
+	// Metro plugin importLocationsPlugin not found. Ensure metro@0.81+ is installed via expo install --fix.
 }
 
 const projectRoot = __dirname;
