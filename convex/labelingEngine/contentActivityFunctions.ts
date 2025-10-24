@@ -7,13 +7,14 @@ import { getOrCreateContentLabel } from './contentLabelFunctions';
 import { createOrUpdateLanguageActivityFromContent } from '../userTargetLanguageActivityFunctions';
 
 // Helper function to convert content source to activity source
-function getSourceFromContentSource(contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website'): 'browser-extension-youtube-provider' | 'browser-extension-website-provider' {
+function getSourceFromContentSource(contentSource: 'youtube' | 'spotify' | 'anki' | 'manual' | 'website'): 'browser-extension-youtube-provider' | 'browser-extension-website-provider' | 'spotify' {
 	switch (contentSource) {
 		case 'youtube':
 			return 'browser-extension-youtube-provider';
 		case 'website':
 			return 'browser-extension-website-provider';
 		case 'spotify':
+			return 'spotify';
 		case 'anki':
 		case 'manual':
 		default:

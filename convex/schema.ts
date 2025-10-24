@@ -225,7 +225,8 @@ export default defineSchema({
 		source: v.union(
 			v.literal('manual'),
 			v.literal('browser-extension-youtube-provider'),
-			v.literal('browser-extension-website-provider')
+			v.literal('browser-extension-website-provider'),
+			v.literal('spotify')
 		),
 
 		title: v.optional(v.string()),

@@ -206,7 +206,8 @@ export const listRecentLanguageActivities = query({
 				source: v.union(
 					v.literal('manual'),
 					v.literal('browser-extension-youtube-provider'),
-					v.literal('browser-extension-website-provider')
+					v.literal('browser-extension-website-provider'),
+					v.literal('spotify')
 				),
 				languageCode: v.optional(languageCodeValidator),
 				title: v.optional(v.string()),
@@ -487,6 +488,8 @@ export const getWeeklySourceDistribution = query({
 
 			if (source === 'browser-extension-youtube-provider') {
 				category = 'youtube';
+			} else if (source === 'spotify') {
+				category = 'spotify';
 			} else if (source === 'manual') {
 				category = 'manual';
 			} else if (source === 'browser-extension-website-provider') {
@@ -599,7 +602,7 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 		};
 		userTargetLanguageId: Id<'userTargetLanguages'>;
 		userTargetLanguageCode: LanguageCode;
-		source: 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
+		source: 'browser-extension-youtube-provider' | 'browser-extension-website-provider' | 'spotify';
 	};
 }): Promise<{
 	activityId?: Id<'userTargetLanguageActivities'>;
@@ -611,11 +614,12 @@ export const createOrUpdateLanguageActivityFromContent = async ({
 	// Determine the language to use for this activity
 	let languageCode: LanguageCode;
 	const isWebsiteProvider = args.source === 'browser-extension-website-provider';
+	const isSpotifyProvider = args.source === 'spotify';
 	if (isWebsiteProvider) {
 		// For website provider, always use user's target language
 		languageCode = userTargetLanguageCode;
 	} else if (contentLabel?.contentLanguageCode) {
-		// Use detected language if available
+		// Use detected language if available (for YouTube and Spotify)
 		languageCode = contentLabel.contentLanguageCode;
 	} else {
 		// Use user's target language as fallback
@@ -756,7 +760,8 @@ export const listStaleInProgressActivities = internalQuery({
 		source: v.union(
 			v.literal('manual'),
 			v.literal('browser-extension-youtube-provider'),
-			v.literal('browser-extension-website-provider')
+			v.literal('browser-extension-website-provider'),
+			v.literal('spotify')
 		),
 		state: v.union(v.literal('in-progress'), v.literal('completed')),
 		isDeleted: v.optional(v.boolean()),
@@ -771,7 +776,7 @@ export const listStaleInProgressActivities = internalQuery({
 		userTargetLanguageId: Id<'userTargetLanguages'>;
 		languageCode?: LanguageCode;
 		contentKey?: string;
-		source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider';
+		source: 'manual' | 'browser-extension-youtube-provider' | 'browser-extension-website-provider' | 'spotify';
 		state: 'in-progress' | 'completed';
 		isDeleted?: boolean;
 		title?: string;
@@ -782,11 +787,14 @@ export const listStaleInProgressActivities = internalQuery({
 		const nowEffective = Date.now();
 		const staleThreshold = nowEffective - ACTIVITY_GAP_MS;
 
-		// Query all in-progress activities
+		// Query all in-progress activities (excluding deleted ones)
 		// Note: We need to query all users since the index requires userId first
 		const allInProgress = await ctx.db
 			.query('userTargetLanguageActivities')
-			.filter(q => q.eq(q.field('state'), 'in-progress'))
+			.filter(q => q.and(
+				q.eq(q.field('state'), 'in-progress'),
+				q.neq(q.field('isDeleted'), true)
+			))
 			.take(args.batchSize);
 
 		// Filter to those that are stale

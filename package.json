@@ -28,6 +28,8 @@
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
+		"deploy:convex:dev": "npx convex deploy --cmd 'pnpm build' --cmd-url-env-var-name CONVEX_URL",
+		"deploy:convex:prod": "npx convex deploy --cmd 'pnpm build' --cmd-url-env-var-name CONVEX_URL --prod",
 		"prelint": "node scripts/check-pnpm.js",
 		"preinstall": "node -e \"if (!process.env.npm_execpath || !/pnpm/.test(process.env.npm_execpath)) { console.error('This repository uses pnpm. Please use pnpm to install and run scripts.'); process.exit(1); }\""
 	},

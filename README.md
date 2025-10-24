@@ -39,6 +39,70 @@ Then:
 
 If you want to sync Clerk user data via webhooks, check out this [example repo](https://github.com/thomasballinger/convex-clerk-users-table/).
 
+## CI/CD Setup
+
+This project uses GitHub Actions for automated CI/CD. The workflows handle:
+
+- **Development deployments**: Triggered on pull requests and non-main branch pushes
+- **Production deployments**: Triggered on pushes to main branch
+- **Code quality checks**: Linting and formatting validation
+
+### Required GitHub Secrets
+
+To enable CI/CD, add these secrets to your GitHub repository settings:
+
+#### Infisical Secrets
+- `INFISICAL_TOKEN_DEV`: Infisical service token for development environment
+- `INFISICAL_TOKEN_PROD`: Infisical service token for production environment
+- `INFISICAL_PROJECT_ID`: Infisical project ID (optional, defaults to project in script)
+
+#### Convex Secrets
+- `CONVEX_DEPLOY_KEY`: Convex deploy key for authentication
+
+#### Vercel Secrets
+- `VERCEL_TOKEN`: Vercel API token for deployments
+- `VERCEL_ORG_ID`: Vercel organization ID
+- `VERCEL_PROJECT_ID`: Vercel project ID
+
+### Workflow Details
+
+#### Development Workflow (`dev.yml`)
+- Runs on pull requests and pushes to non-main branches
+- Pulls environment variables from Infisical (dev environment)
+- Deploys Convex to development deployment
+- Builds browser extension (Chrome & Firefox)
+- Deploys to Vercel preview environment
+- Uploads extension artifacts for manual store upload
+
+#### Production Workflow (`prod.yml`)
+- Runs on pushes to main branch
+- Pulls environment variables from Infisical (production environment)
+- Deploys Convex to production deployment
+- Builds browser extension for production
+- Deploys to Vercel production environment
+- Uploads extension artifacts for manual store upload
+
+#### Linting Workflow (`lint.yml`)
+- Runs on all pull requests and pushes
+- Performs ESLint checks
+- Validates code formatting with Prettier
+
+### Manual Deployment
+
+You can also trigger deployments manually:
+
+```bash
+# Deploy Convex to development
+pnpm deploy:convex:dev
+
+# Deploy Convex to production
+pnpm deploy:convex:prod
+
+# Pull environment variables
+pnpm pull-env:dev    # for development
+pnpm pull-env:prod   # for production
+```
+
 ## Learn more
 
 To learn more about developing your project with Convex, check out:

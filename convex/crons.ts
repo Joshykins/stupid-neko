@@ -76,4 +76,11 @@ crons.interval(
 	{}
 );
 
+crons.interval(
+	'poll spotify listening',
+	{ seconds: 60 },
+	internal.spotifyActions.pollAllUsers,
+	{}
+);
+
 export default crons;

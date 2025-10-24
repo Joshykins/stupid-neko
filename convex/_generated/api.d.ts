@@ -22,6 +22,7 @@ import type * as labelingEngine_contentLabelActions from "../labelingEngine/cont
 import type * as labelingEngine_contentLabelFunctions from "../labelingEngine/contentLabelFunctions.js";
 import type * as labelingEngine_integrations_geminiLanguageDetection from "../labelingEngine/integrations/geminiLanguageDetection.js";
 import type * as labelingEngine_integrations_geminiUtils from "../labelingEngine/integrations/geminiUtils.js";
+import type * as labelingEngine_integrations_spotifyProcessing from "../labelingEngine/integrations/spotifyProcessing.js";
 import type * as labelingEngine_integrations_websiteProcessing from "../labelingEngine/integrations/websiteProcessing.js";
 import type * as labelingEngine_integrations_youtubeProcessing from "../labelingEngine/integrations/youtubeProcessing.js";
 import type * as labelingEngine_integrations_youtubeProcessingDeprecated from "../labelingEngine/integrations/youtubeProcessingDeprecated.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "labelingEngine/contentLabelFunctions": typeof labelingEngine_contentLabelFunctions;
   "labelingEngine/integrations/geminiLanguageDetection": typeof labelingEngine_integrations_geminiLanguageDetection;
   "labelingEngine/integrations/geminiUtils": typeof labelingEngine_integrations_geminiUtils;
+  "labelingEngine/integrations/spotifyProcessing": typeof labelingEngine_integrations_spotifyProcessing;
   "labelingEngine/integrations/websiteProcessing": typeof labelingEngine_integrations_websiteProcessing;
   "labelingEngine/integrations/youtubeProcessing": typeof labelingEngine_integrations_youtubeProcessing;
   "labelingEngine/integrations/youtubeProcessingDeprecated": typeof labelingEngine_integrations_youtubeProcessingDeprecated;

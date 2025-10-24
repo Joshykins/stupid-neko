@@ -209,9 +209,24 @@ const TrackedHistoryItem = ({
 	const styles = SOURCE_STYLES[key] ?? SOURCE_STYLES.manual;
 
 	// For website sources, extract domain from title if it contains "website:domain" pattern
-	let title = item.title ?? item.label?.title ?? '(untitled)';
+	let title = item.label?.title ?? item.title ?? '(untitled)';
 	if (key === 'website' && title.startsWith('website:')) {
 		title = title.split(':')[1] || title;
+	}
+
+	// Handle contentKey fallbacks for better UX
+	if (title === item.contentKey) {
+		if (key === 'spotify') {
+			title = 'Spotify Track';
+		} else if (key === 'youtube') {
+			title = 'YouTube Video';
+		} else if (key === 'anki') {
+			title = 'Anki Deck';
+		} else if (key === 'website') {
+			title = 'Website Content';
+		} else {
+			title = 'Learning Activity';
+		}
 	}
 
 	const deleteActivity = useMutation(api.userTargetLanguageActivityFunctions.deleteLanguageActivity);

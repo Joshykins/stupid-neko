@@ -3,6 +3,7 @@ import { internal } from '../_generated/api';
 import { internalAction, internalMutation } from '../_generated/server';
 import * as YouTubeProcessing from './integrations/youtubeProcessing';
 import * as WebsiteProcessing from './integrations/websiteProcessing';
+import * as SpotifyProcessing from './integrations/spotifyProcessing';
 import dayjs from '../../lib/dayjs';
 import { tryCatch } from '../../lib/tryCatch';
 import { languageCodeValidator } from '../schema';
@@ -163,6 +164,11 @@ export const processOneContentLabel = internalAction({
 						);
 					case 'website':
 						return await WebsiteProcessing.processWebsiteContentLabel(
+							ctx,
+							{ contentLabelId: args.contentLabelId }
+						);
+					case 'spotify':
+						return await SpotifyProcessing.processSpotifyContentLabel(
 							ctx,
 							{ contentLabelId: args.contentLabelId }
 						);
