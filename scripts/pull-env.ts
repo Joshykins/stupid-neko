@@ -131,10 +131,15 @@ function exportSecretsMap(
 	if (tokenIdx !== -1 && tokenIdx + 1 < displayArgs.length)
 		displayArgs[tokenIdx + 1] = '***';
 	log('infisical', chalk.gray(`infisical ${displayArgs.join(' ')}`));
+	console.log(`[DEBUG] About to run: infisical ${displayArgs.join(' ')}`);
+	console.log(`[DEBUG] Full command args: ${JSON.stringify(args)}`);
 	const res = spawnSync('infisical', args, {
 		stdio: ['ignore', 'pipe', 'pipe'],
 		encoding: 'utf8',
 	});
+	console.log(`[DEBUG] Infisical exit code: ${res.status}`);
+	console.log(`[DEBUG] Infisical stdout length: ${(res.stdout || '').length}`);
+	console.log(`[DEBUG] Infisical stderr length: ${(res.stderr || '').length}`);
 	if (res.status !== 0) {
 		const stderr = (res.stderr || '').trim();
 		if (!token) {
@@ -450,6 +455,9 @@ async function main(): Promise<void> {
 			`[DEBUG] INFISICAL_PROJECT_ID value: ${readEnv('INFISICAL_PROJECT_ID')?.substring(0, 8)}...`
 		);
 	}
+	console.log(`[DEBUG] Node version: ${process.version}`);
+	console.log(`[DEBUG] Platform: ${process.platform}`);
+	console.log(`[DEBUG] Working directory: ${process.cwd()}`);
 	console.log(`[DEBUG] ======================================`);
 
 	log(
