@@ -1,5 +1,7 @@
 name: Sync Environment Variables
 
+run-name: ${{ github.ref == 'refs/heads/dev' && 'DEV' || 'PROD' }} - Sync Environment Variables - ${{ github.event.head_commit.message }}
+
 # Trigger on pushes to dev and master branches
 on:
   push:
