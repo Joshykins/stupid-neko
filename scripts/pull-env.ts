@@ -338,7 +338,22 @@ function setEnvInConvex(envVars: StringMap, stage: Stage): void {
 		'magenta'
 	);
 
-	const env = { ...process.env, CONVEX_DEPLOYMENT: deployment };
+	// Get CONVEX_DEPLOY_KEY from Infisical data
+	const convexDeployKey = envVars['CONVEX_DEPLOY_KEY'];
+	
+	// Debug authentication setup
+	if (convexDeployKey) {
+		log('convex', 'CONVEX_DEPLOY_KEY is available for authentication', 'green');
+	} else {
+		log('convex', 'Warning: CONVEX_DEPLOY_KEY not found in Infisical data', 'yellow');
+	}
+
+	const env = { 
+		...process.env, 
+		CONVEX_DEPLOYMENT: deployment,
+		// Include CONVEX_DEPLOY_KEY from Infisical if available
+		...(convexDeployKey && { CONVEX_DEPLOY_KEY: convexDeployKey })
+	};
 
 	// Do not sync framework public envs or Convex built-ins
 	const isPublicPrefixed = (name: string): boolean =>
