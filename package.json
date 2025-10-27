@@ -14,7 +14,7 @@
 		"dev:extension": "turbo run dev --filter=browser-extension",
 		"dev:backend": "convex dev --local --once",
 		"pull-env:dev": "tsx scripts/pull-env.ts dev",
-		"pull-env:prod": "tsx scripts/pull-env.ts production",
+		"pull-env:production": "tsx scripts/pull-env.ts production",
 		"predev": "node scripts/check-pnpm.js",
 		"predev:web": "node scripts/check-pnpm.js",
 		"predev:backend": "node scripts/check-pnpm.js",

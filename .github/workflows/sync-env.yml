@@ -42,12 +42,35 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
             echo "stage=dev" >> $GITHUB_OUTPUT
             echo "token_var=INFISICAL_TOKEN_DEV" >> $GITHUB_OUTPUT
+            echo "deploy_key_var=CONVEX_DEPLOY_KEY_DEV" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "stage=production" >> $GITHUB_OUTPUT
             echo "token_var=INFISICAL_TOKEN_PROD" >> $GITHUB_OUTPUT
+            echo "deploy_key_var=CONVEX_DEPLOY_KEY_PROD" >> $GITHUB_OUTPUT
           else
             echo "Unknown branch: ${{ github.ref }}"
             exit 1
+          fi
+
+      - name: Debug environment setup
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          echo "Stage: ${{ steps.stage.outputs.stage }}"
+          echo "Token variable: ${{ steps.stage.outputs.token_var }}"
+          echo "Deploy key variable: ${{ steps.stage.outputs.deploy_key_var }}"
+          echo "Infisical token set: ${{ secrets[steps.stage.outputs.token_var] != '' }}"
+          echo "Infisical project ID set: ${{ secrets.INFISICAL_PROJECT_ID != '' }}"
+          echo "Convex deploy key set: ${{ secrets[steps.stage.outputs.deploy_key_var] != '' }}"
+
+      - name: Setup Convex authentication
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets[steps.stage.outputs.deploy_key_var] }}
+        run: |
+          if [[ -n "$CONVEX_DEPLOY_KEY" ]]; then
+            echo "Setting up Convex authentication with deploy key for ${{ steps.stage.outputs.stage }}"
+            echo "$CONVEX_DEPLOY_KEY" | npx convex auth --save-url=false
+          else
+            echo "Warning: ${{ steps.stage.outputs.deploy_key_var }} not set, Convex sync may fail"
           fi
 
       - name: Sync environment variables
@@ -56,9 +79,14 @@ jobs:
           # INFISICAL_TOKEN_DEV - Service token for dev environment
           # INFISICAL_TOKEN_PROD - Service token for production environment  
           # INFISICAL_PROJECT_ID - Project ID for Infisical
+          # CONVEX_DEPLOY_KEY_DEV - Convex deployment key for dev environment
+          # CONVEX_DEPLOY_KEY_PROD - Convex deployment key for production environment
           INFISICAL_TOKEN: ${{ secrets[steps.stage.outputs.token_var] }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: pnpm run pull-env:${{ steps.stage.outputs.stage }}
+          CONVEX_DEPLOY_KEY: ${{ secrets[steps.stage.outputs.deploy_key_var] }}
+        run: |
+          echo "Starting environment sync for ${{ steps.stage.outputs.stage }}..."
+          pnpm run pull-env:${{ steps.stage.outputs.stage }} --debug
 
       - name: Commit and push .env files (if any changes)
         run: |
