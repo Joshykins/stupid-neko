@@ -54,7 +54,7 @@ export const me = query({
 			image: user.image ?? undefined,
 			timezone: user.timezone ?? undefined,
 			languageCode: languageCode ?? undefined,
-			streakDisplayMode: (user as any).streakDisplayMode ?? undefined,
+			streakDisplayMode: user.streakDisplayMode ?? undefined,
 		};
 	},
 });
@@ -62,6 +62,7 @@ export const me = query({
 export const updateMe = mutation({
 	args: {
 		name: v.optional(v.string()),
+		image: v.optional(v.string()),
 	},
 	returns: v.null(),
 	handler: async (ctx, args) => {
@@ -72,7 +73,8 @@ export const updateMe = mutation({
 
 		await ctx.db.patch(userId, {
 			...(args.name !== undefined ? { name: args.name || undefined } : {}),
-		} as any);
+			...(args.image !== undefined ? { image: args.image || undefined } : {}),
+		});
 		return null;
 	},
 });
@@ -90,7 +92,7 @@ export const updateTimezone = mutation({
 
 		await ctx.db.patch(userId, {
 			timezone: args.timezone,
-		} as any);
+		});
 		return null;
 	},
 });
@@ -106,7 +108,7 @@ export const updateStreakDisplayCardMode = mutation({
 		const user = await ctx.db.get(userId);
 		if (!user) throw new Error('User not found');
 
-		await ctx.db.patch(userId, { streakDisplayMode: args.mode } as any);
+		await ctx.db.patch(userId, { streakDisplayMode: args.mode });
 		return null;
 	},
 });
@@ -152,7 +154,7 @@ export const getUserProgress = query({
 			.withIndex('by_user', q => q.eq('usedByUserId', userId))
 			.take(1);
 		const hasPreReleaseCode =
-			Boolean((user as any)?.preReleaseGranted) || code.length > 0;
+			Boolean(user.preReleaseGranted) || code.length > 0;
 
 		// Read total XP from latest ledger event
 		const latest = (
@@ -180,7 +182,7 @@ export const getUserProgress = query({
 			currentStreak: user.currentStreak ?? undefined,
 			longestStreak: user.longestStreak ?? undefined,
 			languageCode: targetLanguage.languageCode ?? undefined,
-			totalMsLearning: (targetLanguage as any).totalMsLearning ?? 0,
+			totalMsLearning: targetLanguage.totalMsLearning ?? 0,
 			userCreatedAt: user._creationTime,
 			targetLanguageCreatedAt: targetLanguage._creationTime,
 			currentLevel,
@@ -218,6 +220,54 @@ export const listAllUsersForCron = internalQuery({
 	),
 	handler: async ctx => {
 		const rows = await ctx.db.query('users').take(10000);
-		return rows.map(r => ({ _id: r._id, devDate: (r as any).devDate }));
+		return rows.map(r => ({ _id: r._id, devDate: r.devDate }));
+	},
+});
+
+export const generateUserProfilePictureUploadUrl = mutation({
+	args: {},
+	returns: v.string(),
+	handler: async ctx => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error('Unauthorized');
+		
+		return await ctx.storage.generateUploadUrl();
+	},
+});
+
+export const updateUserProfilePicture = mutation({
+	args: {
+		storageId: v.id('_storage'),
+	},
+	returns: v.null(),
+	handler: async (ctx, args) => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error('Unauthorized');
+		const user = await ctx.db.get(userId);
+		if (!user) throw new Error('User not found');
+
+		const imageUrl = await ctx.storage.getUrl(args.storageId);
+		if (!imageUrl) throw new Error('Failed to get image URL');
+
+		await ctx.db.patch(userId, {
+			image: imageUrl,
+		});
+		return null;
+	},
+});
+
+export const deleteUserProfilePicture = mutation({
+	args: {},
+	returns: v.null(),
+	handler: async ctx => {
+		const userId = await getAuthUserId(ctx);
+		if (!userId) throw new Error('Unauthorized');
+		const user = await ctx.db.get(userId);
+		if (!user) throw new Error('User not found');
+
+		await ctx.db.patch(userId, {
+			image: undefined,
+		});
+		return null;
 	},
 });
