@@ -1,5 +1,7 @@
 name: Linting and Code Quality
 
+run-name: ${{ github.ref == 'refs/heads/dev' && 'DEV' || github.ref == 'refs/heads/master' && 'PROD' || 'DEV' }} - Linting and Code Quality - ${{ github.event.head_commit.message || github.event.pull_request.title || 'Manual trigger' }}
+
 on:
   pull_request:
   push:

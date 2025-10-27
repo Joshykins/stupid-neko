@@ -1,0 +1,73 @@
+name: Sync Environment Variables
+
+run-name: ${{ github.ref == 'refs/heads/dev' && 'DEV' || 'PROD' }} - Sync Environment Variables - ${{ github.event.head_commit.message }}
+
+# Trigger on pushes to dev and master branches
+on:
+  push:
+    branches:
+      - dev
+      - master
+
+jobs:
+  sync-env:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Infisical CLI
+        run: |
+          curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+          sudo apt-get update && sudo apt-get install -y infisical
+
+      - name: Determine environment stage
+        id: stage
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "stage=dev" >> $GITHUB_OUTPUT
+            echo "token_var=INFISICAL_TOKEN_DEV" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "stage=production" >> $GITHUB_OUTPUT
+            echo "token_var=INFISICAL_TOKEN_PROD" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown branch: ${{ github.ref }}"
+            exit 1
+          fi
+
+      - name: Sync environment variables
+        env:
+          # Required GitHub Secrets:
+          # INFISICAL_TOKEN_DEV - Service token for dev environment
+          # INFISICAL_TOKEN_PROD - Service token for production environment  
+          # INFISICAL_PROJECT_ID - Project ID for Infisical
+          INFISICAL_TOKEN: ${{ secrets[steps.stage.outputs.token_var] }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+        run: pnpm run pull-env:${{ steps.stage.outputs.stage }}
+
+      - name: Commit and push .env files (if any changes)
+        run: |
+          if [[ -n $(git status --porcelain .env* apps/*/.env) ]]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .env* apps/*/.env
+            git commit -m "chore: sync environment variables from Infisical [skip ci]"
+            git push
+          else
+            echo "No .env file changes to commit"
+          fi
