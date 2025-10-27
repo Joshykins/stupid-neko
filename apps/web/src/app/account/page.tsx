@@ -11,16 +11,12 @@ import {
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '../../../../../convex/_generated/api';
-import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
-} from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import IntegrationsCard from './components/IntegrationsCard';
+import ProfilePictureUpload from './components/ProfilePictureUpload';
 
 export default function AccountPage() {
 	const { signOut: _signOut } = useAuthActions();
@@ -53,20 +49,10 @@ export default function AccountPage() {
 
 			<Authenticated>
 				<div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-3">
-					<Card className="p-6 md:col-span-1 flex flex-col items-center gap-4">
-						<Avatar className="size-24">
-							<AvatarImage
-								src={me?.image ?? undefined}
-								alt={me?.name ?? 'User'}
-							/>
-							<AvatarFallback>{(me?.name ?? 'U').slice(0, 1)}</AvatarFallback>
-						</Avatar>
-						<div className="text-center">
-							<div className="text-xl font-heading">
-								{me?.name ?? 'Your Account'}
-							</div>
-						</div>
-					</Card>
+					<ProfilePictureUpload
+						currentImage={me?.image}
+						userName={me?.name}
+					/>
 
 					<Card className="p-6 md:col-span-2">
 						<h2 className=" font-heading text-xl">Profile details</h2>
@@ -114,12 +100,12 @@ function EditForm({
 }: {
 	initialName: string;
 	initialTimezone: string;
-	onSave: (values: { name: string; timezone: string }) => Promise<void>;
+	onSave: (values: { name: string; timezone: string; }) => Promise<void>;
 	saving: boolean;
 	errorMessage: string | null;
 	successMessage: string | null;
 }) {
-	const form = useForm<{ name: string; timezone: string }>({
+	const form = useForm<{ name: string; timezone: string; }>({
 		defaultValues: {
 			name: initialName,
 			timezone: initialTimezone,
@@ -127,7 +113,7 @@ function EditForm({
 		onSubmit: async ({
 			value,
 		}: {
-			value: { name: string; timezone: string };
+			value: { name: string; timezone: string; };
 		}) => {
 			await onSave(value);
 		},
@@ -166,7 +152,7 @@ function EditForm({
 							{field.state.meta.errors?.[0] && (
 								<p className="text-sm text-red-500">
 									{String(
-										(field.state.meta.errors?.[0] as { message?: string })
+										(field.state.meta.errors?.[0] as { message?: string; })
 											?.message ?? field.state.meta.errors?.[0]
 									)}
 								</p>
