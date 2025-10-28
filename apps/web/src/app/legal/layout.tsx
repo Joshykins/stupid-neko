@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { Card, CardTitle, CardHeader, CardContent } from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { usePathname } from "next/navigation";
 

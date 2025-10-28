@@ -9,8 +9,8 @@ export default function TermsPage() {
 
                 <h2>1. Acceptance of Terms</h2>
                 <p>
-                    By accessing or using StupidNeko ("the Service"), operated by JSR Software Inc. ("Company," "we," "our," or "us"),
-                    you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms,
+                    By accessing or using StupidNeko (&quot;the Service&quot;), operated by JSR Software Inc. (&quot;Company,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;),
+                    you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms,
                     you may not use the Service.
                 </p>
 
@@ -123,7 +123,7 @@ export default function TermsPage() {
 
                 <h2>11. Disclaimers and Warranties</h2>
                 <p>
-                    THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
+                    THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND,
                     EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
                     FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
                 </p>
@@ -169,7 +169,7 @@ export default function TermsPage() {
                 <h2>15. Changes to Terms</h2>
                 <p>
                     We reserve the right to modify these Terms at any time. We will notify users of any material
-                    changes by posting the updated Terms on this page and updating the "Last updated" date.
+                    changes by posting the updated Terms on this page and updating the &quot;Last updated&quot; date.
                     Your continued use of the Service after such changes constitutes acceptance of the new Terms.
                 </p>
 
