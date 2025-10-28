@@ -7,6 +7,7 @@ import { Background } from '../components/Background/Background';
 import TopNav from '../components/TopNav';
 import { TestingComponent } from '../components/testing/TestingComponent';
 import { Toaster } from '../components/ui/sonner';
+import Footer from '../components/Footer';
 
 const plusJakarta = Plus_Jakarta_Sans({
 	variable: '--font-geist-sans',
@@ -83,6 +84,7 @@ export default async function RootLayout({
 							<Background />
 							<TopNav />
 							{children}
+							<Footer />
 						</div>
 						<Toaster />
 					</ConvexClientProvider>

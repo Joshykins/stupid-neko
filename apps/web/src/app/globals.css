@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Prose */
+@plugin '@tailwindcss/typography';
+
 :root {
 	--bg-mountain-sky: oklch(0.7 0.06 255);
 	/* Deep evening blue with a hint of purple, gives energy not gloom */
