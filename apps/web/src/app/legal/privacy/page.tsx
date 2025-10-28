@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 
                 <h2>1. Introduction</h2>
                 <p>
-                    JSR Software Inc. ("we," "our," or "us") operates StupidNeko, a language learning progress tracking platform
+                    JSR Software Inc. (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) operates StupidNeko, a language learning progress tracking platform
                     available as a web application, mobile app, and browser extension. This Privacy Policy explains how we collect,
                     use, disclose, and protect your information when you use our services.
                 </p>
@@ -131,16 +131,16 @@ export default function PrivacyPage() {
                 <h2>8. Browser Extension Permissions</h2>
                 <p>Our browser extension requests the following permissions:</p>
                 <ul>
-                    <li><strong>activeTab</strong>: To access the current tab's URL and title</li>
+                    <li><strong>activeTab</strong>: To access the current tab&apos;s URL and title</li>
                     <li><strong>tabs</strong>: To track time spent on marked pages</li>
                     <li><strong>storage</strong>: To store your tracking preferences locally</li>
                 </ul>
                 <p>
                     The extension only tracks URLs you explicitly mark for tracking and does not collect
-                    data from pages you haven't designated for language learning.
+                    data from pages you haven&apos;t designated for language learning.
                 </p>
 
-                <h2>9. Children's Privacy</h2>
+                <h2>9. Children&apos;s Privacy</h2>
                 <p>
                     Our service is not intended for users under 13 years of age. We do not knowingly
                     collect personal information from children under 13.
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
                 <h2>11. Changes to This Policy</h2>
                 <p>
                     We may update this Privacy Policy from time to time. We will notify you of any
-                    material changes by posting the new policy on this page and updating the "Last updated" date.
+                    material changes by posting the new policy on this page and updating the &quot;Last updated&quot; date.
                 </p>
 
                 <h2>12. Contact Us</h2>
