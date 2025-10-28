@@ -10,10 +10,10 @@ export function Footer() {
 				<div className="flex flex-col gap-4 text-background/70 text-sm md:flex-row md:items-center md:justify-between">
 					<p>© {year} StupidNeko. All rights reserved.</p>
 					<div className="flex items-center gap-4">
-						<Link href="/privacy" className="hover:text-background">
+						<Link href="/legal/privacy" className="hover:text-background">
 							Privacy
 						</Link>
-						<Link href="/terms" className="hover:text-background">
+						<Link href="/legal/terms" className="hover:text-background">
 							Terms
 						</Link>
 					</div>
