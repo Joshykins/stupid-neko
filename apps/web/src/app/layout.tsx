@@ -8,6 +8,7 @@ import TopNav from '../components/TopNav';
 import { TestingComponent } from '../components/testing/TestingComponent';
 import { Toaster } from '../components/ui/sonner';
 import Footer from '../components/Footer';
+import { Analytics } from "@vercel/analytics/next";
 
 const plusJakarta = Plus_Jakarta_Sans({
 	variable: '--font-geist-sans',
@@ -91,6 +92,7 @@ export default async function RootLayout({
 						<Toaster />
 					</ConvexClientProvider>
 				</ConvexAuthNextjsServerProvider>
+				<Analytics />
 			</body>
 		</html>
 	);
