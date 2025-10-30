@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm turbo build --filter=web",
+  "buildCommand": "npx convex deploy --cmd='pnpm run build:web'",
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
   "framework": "nextjs",
   "outputDirectory": ".next"
