@@ -81,7 +81,7 @@ export default function SignInPage() {
 		if (validation !== undefined) setIsValidating(false);
 	}, [validation, debouncedCode]);
 
-	const _form = useForm<{ email: string; password: string }>({
+	const _form = useForm<{ email: string; password: string; }>({
 		defaultValues: {
 			email: '',
 			password: '',
@@ -106,7 +106,7 @@ export default function SignInPage() {
 			<div className="flex justify-center absolute top-4 left-0 right-0">
 				<UnreleasedBanner />
 			</div>
-			<div className="h-[95vh]"></div>
+			<div className="h-[88vh]"></div>
 			<div className="fixed inset-0 z-40 grid place-items-center px-4">
 				<div className="flex flex-col gap-8 items-center">
 					<div className="w-full max-w-md rounded-[var(--radius-base)] border-2 border-border bg-secondary-background shadow-shadow text-main-foreground min-w-[460px]">
@@ -246,7 +246,7 @@ export default function SignInPage() {
 										await signIn('discord', { redirectTo: '/get-started' });
 									} catch (err: unknown) {
 										const error = err as {
-											errors?: Array<{ message?: string }>;
+											errors?: Array<{ message?: string; }>;
 										};
 										setErrorMessage(
 											error?.errors?.[0]?.message || 'OAuth failed'
@@ -301,7 +301,7 @@ export default function SignInPage() {
 										await signIn('google', { redirectTo: '/get-started' });
 									} catch (err: unknown) {
 										const error = err as {
-											errors?: Array<{ message?: string }>;
+											errors?: Array<{ message?: string; }>;
 										};
 										setErrorMessage(
 											error?.errors?.[0]?.message || 'OAuth failed'
