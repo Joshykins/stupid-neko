@@ -106,21 +106,16 @@ export async function processSpotifyContentLabel(
 
 		const geminiResult = await detectLanguageWithGemini(geminiInput);
 
-		if (geminiResult.success && geminiResult.target_languages.length > 0) {
+		if (geminiResult.success) {
 			patch.contentLanguageCode = geminiResult.dominant_language || undefined;
 			patch.isAboutTargetLanguages = geminiResult.target_languages;
 			patch.geminiLanguageEvidence = geminiResult.reason;
 			patch.languageEvidence = ['spotify:gemini'];
 		} else {
-			const reason = geminiResult.reason || 'Detection failed';
-			console.debug('[spotifyProcessing.processOne] Gemini detection failed or insufficient data', {
+			console.debug('[spotifyProcessing.processOne] Gemini detection failed', {
 				error: geminiResult.error,
-				reason: reason,
 			});
-			return {
-				success: false,
-				error: `Language detection failed: ${reason}`,
-			};
+			// Continue without language detection - the activity will be created with user's target language
 		}
 
 		// Update patch with basic metadata

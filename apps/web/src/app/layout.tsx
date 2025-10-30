@@ -83,7 +83,9 @@ export default async function RootLayout({
 						<div className="min-h-screen px-4 max-w-7xl mx-auto">
 							<Background />
 							<TopNav />
-							{children}
+							<div className="min-h-[80vh] pb-20">
+								{children}
+							</div>
 							<Footer />
 						</div>
 						<Toaster />
