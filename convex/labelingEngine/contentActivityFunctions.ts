@@ -5,6 +5,7 @@ import type { MutationCtx } from '../_generated/server';
 import { getEffectiveNow } from '../utils';
 import { getOrCreateContentLabel } from './contentLabelFunctions';
 import { createOrUpdateLanguageActivityFromContent } from '../userTargetLanguageActivityFunctions';
+import { LanguageCode } from '../schema';
 
 // Helper function to convert content source to activity source
 function getSourceFromContentSource(
@@ -99,7 +100,7 @@ export const recordContentActivity = async ({
 		.withIndex('by_content_key', q => q.eq('contentKey', contentKey))
 		.unique();
 
-	// If no label exists, enqueue labeling and create activity with user's target language
+	// If no label exists, enqueue labeling
 	if (!label) {
 		const enqueue = await getOrCreateContentLabel({
 			ctx,
@@ -115,47 +116,72 @@ export const recordContentActivity = async ({
 			},
 		});
 
-		// Create activity with user's target language (will be updated when labeling completes)
-		const result = await createOrUpdateLanguageActivityFromContent({
-			ctx,
-			args: {
-				userId,
-				contentKey,
-				occurredAt,
-				userTargetLanguageId: currentTargetLanguageId,
-				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
-				source: getSourceFromContentSource(args.source),
-			},
-		});
+		// Only create activity for website content (uses user's target language)
+		// Other sources wait for content label processing to complete
+		if (args.source === 'website') {
+			const result = await createOrUpdateLanguageActivityFromContent({
+				ctx,
+				args: {
+					userId,
+					contentKey,
+					occurredAt,
+					userTargetLanguageId: currentTargetLanguageId,
+					userTargetLanguageCode: currentTargetLanguage.languageCode as LanguageCode,
+					source: getSourceFromContentSource(args.source),
+				},
+			});
 
+			return {
+				ok: true,
+				saved: result.activityId !== undefined,
+				languageActivityId: result.activityId,
+				contentLabelId: enqueue.contentLabelId,
+				isWaitingOnLabeling: false,
+				contentKey,
+			};
+		}
+
+		// For non-website sources, skip activity creation until labeling completes
 		return {
 			ok: true,
-			saved: result.activityId !== undefined,
-			languageActivityId: result.activityId,
+			saved: false,
 			contentLabelId: enqueue.contentLabelId,
 			isWaitingOnLabeling: true,
 			contentKey,
 		};
 	}
 
-	// If label exists but isn't completed or lacks language, create activity with user's target language
+	// If label exists but isn't completed or lacks language
 	if (label.stage !== 'completed' || !label.contentLanguageCode) {
-		const result = await createOrUpdateLanguageActivityFromContent({
-			ctx,
-			args: {
-				userId,
-				contentKey,
-				occurredAt,
-				userTargetLanguageId: currentTargetLanguageId,
-				userTargetLanguageCode: currentTargetLanguage.languageCode as any,
-				source: getSourceFromContentSource(args.source),
-			},
-		});
+		// Only create activity for website content (uses user's target language)
+		// Other sources wait for content label processing to complete
+		if (args.source === 'website') {
+			const result = await createOrUpdateLanguageActivityFromContent({
+				ctx,
+				args: {
+					userId,
+					contentKey,
+					occurredAt,
+					userTargetLanguageId: currentTargetLanguageId,
+					userTargetLanguageCode: currentTargetLanguage.languageCode as LanguageCode,
+					source: getSourceFromContentSource(args.source),
+				},
+			});
 
+			return {
+				ok: true,
+				saved: result.activityId !== undefined,
+				languageActivityId: result.activityId,
+				contentLabelId: label._id,
+				isWaitingOnLabeling: false,
+				contentKey,
+			};
+		}
+
+		// For non-website sources, skip activity creation until labeling completes
 		return {
 			ok: true,
-			saved: result.activityId !== undefined,
-			languageActivityId: result.activityId,
+			saved: false,
 			contentLabelId: label._id,
 			isWaitingOnLabeling: true,
 			contentKey,
@@ -171,12 +197,12 @@ export const recordContentActivity = async ({
 			occurredAt,
 			contentLabel: {
 				title: label.title,
-				contentLanguageCode: label.contentLanguageCode as any,
+				contentLanguageCode: label.contentLanguageCode as LanguageCode,
 				contentMediaType: label.contentMediaType,
-				isAboutTargetLanguages: label.isAboutTargetLanguages as any,
+				isAboutTargetLanguages: label.isAboutTargetLanguages as LanguageCode[],
 			},
 			userTargetLanguageId: currentTargetLanguageId,
-			userTargetLanguageCode: currentTargetLanguage.languageCode as any,
+			userTargetLanguageCode: currentTargetLanguage.languageCode as LanguageCode,
 			source: getSourceFromContentSource(args.source),
 		},
 	});

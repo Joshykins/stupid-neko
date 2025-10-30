@@ -151,16 +151,12 @@ export async function processYouTubeContentLabel(
 				}
 			);
 		} else {
-			// Insufficient linguistic data or detection failed - return failure
-			const reason = geminiResult.reason || 'Detection failed';
-			console.debug('[youtubeProcessing.processOne] Gemini detection failed or insufficient data', {
+			// No language detected - mark as unknown
+			patch.languageEvidence = ['gemini:detection:failed'];
+			console.debug('[youtubeProcessing.processOne] Gemini detection failed', {
 				error: geminiResult.error,
-				reason: reason,
+				reason: geminiResult.reason,
 			});
-			return {
-				success: false,
-				error: `Language detection failed: ${reason}`,
-			};
 		}
 
 		console.debug('[youtubeProcessing.processOne] built patch', {
