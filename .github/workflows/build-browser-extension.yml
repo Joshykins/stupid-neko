@@ -1,0 +1,85 @@
+name: Build Browser Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for'
+        required: true
+        type: choice
+        options:
+          - dev
+          - production
+
+jobs:
+  build:
+    name: Build Chrome Extension
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Infisical CLI
+        run: |
+          curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+          sudo apt-get update && sudo apt-get install -y infisical
+
+      - name: Determine environment stage
+        id: stage
+        run: |
+          if [[ "${{ inputs.environment }}" == "dev" ]]; then
+            echo "stage=dev" >> $GITHUB_OUTPUT
+            echo "token_var=INFISICAL_TOKEN_DEV" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.environment }}" == "production" ]]; then
+            echo "stage=production" >> $GITHUB_OUTPUT
+            echo "token_var=INFISICAL_TOKEN_PROD" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown environment: ${{ inputs.environment }}"
+            exit 1
+          fi
+
+      - name: Sync environment variables
+        env:
+          INFISICAL_TOKEN: ${{ secrets[steps.stage.outputs.token_var] }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+        run: |
+          echo "Syncing environment variables for ${{ steps.stage.outputs.stage }}..."
+          pnpm run pull-env:${{ steps.stage.outputs.stage }} -- --debug
+
+      - name: Build Chrome Extension
+        run: pnpm turbo run build --filter=browser-extension
+
+      - name: Upload Chrome extension artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vite-web-extension-chrome-${{ inputs.environment }}
+          path: apps/browser-extension/dist_chrome
+

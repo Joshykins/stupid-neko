@@ -403,14 +403,16 @@ async function main(): Promise<void> {
 		.filter(Boolean);
 	let stage: Stage | null = null;
 	let debugFlag = false;
+	let syncConvex = false;
 	for (const arg of argv) {
 		if (arg === 'dev' || arg === 'production') stage = arg as Stage;
 		if (arg === '--debug') debugFlag = true;
+		if (arg === '--sync-convex') syncConvex = true;
 	}
 	if (!stage) {
 		fail(
 			'pull-env',
-			`Usage: tsx scripts/pull-env.ts <dev|production> [--debug]`
+			`Usage: tsx scripts/pull-env.ts <dev|production> [--debug] [--sync-convex]`
 		);
 	}
 	if (debugFlag) {
@@ -434,8 +436,12 @@ async function main(): Promise<void> {
 
 	writeDotenvFiles(envVars);
 
-	log('pull-env', `Syncing variables to Convex (${stage!})...`, 'blue');
-	setEnvInConvex(envVars, stage!);
+	if (syncConvex) {
+		log('pull-env', `Syncing variables to Convex (${stage!})...`, 'blue');
+		setEnvInConvex(envVars, stage!);
+	} else {
+		log('pull-env', 'Skipping Convex sync (use --sync-convex to enable)', 'yellow');
+	}
 
 	log('pull-env', chalk.green('Done.'));
 }
