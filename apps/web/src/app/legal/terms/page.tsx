@@ -143,7 +143,7 @@ export default function TermsPage() {
 
                 <h3>13.1 Termination by You</h3>
                 <p>
-                    You may terminate your account at any time by contacting us at joshua@stupidneko.com
+                    You may terminate your account at any time by contacting us at support@stupidneko.com
                     or through the account settings in the Service.
                 </p>
 
@@ -192,7 +192,7 @@ export default function TermsPage() {
                     If you have any questions about these Terms of Service, please contact us at:
                 </p>
                 <p>
-                    <strong>Email:</strong> joshua@stupidneko.com<br />
+                    <strong>Email:</strong> support@stupidneko.com<br />
                     <strong>Company:</strong> JSR Software Inc.
                 </p>
             </div>

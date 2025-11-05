@@ -73,7 +73,7 @@ jobs:
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: |
           echo "Starting environment sync for ${{ steps.stage.outputs.stage }}..."
-          pnpm run pull-env:${{ steps.stage.outputs.stage }} --debug
+          pnpm run pull-env:${{ steps.stage.outputs.stage }} -- --debug --sync-convex
 
       - name: Commit and push .env files (if any changes)
         run: |

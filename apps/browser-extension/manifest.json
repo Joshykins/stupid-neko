@@ -16,7 +16,7 @@
 		"service_worker": "src/service-worker-loader.js",
 		"type": "module"
 	},
-	"permissions": ["activeTab", "tabs", "storage"],
+	"permissions": ["tabs", "storage"],
 	"content_scripts": [
 		{
 			"matches": ["http://*/*", "https://*/*", "<all_urls>"],

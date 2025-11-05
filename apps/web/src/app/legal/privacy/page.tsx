@@ -165,7 +165,7 @@ export default function PrivacyPage() {
                     please contact us at:
                 </p>
                 <p>
-                    <strong>Email:</strong> joshua@stupidneko.com<br />
+                    <strong>Email:</strong> support@stupidneko.com<br />
                     <strong>Company:</strong> JSR Software Inc.
                 </p>
             </div>
