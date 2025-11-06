@@ -11,15 +11,12 @@ on:
           - dev
           - production
 
+run-name: ${{ github.ref == 'refs/heads/dev' && 'DEV' || github.ref == 'refs/heads/master' && 'PROD' || 'DEV' }} - Build Chrome Extension - ${{ inputs.environment }}
+
 jobs:
-  build:
-    name: Build Chrome Extension
-    timeout-minutes: 15
+  build-browser-extension:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
